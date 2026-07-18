@@ -19,10 +19,8 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.{js,jsx,json,css,md,yml,yaml}": [
-      "prettier --write",
-      "oxlint"
-    ]
+    "*.{js,jsx,json,css,md,yml,yaml}": "prettier --write",
+    "*.{js,jsx}": "oxlint"
   },
   "devDependencies": {
     "husky": "*",

@@ -288,6 +288,9 @@ npm run dev
 
 Open `http://localhost:5173`. Seeded credentials are printed by `npm run seed`.
 
+**macOS port 5000 note:** AirPlay Receiver can reserve port `5000`. Either disable AirPlay
+Receiver in macOS settings or set `PORT=5001` in `server/.env` before starting the server.
+
 ### Environment Variables
 
 The `.env.example` files at `server/.env.example` and `client/.env.example` document the **shape only** — never actual values. `.env` is gitignored.
