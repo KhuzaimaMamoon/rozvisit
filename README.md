@@ -146,7 +146,7 @@ Placeholders below. Real screenshots will be added as portals reach preview-qual
 
 **Frontend:**
 - React 18 (function components + hooks only)
-- Vite 5 (portal code splitting)
+- Vite 8.1.5 (portal code splitting)
 - Tailwind CSS with a single design-token source
 - Lucide icons
 

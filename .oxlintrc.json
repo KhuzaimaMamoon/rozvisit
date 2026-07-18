@@ -1,8 +1,21 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "oxc"],
+  "plugins": ["react", "react-perf", "unicorn"],
   "rules": {
+    "no-console": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "no-unused-vars": "error",
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+    "react-hooks/exhaustive-deps": "error",
+    "react/no-danger": "error"
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**/*.js"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
 }

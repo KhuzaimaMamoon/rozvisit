@@ -49,7 +49,7 @@ Six principles. Every rule below serves at least one of these.
 ## 3. React Standards
 
 **Version and style:**
-- React 18, function components only, hooks only. No class components in application code.
+- React 18 with Vite 8.1.5, function components only, hooks only. No class components in application code.
 - Files that export a component: `PascalCase.jsx`. Files that export hooks/utilities: `camelCase.js`.
 
 **The rules:**
