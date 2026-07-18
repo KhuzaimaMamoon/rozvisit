@@ -1,0 +1,31 @@
+const variants = Object.freeze({
+  primary: 'bg-primary text-surface hover:bg-primary-hover',
+  secondary: 'border border-border bg-surface text-text hover:bg-surface-sunken',
+  ghost: 'bg-transparent text-primary hover:bg-primary-soft',
+  emergency: 'bg-emergency text-surface hover:bg-emergency-hover',
+});
+
+export default function Button({
+  children,
+  disabled = false,
+  loading = false,
+  type = 'button',
+  variant = 'primary',
+  caregiver = false,
+  ...props
+}) {
+  const isDisabled = disabled || loading;
+  const height = caregiver ? 'min-h-11' : 'h-10';
+
+  return (
+    <button
+      {...props}
+      aria-busy={loading || undefined}
+      className={`inline-flex ${height} items-center justify-center rounded-md px-4 text-sm font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]}`}
+      disabled={isDisabled}
+      type={type}
+    >
+      {loading ? <span aria-live="polite">Loading</span> : children}
+    </button>
+  );
+}
