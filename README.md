@@ -146,7 +146,7 @@ Placeholders below. Real screenshots will be added as portals reach preview-qual
 
 **Frontend:**
 - React 18 (function components + hooks only)
-- Vite 5 (portal code splitting)
+- Vite 8.1.5 (portal code splitting)
 - Tailwind CSS with a single design-token source
 - Lucide icons
 
@@ -287,6 +287,9 @@ npm run dev
 - **Client**: Vite dev server on port `5173` with an API proxy to `http://localhost:5000/api`.
 
 Open `http://localhost:5173`. Seeded credentials are printed by `npm run seed`.
+
+**macOS port 5000 note:** AirPlay Receiver can reserve port `5000`. Either disable AirPlay
+Receiver in macOS settings or set `PORT=5001` in `server/.env` before starting the server.
 
 ### Environment Variables
 

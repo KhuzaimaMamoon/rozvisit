@@ -109,7 +109,7 @@ Owned by Doc 00 §13, Doc 23. Codex does not choose alternatives.
 ## 3.3 Frontend
 
 - **React 18** (function components only; hooks only; no class components).
-- **Vite 5** as the bundler.
+- **Vite 8.1.5** as the bundler.
 - **Tailwind CSS** with the design-token mapping from Doc 15 §Tailwind mapping.
 - **Lucide** for icons (tree-shaken imports).
 - **No third-party scripts in portals** (Doc 18 §12).

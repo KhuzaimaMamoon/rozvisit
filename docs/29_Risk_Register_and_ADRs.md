@@ -1163,6 +1163,20 @@ The following decisions were made across Documents 09–21 but never captured as
 
 ---
 
+### AD-28 — Vite version tracks current stable, not a fixed pin
+
+- **Status:** Confirmed
+- **Context:** The documentation series pinned Vite 5 as the frontend bundler. During initial installation (T-A01..T-A12), a high-severity dependency advisory required upgrading beyond that line. The available audit fix moved Vite outside the documented version.
+- **Decision:** Adopt the latest stable Vite. Documentation version numbers for build tooling are treated as "current stable at time of writing," not immutable pins. Runtime dependencies (Node 20 LTS, MongoDB 7, React 18) remain hard-pinned.
+- **Alternatives considered:**
+  - Stay on Vite 5 with a known high-severity vulnerability — rejected. A security debt at day 1 is unacceptable and violates the "never leak sensitive data" ranking above feature completeness.
+  - Downgrade around the advisory with a nested override — rejected. This adds fragility without solving the underlying issue.
+- **Consequences:** Build tooling versions in Doc 00 §13 and Doc 23 §3 are treated as guidance, not contract. Actual installed versions are recorded in package.json and package-lock.json, which are the real source of truth for tooling versions. Framework-specific patterns in docs remain valid unless a Vite major version introduces a breaking change we depend on.
+- **Tradeoffs:** Loses the "the docs say exactly which version" property for build tooling. Gained: zero security debt at project start, ability to accept routine security patches without rewriting docs.
+- **Review trigger:** A future Vite major version introduces a breaking change to the module resolution, plugin API, or dev-server behavior that our setup depends on.
+
+---
+
 ## ADR Maintenance
 
 - **New ADRs are added** when a significant technical decision is made, in the same PR as the code that implements it.

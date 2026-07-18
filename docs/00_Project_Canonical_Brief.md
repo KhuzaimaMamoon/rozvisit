@@ -159,7 +159,7 @@ MVP means "minimum viable product" — the smallest version that works.
 |---|---|
 | Database | MongoDB 7.x with Mongoose; supports location-based search (2dsphere indexes) |
 | Backend | Node.js 20 LTS with Express.js; REST API with versions (`/api/v1`) |
-| Frontend | React 18 (built with Vite); Tailwind CSS for styling |
+| Frontend | React 18 (built with Vite 8.1.5); Tailwind CSS for styling |
 | Real-time updates | Socket.io |
 | Login security | JWT tokens (15-minute access token, 7-day refresh token in a secure cookie); passwords hashed with bcrypt |
 | Photo/video storage | Cloudinary for Phases 1–4; look at S3 again in Phase 5 (Decision D-05) |
