@@ -10,6 +10,7 @@ import { caregiverRepository } from '../repositories/caregiver.repo.js';
 import { parentRepository } from '../repositories/parent.repo.js';
 import { subscriptionRepository } from '../repositories/subscription.repo.js';
 import { visitRepository } from '../repositories/visit.repo.js';
+import { cloudinaryMediaStorage } from '../interfaces/media.cloudinary.js';
 import {
   ConflictError,
   ForbiddenError,
@@ -53,6 +54,13 @@ function serializeVisit(visit) {
           capturedAt: visit.checklist.capturedAt,
         }
       : null,
+    media: visit.media.map((item) => ({
+      clientMediaId: item.clientMediaId,
+      ref: item.ref,
+      capturedAt: item.capturedAt,
+      uploadedAt: item.uploadedAt,
+      sourceFlag: item.sourceFlag,
+    })),
   };
 }
 
@@ -233,6 +241,59 @@ export const visitService = Object.freeze({
     return serializeVisit(updated);
   },
 
+  async createMediaPermit(caregiverId, visitId, { items }) {
+    const visit = await getAssignedVisit(caregiverId, visitId);
+    if (
+      [VISIT_STATUS.COMPLETED, VISIT_STATUS.MISSED, VISIT_STATUS.PARENT_DECLINED].includes(
+        visit.status,
+      )
+    ) {
+      throw new ConflictError(
+        'STATE_INVALID',
+        'A media permit cannot be issued for a closed visit.',
+      );
+    }
+    return {
+      permits: items.map((item) =>
+        cloudinaryMediaStorage.createUploadPermit({ visitId: visit._id.toString(), ...item }),
+      ),
+    };
+  },
+
+  async complete(caregiverId, visitId, { clientVisitId, media, completedAt }) {
+    const visit = await getAssignedVisit(caregiverId, visitId);
+    if (visit.clientVisitId !== clientVisitId) {
+      throw new ConflictError('STATE_INVALID', 'The visit sync ID does not match this visit.');
+    }
+    if (visit.status === VISIT_STATUS.COMPLETED) return serializeVisit(visit);
+    if (!visit.checklist || !media.length) {
+      throw new ValidationError(
+        'Checklist and at least one photo are required to complete a visit',
+        {
+          form: ['Save the checklist and capture at least one photo before completing the visit.'],
+        },
+      );
+    }
+    const parent = await parentRepository.findById(visit.parentId);
+    if (!parent || parent.consent.state !== CONSENT_STATE.GIVEN) {
+      throw new ConflictError(
+        'CONSENT_REQUIRED',
+        'Consent is required before a visit can be completed.',
+      );
+    }
+    const updated = await visitRepository.update(visit._id, {
+      $set: { status: VISIT_STATUS.COMPLETED, media },
+      $push: {
+        statusHistory: {
+          status: VISIT_STATUS.COMPLETED,
+          at: completedAt,
+          byUserId: caregiverId,
+        },
+      },
+    });
+    return serializeVisit(updated);
+  },
+
   async feed(clientId, parentId, limit = 20) {
     const parent = await parentRepository.findById(parentId);
     if (!parent) throw new NotFoundError();
@@ -250,7 +311,12 @@ export const visitService = Object.freeze({
               concerns: visit.checklist.concerns,
             }
           : null,
-        media: [],
+        media: visit.media.map((media) => ({
+          ref: media.ref,
+          capturedAt: media.capturedAt,
+          uploadedAt: media.uploadedAt,
+          sourceFlag: media.sourceFlag,
+        })),
         missedReason:
           visit.status === VISIT_STATUS.MISSED
             ? (visit.statusHistory.at(-1)?.reason ?? null)

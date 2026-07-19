@@ -159,4 +159,97 @@ describe('Visit API lifecycle', () => {
     expect(today.status).toBe(200);
     expect(blocked.status).toBe(403);
   });
+
+  it('mints camera-only permits and completes an offline retry exactly once', async () => {
+    const visit = await Visit.create({
+      clientVisitId: 'offline-visit-1',
+      parentId: parent._id,
+      caregiverId: caregiver._id,
+      subscriptionId: (await Subscription.findOne())._id,
+      scheduledAt: new Date(),
+      status: 'scheduled',
+      statusHistory: [{ status: 'scheduled', at: new Date(), byUserId: client._id }],
+      checklist: { medicationTaken: true, mood: 4, concerns: [], capturedAt: new Date() },
+    });
+    await ParentProfile.updateOne(
+      { _id: parent._id },
+      { $set: { 'consent.state': 'given', status: 'active' } },
+    );
+    const capturedAt = '2026-07-20T12:00:00.000Z';
+    const permit = await request(app)
+      .post(`/api/v1/visits/${visit._id}/media-permit`)
+      .set(auth(caregiver))
+      .send({
+        items: [{ clientMediaId: 'device-photo-1', capturedAt, mediaType: 'photo' }],
+      });
+    expect(permit.status).toBe(200);
+    expect(permit.body.data.permits[0]).toMatchObject({
+      clientMediaId: 'device-photo-1',
+      folder: `rozvisit/visits/${visit._id}/`,
+      maxFileSize: 52428800,
+      resourceType: 'auto',
+    });
+    const completion = {
+      clientVisitId: 'offline-visit-1',
+      completedAt: new Date().toISOString(),
+      media: [
+        {
+          clientMediaId: 'device-photo-1',
+          ref: 'https://res.cloudinary.com/test/image/upload/proof.jpg',
+          capturedAt,
+          uploadedAt: new Date().toISOString(),
+          sourceFlag: 'in_app_camera',
+        },
+      ],
+    };
+    const first = await request(app)
+      .post(`/api/v1/visits/${visit._id}/complete`)
+      .set(auth(caregiver))
+      .send(completion);
+    const retry = await request(app)
+      .post(`/api/v1/visits/${visit._id}/complete`)
+      .set(auth(caregiver))
+      .send(completion);
+    expect(first.status).toBe(200);
+    expect(first.body.data.status).toBe('completed');
+    expect(retry.status).toBe(200);
+    expect(
+      retry.body.data.statusHistory.filter((item) => item.status === 'completed'),
+    ).toHaveLength(1);
+  });
+
+  it('rejects gallery-origin proof when completing a visit', async () => {
+    const visit = await Visit.create({
+      clientVisitId: 'offline-visit-2',
+      parentId: parent._id,
+      caregiverId: caregiver._id,
+      subscriptionId: (await Subscription.findOne())._id,
+      scheduledAt: new Date(),
+      status: 'scheduled',
+      statusHistory: [{ status: 'scheduled', at: new Date(), byUserId: client._id }],
+      checklist: { medicationTaken: true, mood: 4, concerns: [], capturedAt: new Date() },
+    });
+    await ParentProfile.updateOne(
+      { _id: parent._id },
+      { $set: { 'consent.state': 'given', status: 'active' } },
+    );
+    const response = await request(app)
+      .post(`/api/v1/visits/${visit._id}/complete`)
+      .set(auth(caregiver))
+      .send({
+        clientVisitId: 'offline-visit-2',
+        completedAt: new Date().toISOString(),
+        media: [
+          {
+            clientMediaId: 'x',
+            ref: 'proof',
+            capturedAt: new Date(),
+            uploadedAt: new Date(),
+            sourceFlag: 'gallery',
+          },
+        ],
+      });
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe('VALIDATION_FAILED');
+  });
 });

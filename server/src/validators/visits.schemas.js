@@ -95,3 +95,74 @@ export const parentDeclinedSchema = {
       : failure({ capturedAt: ['A capture time is required.'] });
   },
 };
+
+export const mediaPermitSchema = {
+  safeParse(value) {
+    const items = value?.items;
+    if (!Array.isArray(items) || items.length < 1 || items.length > 5) {
+      return failure({ items: ['Provide one to five captured media items.'] });
+    }
+    const fields = {};
+    const ids = new Set();
+    const valid = items.every((item) => {
+      if (typeof item?.clientMediaId !== 'string' || !item.clientMediaId.trim()) return false;
+      if (ids.has(item.clientMediaId)) return false;
+      ids.add(item.clientMediaId);
+      return validDate(item.capturedAt) && ['photo', 'video'].includes(item.mediaType);
+    });
+    if (!valid)
+      fields.items = ['Every item needs a unique device media ID, capture time, and type.'];
+    return Object.keys(fields).length
+      ? failure(fields)
+      : {
+          success: true,
+          data: {
+            items: items.map((item) => ({
+              clientMediaId: item.clientMediaId.trim(),
+              capturedAt: new Date(item.capturedAt),
+              mediaType: item.mediaType,
+            })),
+          },
+        };
+  },
+};
+
+export const completeVisitSchema = {
+  safeParse(value) {
+    const fields = {};
+    if (typeof value?.clientVisitId !== 'string' || !value.clientVisitId)
+      fields.clientVisitId = ['A visit sync ID is required.'];
+    if (!validDate(value?.completedAt)) fields.completedAt = ['A completion time is required.'];
+    if (!Array.isArray(value?.media) || value.media.length < 1) {
+      fields.media = ['At least one in-app camera photo is required.'];
+    } else if (
+      value.media.some(
+        (item) =>
+          typeof item?.clientMediaId !== 'string' ||
+          typeof item?.ref !== 'string' ||
+          !item.ref ||
+          !validDate(item.capturedAt) ||
+          !validDate(item.uploadedAt) ||
+          item.sourceFlag !== 'in_app_camera',
+      )
+    ) {
+      fields.media = ['Every media item must be captured in the in-app camera.'];
+    }
+    return Object.keys(fields).length
+      ? failure(fields)
+      : {
+          success: true,
+          data: {
+            clientVisitId: value.clientVisitId,
+            completedAt: new Date(value.completedAt),
+            media: value.media.map((item) => ({
+              clientMediaId: item.clientMediaId,
+              ref: item.ref,
+              capturedAt: new Date(item.capturedAt),
+              uploadedAt: new Date(item.uploadedAt),
+              sourceFlag: item.sourceFlag,
+            })),
+          },
+        };
+  },
+};

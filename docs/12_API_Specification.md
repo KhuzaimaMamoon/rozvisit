@@ -340,14 +340,14 @@ Example response:
 ### POST /visits/:id/media-permit — Signed upload permit
 
 - **Role:** caregiver (assigned)
-- **Body:** `{ count: 1-5 }` *(Recommendation — max 5 files per visit)*
-- **Success `200`:** `{ permits: [{ uploadUrl, params, expiresAt }] }` — short-lived, folder-scoped (Section 15)
+- **Body:** `{ items: [{ clientMediaId, capturedAt, mediaType }] }`, one to five entries. `clientMediaId` is generated on-device at capture time; `capturedAt` is the device's ISO-8601 capture time; `mediaType` is `photo` or `video`.
+- **Success `200`:** `{ permits: [{ clientMediaId, cloudName, apiKey, timestamp, signature, folder, publicId, resourceType: "auto", maxFileSize: 52428800, allowedFormats: ["jpg", "jpeg", "png", "heic", "mp4", "mov"], expiresAt }] }`. Each permit is keyed to its submitted `clientMediaId`, folder-scoped to `rozvisit/visits/<visitId>/`, and expires after 10 minutes (AD-30). `publicId` is `<visitId>*<clientMediaId>*<compact capturedAt>`.
 - **Errors:** `403`; `409 STATE_INVALID` on closed visits
 
 ### POST /visits/:id/complete — Close the visit
 
 - **Role:** caregiver (assigned)
-- **Body:** `{ clientVisitId, media: [{ ref, capturedAt, sourceFlag }], completedAt }`
+- **Body:** `{ clientVisitId, media: [{ clientMediaId, ref, capturedAt, uploadedAt, sourceFlag }], completedAt }`. `capturedAt` is device time; `uploadedAt` records the successful Cloudinary upload time, so offline delay remains visible.
 - **Validation:** checklist present (FR-045); ≥1 media ref; sourceFlag must be `in_app_camera` (SEC-012)
 - **Success `200`:** status → `completed`; history appended; earning recorded (FR-048); `visit.completed` event fires (feed + notification)
 - **Idempotent:** same `clientVisitId` re-sent → `200` with the existing record (Section 14)

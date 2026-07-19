@@ -38,6 +38,15 @@ export const parentDeclined = run(async (req, res) =>
     await visitService.parentDeclined(req.auth.sub, req.params.id, req.validatedBody),
   ),
 );
+export const createMediaPermit = run(async (req, res) =>
+  respond.ok(
+    res,
+    await visitService.createMediaPermit(req.auth.sub, req.params.id, req.validatedBody),
+  ),
+);
+export const completeVisit = run(async (req, res) =>
+  respond.ok(res, await visitService.complete(req.auth.sub, req.params.id, req.validatedBody)),
+);
 export const feed = run(async (req, res) =>
   respond.ok(res, await visitService.feed(req.auth.sub, req.query.parentId)),
 );

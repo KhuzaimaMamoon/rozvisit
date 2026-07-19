@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import {
   assignCaregiver,
+  completeVisit,
+  createMediaPermit,
   feed,
   parentDeclined,
   saveChecklist,
@@ -13,6 +15,8 @@ import { validate } from '../middleware/validate.js';
 import {
   assignCaregiverSchema,
   checklistSchema,
+  completeVisitSchema,
+  mediaPermitSchema,
   parentDeclinedSchema,
   scheduleVisitsSchema,
 } from '../validators/visits.schemas.js';
@@ -24,6 +28,18 @@ visitsRouter.post(
   requireRole('client'),
   validate(scheduleVisitsSchema),
   scheduleVisits,
+);
+visitsRouter.post(
+  '/:id/media-permit',
+  requireRole('caregiver'),
+  validate(mediaPermitSchema),
+  createMediaPermit,
+);
+visitsRouter.post(
+  '/:id/complete',
+  requireRole('caregiver'),
+  validate(completeVisitSchema),
+  completeVisit,
 );
 visitsRouter.get('/today', requireRole('caregiver'), today);
 visitsRouter.post(

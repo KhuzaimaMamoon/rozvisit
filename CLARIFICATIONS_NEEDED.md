@@ -1,5 +1,30 @@
 # Clarifications Needed
 
+## Cloudinary signed-upload permit contract — Resolved
+
+- **Resolution:** Approved for the Visit offline-media task: 10-minute TTL, 50 MB maximum,
+  image/video-only formats, visit-folder scope, and `clientMediaId`-scoped direct-upload permits.
+  Recorded in Doc 12 and AD-30.
+- **Searched:** Doc 12 §§14–15 and the `POST /visits/:id/media-permit` contract; Doc 18 §25;
+  Doc 29 AD-7; Doc 08 §15; Doc 09 §§17 and 19; Doc 07 FR-042–045, SEC-012, DATA-005 and
+  INT-002; Doc 20 Cloudinary outage handling; Doc 21 §10 (15-minute **view-link** expiry only).
+- **What is needed:** The permit TTL (for example, an approved number of minutes), plus the
+  approved Cloudinary parameters that enforce the permitted resource types, 50 MB limit, and
+  folder/public-ID behavior. This determines the MediaStorage contract, backend response,
+  client upload request, retry behavior, and the security tests.
+
+## Media-permit capture-time input — Resolved
+
+- **Resolution:** `items` contains one to five `{ clientMediaId, capturedAt, mediaType }` records.
+  The public ID is `<visitId>*<clientMediaId>*<compact capturedAt>`; the device-generated media
+  ID and device capture time are preserved through retries. Recorded in Doc 12 and AD-30.
+- **Searched:** Doc 12 §Visits (`media-permit` body and completion body); the approved
+  signed-upload-permit resolution; Doc 08 §15 (capture time is recorded at capture); Doc 07
+  FR-043/044; Doc 11 `visits.media`; and Doc 29 AD-7.
+- **What is needed:** The approved request shape for one to five captured files. The server must
+  use the device time in the folder-scoped public ID; substituting server time would violate
+  FR-044 and weaken offline-record integrity.
+
 ## Visit caregiver-assignment dependency — Resolved
 
 - **Question:** How should T-B21..T-B32 create scheduled visits and verify the caregiver for
