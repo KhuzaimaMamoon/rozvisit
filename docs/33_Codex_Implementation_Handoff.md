@@ -493,8 +493,8 @@ Owned by Doc 18. Non-negotiable.
 
 Initial list (Doc 18 §22):
 ```
-careNotes, addresses.text, cnicNumber, cnicDocumentRef,
-consentRecordingRef, emergencyContactNotes, visitNotes,
+careNotes, addressText, cnicNumber, cnicDocumentRef,
+recordingRef, emergencyContactNotes, visitNotes,
 passwordHash, refreshTokenHash, tokenHash
 ```
 

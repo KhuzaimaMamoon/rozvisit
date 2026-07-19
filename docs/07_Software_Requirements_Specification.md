@@ -165,6 +165,10 @@ Grouped by module. Each requirement: unique ID, phase, statement, and trace.
 | FR-014 | 1 | The system shall block visit completion on any parent profile without consent, and shall pause future visits if consent is withdrawn. | US-PROFILE-003 |
 | FR-015 | 1 | The system shall show the parent's consent choices to the caregiver inside every visit's checklist. | US-VISIT-004 |
 
+**FR-010 validation note:** Every parent has at least one emergency contact. Each contact priority
+is a required positive 1-indexed integer, unique within that parent's emergency-contact list;
+lower numbers are contacted first.
+
 ### 12.3 Plans and Subscription State
 
 | ID | Phase | Requirement | Trace |

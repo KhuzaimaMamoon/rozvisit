@@ -57,3 +57,26 @@
   country?
 - **Resolution:** Founder approved AE→AED, GB→GBP, US→USD, SA→SAR, with USD for all other ISO
   alpha-2 country codes. The mapping lives in `config/constants.js` and BR-033 records it.
+
+## Parent emergency-contact priority contract — Resolved
+
+- **Question:** What type, allowed range, and uniqueness/order rule should
+  `emergencyContacts[].priority` use?
+- **Searched:** Doc 11 §§4–6 (the field is listed only as `priority` in an ordered embedded
+  array), Doc 12 Parents `POST /parents` (the field is required in the request shape but has no
+  validation rule), Doc 14 Module 2, Doc 07 FR-010, and Doc 23 §11 (naming only).
+- **Resolution:** Founder approved a required, positive, 1-indexed integer. Lower is called
+  first, and priorities must be unique within the parent's embedded contact array; there is no
+  fixed maximum or contact-count cap beyond the existing minimum of one.
+
+## Consent capture before the Visit module exists — Resolved
+
+- **Question:** Should the Profile module implement `POST /parents/:id/consent` now despite the
+  documented requirement to verify the caregiver is assigned to that parent's first visit, when
+  the Visit model/repository and assignment data are scheduled for the later Visit/Admin modules?
+- **Searched:** Doc 12 Parents consent endpoint (assigned caregiver + `byVisitId`), Doc 14 Module
+  2 permissions specifics, Doc 07 FR-013–015, Doc 11 visits/consent schemas, and Doc 33 §13.2
+  dependency order.
+- **Resolution:** Founder directed that consent capture is deferred to the Visit module task,
+  where assignment data exists. The Profile task excludes `POST /parents/:id/consent`; this is
+  tracked explicitly for the Visit module scope and preserves the caregiver-assignment safeguard.
