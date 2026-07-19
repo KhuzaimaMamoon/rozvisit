@@ -176,7 +176,7 @@ POST /api/v1/auth/register
 
 ### POST /auth/resend-verification
 
-- **Role:** public — **Body:** `{ email }` — **Success `200`** always (no account-existence leak) — rate-limited
+- **Role:** public — **Body:** `{ email }` — **Success `200`** always with the same generic response whether the email is unknown, already verified, or awaiting verification; it sends only for an existing unverified account — rate-limited and non-enumerating
 
 ### POST /auth/apply — Caregiver application
 
@@ -191,7 +191,7 @@ POST /api/v1/auth/register
 - **Role:** public
 - **Body:** `{ email, password }`
 - **Success `200`:** `{ data: { accessToken, user: { id, name, role, status } } }` + refresh cookie set
-- **Errors:** `401 UNAUTHENTICATED` (wrong credentials — same message for wrong email or password); `403 FORBIDDEN` with reason for unverified email (`VERIFY_EMAIL_FIRST` in code) or disabled account; `429`
+- **Errors:** `401 UNAUTHENTICATED` with the same status, message, shape, and approximate timing for wrong email, wrong password, and unverified email; `403 ACCOUNT_DISABLED`; `429`
 - **Note:** caregiver in `applied`/`in_review` logs in successfully but the portal routes them to status-only (FR-003) — the API reflects it in `user.status`
 
 ### POST /auth/refresh
@@ -204,7 +204,7 @@ POST /api/v1/auth/register
 
 ### POST /auth/forgot
 
-- **Role:** public — **Body:** `{ email }` — **Success `200`** always; reset link emailed if the account exists (30-minute expiry, FR-006) — rate-limited
+- **Role:** public — **Body:** `{ email }` — **Success `200`** always; reset link emailed if the account exists (1-hour expiry) — rate-limited
 
 ### POST /auth/reset
 

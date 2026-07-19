@@ -12,6 +12,7 @@ const REQUIRED = [
   'FIREBASE_SERVICE_ACCOUNT_JSON',
   'EMAIL_PROVIDER_API_KEY',
   'EMAIL_FROM_ADDRESS',
+  'APP_BASE_URL',
 ];
 
 const OPTIONAL = ['PORT', 'LOG_LEVEL', 'SENTRY_DSN'];
@@ -68,6 +69,12 @@ if (!EMAIL_PATTERN.test(process.env.EMAIL_FROM_ADDRESS)) {
   fail('EMAIL_FROM_ADDRESS must be a valid email address');
 }
 
+try {
+  new URL(process.env.APP_BASE_URL);
+} catch {
+  fail('APP_BASE_URL must be a valid URL');
+}
+
 const port = Number(process.env.PORT ?? 5000);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) {
   fail('PORT must be an integer between 1024 and 65535');
@@ -108,6 +115,7 @@ export const env = Object.freeze({
     apiKey: process.env.EMAIL_PROVIDER_API_KEY,
     fromAddress: process.env.EMAIL_FROM_ADDRESS,
   }),
+  appBaseUrl: process.env.APP_BASE_URL,
   sentryDsn: process.env.SENTRY_DSN ?? null,
   logLevel,
 });

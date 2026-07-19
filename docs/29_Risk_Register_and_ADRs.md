@@ -1177,6 +1177,19 @@ The following decisions were made across Documents 09–21 but never captured as
 
 ---
 
+### AD-29 — Uniform login failures prevent account enumeration
+
+- **Status:** Confirmed
+- **Context:** Doc 13 and Doc 12 originally specified a distinct `403 VERIFY_EMAIL_FIRST` response for unverified accounts at login. This conflicted with the uniform-response anti-enumeration rule and was itself an enumeration vector.
+- **Decision:** Login returns a uniform response for wrong-email, wrong-password, and unverified cases. `VERIFY_EMAIL_FIRST` is reserved for authenticated contexts. A separate resend-verification endpoint always returns generic success.
+- **Alternatives considered:**
+  - Keep distinct `403` — rejected: enables enumeration.
+  - Silently succeed login but block features until verified — rejected: contradicts FR-002's registration flow intent.
+- **Consequences:** Slightly less specific error feedback to legitimate users at login; gained protection against enumeration attacks.
+- **Review trigger:** None anticipated; this is a standard security pattern.
+
+---
+
 ## ADR Maintenance
 
 - **New ADRs are added** when a significant technical decision is made, in the same PR as the code that implements it.

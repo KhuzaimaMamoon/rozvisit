@@ -44,7 +44,7 @@ From DATA-001 and the ER model in Document 08:
 
 Collection names are plural camelCase, matching Mongoose defaults:
 
-`users`, `clientProfiles`, `parentProfiles`, `caregiverProfiles`, `carePlans`, `subscriptions`, `visits`, `notifications`, `refreshTokens`, `auditEvents` — and at Phase 2: `errands`, `emergencyAlerts`.
+`users`, `clientProfiles`, `parentProfiles`, `caregiverProfiles`, `carePlans`, `subscriptions`, `visits`, `notifications`, `refreshTokens`, `authTokens`, `auditEvents` — and at Phase 2: `errands`, `emergencyAlerts`.
 
 ---
 
@@ -192,6 +192,18 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | expiresAt | Date | TTL index removes expired rows automatically |
 | revokedAt | Date | Set on logout/reset (FR-006) |
 
+### authTokens
+
+| Field | Type | Notes |
+|---|---|---|
+| _id | ObjectId | |
+| userId | ObjectId → users | Required token owner |
+| tokenHash | String | SHA-256 hash only; raw token is sent only in the email link |
+| type | String enum | `email_verification` \| `password_reset` |
+| expiresAt | Date | TTL index removes expired rows; verification expires after 24 hours, reset after 1 hour *(Recommendation — durations pending founder confirmation)* |
+| usedAt | Date | Null until consumed; enforces single use |
+| createdAt | Date | Defaults to creation time |
+
 ### auditEvents (append-only data, not logs — Doc 10 §21)
 
 | Field | Type | Notes |
@@ -216,6 +228,7 @@ erDiagram
     USER ||--o| CLIENT_PROFILE : "has (client)"
     USER ||--o| CAREGIVER_PROFILE : "has (caregiver)"
     USER ||--o{ REFRESH_TOKEN : "sessions"
+    USER ||--o{ AUTH_TOKEN : "verification and reset links"
     USER ||--o{ NOTIFICATION : "receives"
     USER ||--o{ AUDIT_EVENT : "acts (admin)"
     CLIENT_PROFILE ||--o{ PARENT_PROFILE : "manages"
@@ -297,6 +310,8 @@ Bounded-array note: embedded histories are bounded by nature (a visit has a hand
 | notifications | userId, createdAt desc | Compound | Notification list + unread |
 | refreshTokens | tokenHash | Unique | Refresh lookup |
 | refreshTokens | expiresAt | TTL | Auto-cleanup of expired sessions |
+| authTokens | tokenHash | Single | Verification/reset lookup |
+| authTokens | expiresAt | TTL | Auto-cleanup of expired links |
 | auditEvents | actorId, at desc | Compound | "What did this admin do" |
 | auditEvents | targetType, targetId | Compound | "Who touched this record" (AUD-004) |
 

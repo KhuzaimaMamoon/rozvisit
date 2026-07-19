@@ -231,6 +231,20 @@ Every variable is specified with the 9 fields from the prompt:
 | Default behavior | Boot refused |
 | Validation | Valid email format |
 
+### `APP_BASE_URL`
+
+| Field | Value |
+|---|---|
+| Variable | `APP_BASE_URL` |
+| Service | Server auth layer |
+| Purpose | Builds email-verification and password-reset links sent by the email channel |
+| Required | Required |
+| Development example | `APP_BASE_URL=http://localhost:5173` |
+| Production rule | The public RozVisit application origin, set in Render's environment |
+| Sensitivity | Public |
+| Default behavior | Boot refused — an email link without its application origin is not usable |
+| Validation | Must be a valid absolute URL |
+
 ---
 
 ## A.8 Error Tracking — Sentry *(Recommendation)*

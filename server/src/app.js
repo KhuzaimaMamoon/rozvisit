@@ -2,6 +2,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import { correlationId } from './middleware/correlationId.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { apiRouter } from './routes/index.js';
 import { healthRouter } from './routes/health.routes.js';
 
 export function createApp() {
@@ -12,6 +13,7 @@ export function createApp() {
   app.use(cookieParser());
 
   app.use('/health', healthRouter);
+  app.use('/api/v1', apiRouter);
 
   app.use(errorHandler);
 

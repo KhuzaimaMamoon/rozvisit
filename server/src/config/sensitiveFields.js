@@ -8,4 +8,5 @@ export const sensitiveFields = Object.freeze([
   'visitNotes',
   'passwordHash',
   'refreshTokenHash',
+  'tokenHash',
 ]);
