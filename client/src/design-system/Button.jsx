@@ -1,6 +1,7 @@
 const variants = Object.freeze({
   primary: 'bg-primary text-surface hover:bg-primary-hover',
   secondary: 'border border-border bg-surface text-text hover:bg-surface-sunken',
+  accent: 'border border-accent bg-accent text-text hover:bg-primary-soft',
   ghost: 'bg-transparent text-primary hover:bg-primary-soft',
   emergency: 'bg-emergency text-surface hover:bg-emergency-hover',
 });
@@ -22,7 +23,7 @@ export default function Button({
     <button
       {...props}
       aria-busy={loading || undefined}
-      className={`inline-flex ${height} items-center justify-center rounded-md px-4 text-sm font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
+      className={`inline-flex ${height} items-center justify-center rounded-md px-4 text-sm font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
       disabled={isDisabled}
       type={type}
     >
