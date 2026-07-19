@@ -1,4 +1,4 @@
-import { AppError, InternalError } from '../utils/AppError.js';
+import { AppError, ConflictError, InternalError } from '../utils/AppError.js';
 import { logger } from '../utils/logger.js';
 import { respond } from '../utils/respond.js';
 
@@ -7,7 +7,15 @@ export function errorHandler(error, req, res, next) {
     return next(error);
   }
 
-  const appError = error instanceof AppError ? error : new InternalError(error);
+  const appError =
+    error instanceof AppError
+      ? error
+      : error?.code === 11000
+        ? new ConflictError(
+            'DUPLICATE',
+            'An account already uses this email. Please sign in or reset your password.',
+          )
+        : new InternalError(error);
   const logContext = {
     correlationId: req.correlationId,
     code: appError.code,

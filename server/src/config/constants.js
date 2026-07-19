@@ -51,3 +51,12 @@ export const PLAN_NAMES = Object.freeze({
   STANDARD: 'Standard',
   PREMIUM: 'Premium',
 });
+
+export const COUNTRY_CURRENCY_MAP = Object.freeze({
+  AE: 'AED',
+  GB: 'GBP',
+  US: 'USD',
+  SA: 'SAR',
+});
+
+export const DEFAULT_CURRENCY = 'USD';

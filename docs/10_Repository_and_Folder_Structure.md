@@ -196,10 +196,13 @@ server/
     │   ├── caregiver.repo.js
     │   ├── subscription.repo.js
     │   ├── visit.repo.js
-    │   └── notification.repo.js
+    │   ├── notification.repo.js
+    │   └── token.repo.js
     │
     ├── models/
     │   ├── User.js
+    │   ├── RefreshToken.js
+    │   ├── AuthToken.js
     │   ├── ClientProfile.js
     │   ├── ParentProfile.js     # includes linkedFamilyMembers (FR-012)
     │   ├── CaregiverProfile.js

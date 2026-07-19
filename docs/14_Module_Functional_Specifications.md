@@ -37,7 +37,7 @@
 
 **Functional requirements:** FR-001–007. **Business rules:** verification gates login (clients) and service access (caregivers); admin accounts never self-register; same-message responses for wrong credentials. **Validation:** Document 12 Auth module.
 
-**Data entities:** users, refreshTokens (Document 11). **API dependencies:** the 9 Auth endpoints (Document 12); email service (EXT-003).
+**Data entities:** users, refreshTokens, authTokens (Document 11). **API dependencies:** the 9 Auth endpoints (Document 12); email service (EXT-003).
 
 **Notifications:** verification email; reset email; caregiver decision outcome (in-app + email).
 

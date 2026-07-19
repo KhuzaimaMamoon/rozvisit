@@ -109,6 +109,7 @@ Each requirement has a unique ID. "Must" means required for the phase listed. Re
 | BR-007 | From Phase 4, more than one family member must be able to share the cost of one parent's plan (split billing). | 4 |
 | BR-008 | From Phase 4, a missed visit must trigger an automatic refund or credit. | 4 |
 | BR-009 | The business must be able to sell single errands and one-time emergency call-outs to people who are not subscribers. | 2 |
+| BR-033 | Client registration currency is determined by country: AE→AED, GB→GBP, US→USD, SA→SAR. Countries outside these four default to USD. | 1 |
 
 ### Service delivery
 

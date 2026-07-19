@@ -1,7 +1,7 @@
 # RozVisit — Authentication, Authorization and Account Security
 ### Document 13
 
-**Sources:** Documents 00–12, especially the API specification (Document 12, Auth module), the architecture (Document 09 §13–14), and the database design (Document 11: users, refreshTokens, auditEvents).
+**Sources:** Documents 00–12, especially the API specification (Document 12, Auth module), the architecture (Document 09 §13–14), and the database design (Document 11: users, refreshTokens, authTokens, auditEvents).
 **Labels:** Everything here is confirmed unless marked *(Assumption)*, *(Recommendation)*, or *(Open)*.
 **Scope:** Phase 1 in full; Phase 2+ items (OTP, MFA) as roadmap.
 
@@ -36,7 +36,7 @@ sequenceDiagram
 ```
 
 Design notes:
-- The verification token is single-use, random (not a JWT), stored hashed with an expiry. *(Recommendation — 24-hour expiry; confirm at build.)*
+- The verification token is single-use, random (not a JWT), stored hashed with a 24-hour expiry.
 - `POST /auth/resend-verification` always returns success, leaking nothing about whether the email exists (Document 12).
 
 ---
@@ -53,10 +53,8 @@ sequenceDiagram
     API->>API: Rate limit check (Section 21)
     API->>DB: Find user by email
     API->>API: bcrypt.compare
-    alt Wrong credentials
-        API-->>U: 401 - one same message for wrong email OR password
-    else Not verified
-        API-->>U: 403 VERIFY_EMAIL_FIRST
+    alt Wrong credentials or unverified email
+        API-->>U: 401 - one same message for wrong email, wrong password, OR unverified email
     else Disabled account
         API-->>U: 403 with support path (Section 18)
     else Success
@@ -65,7 +63,7 @@ sequenceDiagram
     end
 ```
 
-The single most important line: **the same error message for a wrong email and a wrong password.** Attackers must not be able to test which emails have accounts (SEC posture; pairs with the always-success resend endpoint).
+The single most important line: **the same status, message, shape, and approximate timing for a wrong email, wrong password, and unverified email.** Attackers must not be able to test which emails have accounts (SEC posture; pairs with the always-success resend endpoint). `VERIFY_EMAIL_FIRST` is reserved for authenticated actions that explicitly require a verified email; it is never returned by login.
 
 ---
 
@@ -137,7 +135,7 @@ Confirmed rule (Document 07, US-AUTH-001): minimum 8 characters, at least one le
 
 ## 9. Forgot Password
 
-`POST /auth/forgot` (public, rate-limited): always returns success in the same time whether the account exists or not. If it exists: a single-use reset token (random, hashed at rest, 30-minute expiry — FR-006) is emailed.
+`POST /auth/forgot` (public, rate-limited): always returns success in the same time whether the account exists or not. If it exists: a single-use reset token (random, hashed at rest, 1-hour expiry) is emailed.
 
 ---
 
@@ -151,7 +149,7 @@ sequenceDiagram
 
     U->>API: POST /auth/forgot (email)
     API-->>U: 200 always (no account leak)
-    API->>DB: Store hashed reset token (30 min)
+    API->>DB: Store hashed reset token (1 hour)
     API->>U: Email with reset link
     U->>API: POST /auth/reset (token, newPassword)
     API->>DB: Verify token hash, unused, unexpired

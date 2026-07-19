@@ -289,6 +289,7 @@ The MVP collections are:
 - `subscriptions` — with `planSnapshot` and append-only state history
 - `visits` — with `clientVisitId` unique for offline dedupe, embedded checklist, embedded status history
 - `refreshTokens` — hashed, TTL-indexed
+- `authTokens` — hashed, single-use verification and reset links, TTL-indexed
 - `notifications` — with per-channel delivery state array
 - `auditEvents` — append-only, queryable evidence
 - `emergencyAlerts` — reserved for Phase 2; do not create until Phase 2 trigger
@@ -353,6 +354,7 @@ export const PLAN_NAMES = Object.freeze({ BASIC: 'Basic', STANDARD: 'Standard', 
 - `subscriptions.planSnapshot` copies the plan's terms at purchase (AD-14) — prices set on subscriptions never change with plan updates.
 - `visits.clientVisitId` has a unique index — the offline dedupe seatbelt.
 - `refreshTokens.expiresAt` has a TTL index for automatic cleanup.
+- `authTokens.expiresAt` has a TTL index for automatic cleanup.
 
 ---
 
@@ -493,7 +495,7 @@ Initial list (Doc 18 §22):
 ```
 careNotes, addresses.text, cnicNumber, cnicDocumentRef,
 consentRecordingRef, emergencyContactNotes, visitNotes,
-passwordHash, refreshTokenHash
+passwordHash, refreshTokenHash, tokenHash
 ```
 
 **Never** log a value from this list. **Never** return it in an API response unless explicitly needed.

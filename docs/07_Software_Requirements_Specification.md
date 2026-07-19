@@ -151,7 +151,7 @@ Grouped by module. Each requirement: unique ID, phase, statement, and trace.
 | FR-003 | 1 | The system shall let a person apply as a caregiver, creating an account in "applied" state with no access to visit features. | US-AUTH-002 |
 | FR-004 | 1 | The system shall let users log in with email and password, issuing a 15-minute access token and a 7-day refresh token in a secure httpOnly cookie. | US-AUTH-003 |
 | FR-005 | 1 | The system shall slow repeated failed logins with rate limiting. | US-AUTH-003, SEC-005 |
-| FR-006 | 1 | The system shall provide password reset by a single-use, time-limited email link (30 minutes *(Recommendation)*), and shall log out all other sessions on reset. | US-AUTH-004 |
+| FR-006 | 1 | The system shall provide password reset by a single-use, time-limited email link (1 hour), and shall log out all other sessions on reset. | US-AUTH-004 |
 | FR-007 | 1 | The system shall enforce exactly three roles — client, caregiver, admin — and check the role on the server for every protected action. | Document 00 §7, §17 |
 
 ### 12.2 Parent Profiles and Consent

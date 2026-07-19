@@ -22,3 +22,38 @@
   them is authorized before the Auth, Profile, Plan, Visit, and Admin module tasks. Without
   that approval, the seed cannot truthfully create or idempotently query the documented
   collections.
+
+## Auth email-link token persistence and delivery — Resolved
+
+- **Question:** What canonical collection/schema should persist the hashed, single-use email
+  verification and password-reset tokens, and which email-provider implementation should send
+  those links at MVP?
+- **Searched:** Doc 11 §§7–11 and 23 (tokens have separate lifecycles; only
+  `refreshTokens` is named and indexed), Doc 13 §§6, 9–10 (hash + expiry + `usedAt`, email
+  delivery), Doc 12 Auth endpoints, Doc 10 §3 (a `NotificationChannel` and email channel are
+  listed but their contract is not specified), and Doc 26 (provider credentials only).
+- **Resolution:** Founder directed `authTokens` with `userId`, SHA-256 `tokenHash`, `type`,
+  `expiresAt`, `usedAt`, and `createdAt`; TTL on `expiresAt` and lookup index on `tokenHash`.
+  The approved NotificationChannel email implementation remains a no-op local logger. `APP_BASE_URL`
+  builds email links and is documented in Doc 26 and `server/.env.example`.
+
+## Unverified-login response conflict — Resolved
+
+- **Question:** Should an unverified account receive the distinct `403 VERIFY_EMAIL_FIRST`
+  response in Doc 13 and Doc 12, or the uniform unauthorized response required by Doc 33 §9.4
+  and the Auth task wording?
+- **Searched:** Doc 13 §2 and §4 (unverified accounts receive `403 VERIFY_EMAIL_FIRST`), Doc
+  12 Auth `POST /auth/login` (same), Doc 20 error-code ownership, Doc 33 §9.4 and §20
+  adversarial-auth wording (uniform response includes unverified), and Doc 31 Part F (Doc 13
+  is the higher-ranked owner for auth mechanics).
+- **Resolution:** Founder selected uniform `401 UNAUTHENTICATED` responses for wrong email,
+  wrong password, and unverified accounts. AD-29 records the security decision; Docs 12 and 13
+  now align. `VERIFY_EMAIL_FIRST` is reserved for authenticated verification-gated actions.
+
+## Client registration currency mapping — Resolved
+
+- **Question:** What currency should `clientProfiles.currency` receive from the registration
+  `countryCode` when the profile schema requires a currency but the registration API only accepts
+  country?
+- **Resolution:** Founder approved AE→AED, GB→GBP, US→USD, SA→SAR, with USD for all other ISO
+  alpha-2 country codes. The mapping lives in `config/constants.js` and BR-033 records it.
