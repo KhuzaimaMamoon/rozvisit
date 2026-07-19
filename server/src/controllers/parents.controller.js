@@ -1,4 +1,5 @@
 import { profileService } from '../services/profile.service.js';
+import { visitService } from '../services/visit.service.js';
 import { respond } from '../utils/respond.js';
 
 function run(handler) {
@@ -28,4 +29,10 @@ export const updateParent = run(async (req, res) =>
 );
 export const withdrawConsent = run(async (req, res) =>
   respond.ok(res, await profileService.withdrawConsent(req.auth, req.params.id)),
+);
+export const captureConsent = run(async (req, res) =>
+  respond.ok(
+    res,
+    await visitService.captureConsent(req.auth.sub, req.params.id, req.validatedBody),
+  ),
 );
