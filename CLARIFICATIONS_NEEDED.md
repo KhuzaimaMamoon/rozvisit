@@ -80,3 +80,21 @@
 - **Resolution:** Founder directed that consent capture is deferred to the Visit module task,
   where assignment data exists. The Profile task excludes `POST /parents/:id/consent`; this is
   tracked explicitly for the Visit module scope and preserves the caregiver-assignment safeguard.
+
+## Care-plan price representation before Phase 0 evidence — Resolved
+
+- **Question:** What exact persisted/API representation should `carePlans.prices` and
+  `subscriptions.planSnapshot.price` use while D-03/BR-004 require ranges rather than final
+  figures? Doc 11 declares `prices: { USD, GBP, AED, SAR: Number }` and the subscription
+  snapshot `price` as a number, while Doc 03 §15 supplies only USD ranges and requires every
+  concrete figure to be labelled an example.
+- **Searched:** Doc 01 D-03, Doc 03 BR-004/BR-032 and §15, Doc 07 FR-020–025, Doc 11
+  `carePlans`/`subscriptions` schemas, Doc 12 Plans endpoints, Doc 14 Module 3, Doc 17 Brief 6,
+  Doc 29 AD-14, and Doc 31 Part E.
+- **Resolution:** Founder approved currency-specific display ranges in `carePlans.prices`:
+  `{ USD|GBP|AED|SAR: { min, max } }`. At activation, operations records the actual agreed
+  positive amount and currency with the payment reference; only then are the immutable numeric
+  `planSnapshot.price` and `planSnapshot.currency` set. Reference ranges are recommendations
+  pending Phase 0 evidence: Basic USD 25–35 / GBP 20–28 / AED 90–130 / SAR 95–135; Standard USD
+  45–60 / GBP 35–48 / AED 165–220 / SAR 170–230; Premium USD 75–95 / GBP 60–75 / AED 275–350 /
+  SAR 285–360. Docs 03, 11, and 12 were updated with the lifecycle contract.

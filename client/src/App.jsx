@@ -15,7 +15,16 @@ export default function App() {
   const Portal = resolvePortal();
 
   return (
-    <Suspense fallback={<main className="portal-placeholder">Loading RozVisit…</main>}>
+    <Suspense
+      fallback={
+        <main className="portal-placeholder bg-background text-center">
+          <div className="rounded-md border border-border bg-surface px-6 py-5 shadow-sm">
+            <p className="text-sm font-semibold text-primary">RozVisit</p>
+            <p className="mt-2 text-sm text-muted">Waking up — just a moment</p>
+          </div>
+        </main>
+      }
+    >
       <Portal />
     </Suspense>
   );

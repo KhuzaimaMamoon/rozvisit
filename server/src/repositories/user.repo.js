@@ -23,4 +23,7 @@ export const userRepository = Object.freeze({
   createClientProfile(data) {
     return ClientProfile.create(data);
   },
+  findClientProfile(userId) {
+    return ClientProfile.findOne({ userId });
+  },
 });
