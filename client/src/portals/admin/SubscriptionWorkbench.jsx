@@ -43,68 +43,87 @@ export default function SubscriptionWorkbench() {
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-8 sm:px-6">
+    <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-6xl">
-        <header className="rounded-lg border border-border bg-surface p-6 shadow-sm">
-          <div>
-            <p className="text-sm font-semibold tracking-wide text-primary">RozVisit</p>
-            <h1 className="mt-3 text-2xl font-semibold text-text">Subscriptions</h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-              Payment happens outside the app during Phase 1. Record the Payoneer reference on
-              activation.
+        <header className="border-b border-border pb-6">
+          <p className="text-lg font-semibold tracking-tight text-primary">RozVisit</p>
+          <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-primary">Administration</p>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
+                Subscriptions
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+                Review a subscription and record its agreed payment when it is activated.
+              </p>
+            </div>
+            <p className="rounded-full border border-border bg-primary-soft px-3 py-2 text-xs font-medium text-primary">
+              Manual payment tracking
             </p>
           </div>
         </header>
 
-        <div className="mt-7 flex flex-wrap gap-3" aria-label="Subscription state filters">
-          {Object.entries(stateLabels).map(([key, label]) => (
-            <button
-              aria-pressed={state === key}
-              className={`rounded-full border px-3 py-2 text-sm font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/25 ${filterStyle(key, state)}`}
-              key={key}
-              onClick={() => setState(key)}
-              type="button"
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <section className="mt-6 rounded-lg border border-border bg-primary-soft p-4 sm:p-5">
+          <h2 className="text-sm font-semibold text-text">Payment is confirmed outside RozVisit</h2>
+          <p className="mt-1 text-sm leading-6 text-muted">
+            Enter the Payoneer reference and agreed price only after payment has been verified.
+          </p>
+        </section>
 
-        <section className="mt-6 rounded-md border border-border bg-surface shadow-sm">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <caption className="sr-only">Subscriptions workbench</caption>
-            <thead className="bg-surface-sunken text-xs font-semibold text-muted">
-              <tr>
-                <th className="p-4">Client</th>
-                <th className="p-4">Parent</th>
-                <th className="p-4">Plan</th>
-                <th className="p-4">State</th>
-                <th className="p-4">Period end</th>
-                <th className="p-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-t border-border transition-colors hover:bg-background">
-                <td className="p-4 font-medium text-text">Ayesha Khan</td>
-                <td className="p-4 text-text">Amina Bibi</td>
-                <td className="p-4 text-text">Standard</td>
-                <td className="p-4">
-                  <StatusBadge variant={statusVariant(state)}>{stateLabels[state]}</StatusBadge>
-                </td>
-                <td className="p-4 text-muted">—</td>
-                <td className="p-4">
-                  <Button onClick={() => setActivationOpen(true)} variant="ghost">
-                    Activate
-                  </Button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <section className="mt-6 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
+            <div>
+              <h2 className="text-lg font-semibold text-text">Subscription records</h2>
+              <p className="mt-1 text-sm text-muted">Filter records by their current state.</p>
+            </div>
+            <div className="flex flex-wrap gap-2" aria-label="Subscription state filters">
+              {Object.entries(stateLabels).map(([key, label]) => (
+                <button
+                  aria-pressed={state === key}
+                  className={`rounded-full border px-3 py-2 text-xs font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/25 ${filterStyle(key, state)}`}
+                  key={key}
+                  onClick={() => setState(key)}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <caption className="sr-only">Subscriptions workbench</caption>
+              <thead className="bg-surface-sunken text-xs font-semibold uppercase tracking-wide text-muted">
+                <tr>
+                  <th className="px-6 py-3">Client</th>
+                  <th className="px-6 py-3">Parent</th>
+                  <th className="px-6 py-3">Plan</th>
+                  <th className="px-6 py-3">State</th>
+                  <th className="px-6 py-3">Period end</th>
+                  <th className="px-6 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-border transition-colors hover:bg-background">
+                  <td className="px-6 py-5 font-semibold text-text">Ayesha Khan</td>
+                  <td className="px-6 py-5 text-text">Amina Bibi</td>
+                  <td className="px-6 py-5 text-text">Standard</td>
+                  <td className="px-6 py-5">
+                    <StatusBadge variant={statusVariant(state)}>{stateLabels[state]}</StatusBadge>
+                  </td>
+                  <td className="px-6 py-5 text-muted">—</td>
+                  <td className="px-6 py-5 text-right">
+                    <Button onClick={() => setActivationOpen(true)}>Activate</Button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </section>
         {message ? (
           <p
             aria-live="polite"
-            className="mt-5 border-l-[3px] border-success bg-success-soft p-4 text-sm text-success"
+            className="fixed bottom-4 right-4 z-10 max-w-md border-l-[3px] border-success bg-success-soft p-4 text-sm text-success shadow-md"
           >
             {message}
           </p>
@@ -115,15 +134,18 @@ export default function SubscriptionWorkbench() {
             <section
               aria-label="Activate subscription"
               aria-modal="true"
-              className="w-full max-w-lg rounded-lg border border-border bg-surface p-6 shadow-lg"
+              className="w-full max-w-lg rounded-lg border border-border bg-surface shadow-lg"
               role="dialog"
             >
-              <h2 className="text-xl font-semibold text-text">Activate subscription</h2>
-              <p className="mt-3 text-sm leading-6 text-muted">
-                Record the actual amount agreed with the client. This price is locked to the
-                subscription.
-              </p>
-              <form className="mt-6 space-y-5" onSubmit={activate}>
+              <div className="border-b border-border p-6">
+                <p className="text-sm font-medium text-primary">Payment confirmation</p>
+                <h2 className="mt-1 text-xl font-semibold text-text">Activate subscription</h2>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  Record the actual amount agreed with the client. This price is locked to the
+                  subscription.
+                </p>
+              </div>
+              <form className="space-y-5 p-6" onSubmit={activate}>
                 <FormInput
                   id="payment-reference"
                   label="Payoneer reference"
@@ -153,7 +175,7 @@ export default function SubscriptionWorkbench() {
                   <option>AED</option>
                   <option>SAR</option>
                 </select>
-                <div className="flex justify-between gap-3 pt-3">
+                <div className="flex justify-between gap-3 border-t border-border pt-5">
                   <Button onClick={() => setActivationOpen(false)} variant="ghost">
                     Cancel
                   </Button>

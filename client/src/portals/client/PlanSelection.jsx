@@ -1,153 +1,147 @@
 import { useState } from 'react';
 import Button from '../../design-system/Button.jsx';
-import Card from '../../design-system/Card.jsx';
 
 const plans = [
   {
     name: 'Basic',
-    visits: '1 visit / week',
+    visits: '1 visit each week',
     errands: 'No errands included',
-    price: 'AED 90–130 / month',
+    price: 'AED 90–130',
+    summary: 'A gentle, dependable rhythm of support.',
   },
   {
     name: 'Standard',
-    visits: '3 visits / week',
-    errands: '1 errand / week',
-    price: 'AED 165–220 / month',
+    visits: '3 visits each week',
+    errands: '1 errand each week',
+    price: 'AED 165–220',
+    summary: 'Regular support for the week-to-week essentials.',
   },
   {
     name: 'Premium',
     visits: 'Daily visits',
     errands: 'Unlimited errands',
-    price: 'AED 275–350 / month',
+    price: 'AED 275–350',
+    summary: 'The fullest routine of care and practical support.',
   },
 ];
 
+const paymentSteps = [
+  ['1', 'Choose a plan', 'Pick the level of support that suits your family.'],
+  ['2', 'Receive your link', 'We send a secure Payoneer payment link within 24 hours.'],
+  ['3', 'Start scheduling', 'Once payment is recorded, your subscription becomes active.'],
+];
+
 export default function PlanSelection() {
-  const [compareOpen, setCompareOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
 
   return (
-    <main className="min-h-screen bg-background px-4 py-8 sm:px-6">
-      <div className="mx-auto max-w-6xl">
-        <header className="mx-auto max-w-2xl pt-4 text-center sm:pt-8">
-          <p className="text-sm font-semibold tracking-wide text-primary">RozVisit</p>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
-            Choose Ammi&apos;s care plan
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-muted">
-            Pick the level of regular support that feels right. You can see the full plan history at
-            any time.
-          </p>
+    <main className="min-h-screen bg-background px-4 py-3 sm:px-6 sm:py-4 lg:h-screen lg:overflow-hidden">
+      <div className="mx-auto max-w-7xl">
+        <header className="flex items-center border-b border-border pb-4">
+          <p className="text-lg font-semibold tracking-tight text-primary">RozVisit</p>
         </header>
 
-        <p
-          aria-live="polite"
-          className="mx-auto mt-6 w-fit rounded-full border border-pending-soft bg-pending-soft px-3 py-2 text-sm font-medium text-pending"
-        >
-          Introductory pricing — locked when you subscribe
-        </p>
+        <section className="mt-4">
+          <p className="text-sm font-medium text-primary">Care for Amina Bibi</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-text">
+            Choose a care plan
+          </h1>
+          <p className="mt-1 text-sm leading-5 text-muted">
+            Review the support, pricing, and payment steps in one place.
+          </p>
+        </section>
 
         <section
           aria-label="Available care plans"
-          className="mt-7 grid gap-6 md:grid-cols-2 xl:grid-cols-3"
+          className="mt-5 grid items-stretch gap-5 md:grid-cols-3"
         >
           {plans.map((plan) => (
-            <Card className="transition-shadow duration-150 hover:shadow-md" key={plan.name}>
-              <div className="flex min-h-72 flex-col">
-                <h2 className="text-lg font-semibold text-text">{plan.name}</h2>
-                <p className="mt-5 font-medium text-text">{plan.visits}</p>
-                <p className="mt-2 text-sm text-muted">{plan.errands}</p>
-                <div className="mt-6 border-t border-border pt-5">
-                  <p className="text-2xl font-bold tabular-nums text-text">{plan.price}</p>
-                  <p className="mt-2 text-sm text-muted">
-                    Shown in your account currency when you select.
-                  </p>
+            <article
+              aria-label={`${plan.name}, ${plan.price} per month`}
+              className="flex min-h-80 flex-col rounded-lg border border-border bg-surface p-5 shadow-sm transition-all duration-150 hover:-translate-y-1 hover:border-primary hover:shadow-md motion-reduce:transform-none"
+              key={plan.name}
+            >
+              <div>
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="text-lg font-semibold text-text">{plan.name}</h2>
+                  <span className="rounded-full bg-primary-soft px-2 py-1 text-xs font-medium text-primary">
+                    Monthly
+                  </span>
                 </div>
-                <Button className="mt-auto w-full" onClick={() => setSelectedPlan(plan.name)}>
-                  Select {plan.name}
-                </Button>
+                <p className="mt-2 min-h-10 text-sm leading-5 text-muted">{plan.summary}</p>
               </div>
-            </Card>
+              <div className="mt-4 border-y border-border py-3">
+                <p className="text-2xl font-bold tabular-nums text-text">{plan.price}</p>
+                <p className="mt-1 text-xs text-muted">per month</p>
+              </div>
+              <ul className="mt-4 space-y-2 text-sm text-text">
+                <li className="flex gap-2">
+                  <span aria-hidden="true" className="text-primary">
+                    •
+                  </span>
+                  {plan.visits}
+                </li>
+                <li className="flex gap-2">
+                  <span aria-hidden="true" className="text-primary">
+                    •
+                  </span>
+                  {plan.errands}
+                </li>
+              </ul>
+              <Button className="mt-auto w-full" onClick={() => setSelectedPlan(plan.name)}>
+                Select {plan.name}
+              </Button>
+            </article>
           ))}
         </section>
 
         {selectedPlan ? (
           <section
             aria-live="polite"
-            className="mx-auto mt-6 max-w-2xl border-l-[3px] border-primary bg-primary-soft p-4 text-sm text-text"
+            className="fixed inset-x-4 top-4 z-10 max-w-md border-l-[3px] border-primary bg-primary-soft p-4 text-sm text-text shadow-md sm:left-auto sm:w-full"
           >
-            <p className="font-medium">{selectedPlan} selected</p>
-            <p className="mt-1 text-muted">
-              We will send your secure Payoneer payment link within 24 hours. Your plan activates
-              after payment is recorded.
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-semibold">{selectedPlan} plan selected</p>
+                <p className="mt-2 leading-6 text-muted">
+                  We will send your secure Payoneer payment link within 24 hours. Your plan will
+                  become active once payment has been recorded.
+                </p>
+              </div>
+              <Button
+                aria-label="Dismiss plan selection confirmation"
+                className="shrink-0"
+                onClick={() => setSelectedPlan(null)}
+                variant="ghost"
+              >
+                Dismiss
+              </Button>
+            </div>
           </section>
         ) : null}
 
-        <section
-          className="mt-7 rounded-lg border border-border bg-primary-soft p-6 shadow-sm"
-          aria-label="How payment works"
-        >
-          <h2 className="text-lg font-semibold text-text">How payment works</h2>
-          <ol className="mt-5 grid gap-5 sm:grid-cols-3">
-            {[
-              'Select a plan',
-              'We send a secure Payoneer link within 24 hours',
-              'Your subscription activates',
-            ].map((step, index) => (
-              <li className="flex gap-3 rounded-md bg-surface p-4 text-sm text-text" key={step}>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent font-semibold text-text">
-                  {index + 1}
+        <section className="mt-5 rounded-lg border border-border bg-primary-soft p-4 shadow-sm">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-lg font-semibold text-text">How payment works</h2>
+            <p className="text-xs text-muted">Clear steps, with no hidden charges.</p>
+          </div>
+          <ol className="mt-3 grid gap-3 md:grid-cols-3">
+            {paymentSteps.map(([number, title, detail]) => (
+              <li className="flex gap-3 rounded-md bg-surface p-3" key={number}>
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-text">
+                  {number}
                 </span>
-                <span className="pt-1">{step}</span>
+                <div>
+                  <h3 className="text-sm font-semibold text-text">{title}</h3>
+                  <p className="mt-1 text-xs leading-4 text-muted">{detail}</p>
+                </div>
               </li>
             ))}
           </ol>
+          <p className="mt-3 border-t border-border pt-3 text-xs leading-4 text-muted">
+            Introductory pricing is confirmed with you before payment is requested.
+          </p>
         </section>
-
-        <div className="mt-7 text-center">
-          <Button onClick={() => setCompareOpen(true)} variant="accent">
-            Compare plans
-          </Button>
-        </div>
-        {compareOpen ? (
-          <section
-            aria-label="Plan comparison"
-            className="mx-auto mt-6 max-w-3xl rounded-lg border border-border bg-surface p-6 shadow-md"
-          >
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-lg font-semibold text-text">Compare plans</h2>
-              <Button
-                aria-label="Close plan comparison"
-                onClick={() => setCompareOpen(false)}
-                variant="ghost"
-              >
-                Close
-              </Button>
-            </div>
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-surface-sunken text-muted">
-                  <tr>
-                    <th className="p-3">Plan</th>
-                    <th className="p-3">Visits</th>
-                    <th className="p-3">Errands</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {plans.map((plan) => (
-                    <tr className="border-b border-border last:border-0" key={plan.name}>
-                      <td className="p-3 font-medium text-text">{plan.name}</td>
-                      <td className="p-3 text-muted">{plan.visits}</td>
-                      <td className="p-3 text-muted">{plan.errands}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        ) : null}
       </div>
     </main>
   );
