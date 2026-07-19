@@ -135,7 +135,7 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | key | String enum unique | `basic` \| `standard` \| `premium` |
 | visitsPerWeek | Number | 1 / 3 / 7 |
 | errandsPerWeek | Number | 0 / 1 / null (null = unlimited, Premium) |
-| prices | { USD, GBP, AED, SAR: Number } | Fixed table, no live conversion (FR-020); values are examples until D-03 evidence locks them |
+| prices | { USD, GBP, AED, SAR: { min: Number, max: Number } } | Display ranges, no live conversion (FR-020); recommendation values pending D-03 Phase 0 evidence |
 | active | Boolean | Retiring a plan never deletes it |
 
 ### subscriptions
@@ -145,7 +145,8 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | _id | ObjectId | R | |
 | clientId | ObjectId → users | R | |
 | parentId | ObjectId → parentProfiles | R | One active subscription per parent (partial unique index, Section 11) |
-| planKey | String enum | R | Denormalized copy of plan terms at purchase: `planSnapshot { visitsPerWeek, errandsPerWeek, price, currency }` — price changes never rewrite history |
+| planKey | String enum | R | Selected care-plan key |
+| planSnapshot | { visitsPerWeek, errandsPerWeek, price, currency } | R | Terms copied at selection; `price` (Number) and `currency` (`USD` \| `GBP` \| `AED` \| `SAR`) record the actual amount agreed by operations at activation and never rewrite history |
 | state | String enum | R | `selected` \| `link_sent` \| `active` \| `grace` \| `paused` \| `cancelled` (FR-022) |
 | stateHistory | [{ state, at, byUserId, paymentRef }] | R | Append-only; who/when on every arrow (AUD-002); paymentRef required on activation (FR-023) |
 | currentPeriodEnd | Date | O | Drives grace date-math (FR-025) |

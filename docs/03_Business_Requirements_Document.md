@@ -235,6 +235,7 @@ Pricing principles:
 - Prices are shown in the client's own currency.
 - The price should feel small next to what it replaces — worry — and next to what the client already spends on remittances.
 - Example launch figures like $29 / $69 / $129 may appear in documents, always marked as examples.
+- Before a subscription exists, plans display a currency-specific price range. When operations activates a subscription after recording a real manual payment, the agreed numeric price and currency are copied into that subscription's immutable plan snapshot. Changing a displayed range never changes an existing subscriber's agreed price (BR-032, AD-14).
 
 ---
 

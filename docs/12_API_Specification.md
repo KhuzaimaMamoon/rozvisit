@@ -257,7 +257,7 @@ POST /api/v1/auth/register
 ### GET /plans — The three plans in my currency
 
 - **Role:** client
-- **Success `200`:** `{ items: [{ key, visitsPerWeek, errandsPerWeek, price, currency }] }` — price from the fixed table for the client's currency (FR-020); marked introductory until D-03 locks pricing
+- **Success `200`:** `{ items: [{ key, visitsPerWeek, errandsPerWeek, price: { min, max }, currency }] }` — display range from the fixed table for the client's currency (FR-020); marked introductory until D-03 locks pricing
 - **Errors:** none beyond auth; unsupported currency falls back to USD with `"currencyFallback": true` in data
 
 ### POST /subscriptions — Select a plan
@@ -265,7 +265,7 @@ POST /api/v1/auth/register
 - **Role:** client
 - **Body:** `{ parentId, planKey }`
 - **Validation:** planKey in enum; parent owned by caller; no existing active subscription for that parent (partial unique index, Doc 11)
-- **Success `201`:** subscription in `selected` state with the plan snapshot copied in; allowance enforcement begins (FR-021); operations is notified to send the payment link
+- **Success `201`:** subscription in `selected` state with the plan terms copied into its snapshot; the actual agreed price and currency are set only when operations activates the manual payment. Allowance enforcement begins (FR-021); operations is notified to send the payment link
 - **Errors:** `409 DUPLICATE` (active subscription exists); `403`; `422`
 
 Example response:
@@ -273,7 +273,7 @@ Example response:
 ```json
 { "success": true, "data": {
   "id": "6650cc...", "state": "selected",
-  "planSnapshot": { "visitsPerWeek": 3, "errandsPerWeek": 1, "price": 255, "currency": "AED" },
+  "planSnapshot": { "visitsPerWeek": 3, "errandsPerWeek": 1, "price": null, "currency": null },
   "nextStep": "We will send your secure Payoneer payment link within 24 hours."
 } }
 ```
@@ -291,8 +291,8 @@ Example response:
 ### PATCH /admin/subscriptions/:id/state — Operations state changes
 
 - **Role:** admin
-- **Body:** `{ state: "link_sent" | "active" | "paused", paymentRef? }`
-- **Validation:** legal transitions only (state machine, Doc 09 §9); `active` requires `paymentRef` (FR-023)
+- **Body:** `{ state: "link_sent" | "active" | "paused", paymentRef?, price?, currency? }`
+- **Validation:** legal transitions only (state machine, Doc 09 §9); `active` requires `paymentRef`, a positive agreed `price`, and a `currency` of `USD`, `GBP`, `AED`, or `SAR` (FR-023). The agreed amount and currency are copied to the immutable plan snapshot.
 - **Success `200`:** state changed; history appended with actor; client notified; scheduling unlocks on `active`
 - **Errors:** `409 STATE_INVALID` (illegal arrow — e.g. activating twice); `422` missing paymentRef
 - **Security:** audit event written automatically (AUD-002)
