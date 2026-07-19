@@ -89,7 +89,7 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | addressText | String **(E)** | R | As written by the client |
 | location | GeoJSON Point | R | `{ type: "Point", coordinates: [lng, lat] }` (DATA-002) |
 | careNotes | String **(E)** | O | Medication times, preferences (FR-010) |
-| emergencyContacts | [{ name, phone, relation, priority }] | R (min 1) | Ordered for Phase 2 escalation (FR-072) |
+| emergencyContacts | [{ name, phone, relation, priority }] | R (min 1) | Ordered for Phase 2 escalation (FR-072); `priority` is a required positive 1-indexed integer, unique within this parent's array; lower number is contacted first |
 | consent | Embedded (see below) | R | The consent record (FR-013) |
 | status | String enum | R | `pending_consent` \| `active` \| `paused` \| `archived` |
 | createdAt / updatedAt | Date | R | |

@@ -12,6 +12,7 @@ export default function Button({
   type = 'button',
   variant = 'primary',
   caregiver = false,
+  className = '',
   ...props
 }) {
   const isDisabled = disabled || loading;
@@ -21,7 +22,7 @@ export default function Button({
     <button
       {...props}
       aria-busy={loading || undefined}
-      className={`inline-flex ${height} items-center justify-center rounded-md px-4 text-sm font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]}`}
+      className={`inline-flex ${height} items-center justify-center rounded-md px-4 text-sm font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
       disabled={isDisabled}
       type={type}
     >
