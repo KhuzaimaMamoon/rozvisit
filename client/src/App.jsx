@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { useEffect } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
 import Login from './portals/public/Login.jsx';
+import Register from './portals/public/Register.jsx';
 
 const portals = {
   client: lazy(() => import('./portals/client/ClientPortal.jsx')),
@@ -35,6 +36,7 @@ export default function App() {
   const Portal = resolvePortal();
 
   if (window.location.pathname === '/login') return <Login />;
+  if (window.location.pathname === '/register') return <Register />;
   if (!Portal) return <main className="portal-placeholder">This page doesn&apos;t exist.</main>;
 
   return (
