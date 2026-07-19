@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import BrandMark from '../../design-system/BrandMark.jsx';
 import Button from '../../design-system/Button.jsx';
 import Card from '../../design-system/Card.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
@@ -75,7 +76,7 @@ export default function ParentProfileForm() {
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-5xl">
         <header className="border-b border-border pb-6">
-          <p className="text-lg font-semibold tracking-tight text-primary">RozVisit</p>
+          <BrandMark />
           <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-primary">Parent profile</p>

@@ -1,0 +1,262 @@
+import crypto from 'node:crypto';
+import {
+  CAREGIVER_STATUS,
+  CONSENT_STATE,
+  PARENT_STATUS,
+  SUBSCRIPTION_STATE,
+  VISIT_STATUS,
+} from '../config/constants.js';
+import { caregiverRepository } from '../repositories/caregiver.repo.js';
+import { parentRepository } from '../repositories/parent.repo.js';
+import { subscriptionRepository } from '../repositories/subscription.repo.js';
+import { visitRepository } from '../repositories/visit.repo.js';
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from '../utils/AppError.js';
+import { encrypt } from '../utils/crypto.js';
+
+function startOfWeek(date) {
+  const value = new Date(date);
+  value.setHours(0, 0, 0, 0);
+  value.setDate(value.getDate() - value.getDay());
+  return value;
+}
+
+function dateForSlot(now, dayOfWeek, time) {
+  const [hours, minutes] = time.split(':').map(Number);
+  const date = startOfWeek(now);
+  date.setDate(date.getDate() + dayOfWeek);
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+}
+
+function serializeVisit(visit) {
+  return {
+    id: visit._id.toString(),
+    clientVisitId: visit.clientVisitId,
+    parentId: visit.parentId.toString(),
+    caregiverId: visit.caregiverId?.toString() ?? null,
+    subscriptionId: visit.subscriptionId.toString(),
+    scheduledAt: visit.scheduledAt,
+    standingNote: visit.standingNote,
+    status: visit.status,
+    statusHistory: visit.statusHistory,
+    checklist: visit.checklist
+      ? {
+          medicationTaken: visit.checklist.medicationTaken,
+          mood: visit.checklist.mood,
+          concerns: visit.checklist.concerns,
+          completedAt: visit.checklist.completedAt,
+          capturedAt: visit.checklist.capturedAt,
+        }
+      : null,
+  };
+}
+
+async function getAssignedVisit(caregiverId, visitId) {
+  const visit = await visitRepository.findById(visitId);
+  if (!visit) throw new NotFoundError();
+  if (!visit.caregiverId) {
+    throw new ConflictError(
+      'STATE_INVALID',
+      'This visit has not been assigned to a caregiver yet.',
+    );
+  }
+  if (visit.caregiverId.toString() !== caregiverId) throw new ForbiddenError();
+  return visit;
+}
+
+export const visitService = Object.freeze({
+  async schedule(clientId, { parentId, slots, standingNote }) {
+    const [parent, subscription] = await Promise.all([
+      parentRepository.findById(parentId),
+      subscriptionRepository.findActiveByParent(parentId),
+    ]);
+    if (!parent) throw new NotFoundError();
+    if (parent.clientId.toString() !== clientId) throw new ForbiddenError();
+    if (parent.status === PARENT_STATUS.PAUSED) {
+      throw new ConflictError(
+        'CONSENT_REQUIRED',
+        'Consent is required before visits can be scheduled.',
+      );
+    }
+    if (!subscription || subscription.state !== SUBSCRIPTION_STATE.ACTIVE) {
+      throw new ConflictError(
+        'STATE_INVALID',
+        'An active subscription is required to schedule visits.',
+      );
+    }
+    const limit = subscription.planSnapshot.visitsPerWeek;
+    if (slots.length > limit) {
+      throw new ConflictError(
+        'ALLOWANCE_EXCEEDED',
+        `Your plan includes ${limit} visits per week. Upgrade to add more.`,
+      );
+    }
+    const now = new Date();
+    const periodEnd =
+      subscription.currentPeriodEnd ??
+      new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    const records = [];
+    for (const week = startOfWeek(now); week < periodEnd; week.setDate(week.getDate() + 7)) {
+      for (const slot of slots) {
+        const scheduledAt = dateForSlot(week, slot.dayOfWeek, slot.time);
+        if (scheduledAt < now || scheduledAt >= periodEnd) continue;
+        records.push({
+          clientVisitId: crypto.randomUUID(),
+          parentId,
+          caregiverId: null,
+          subscriptionId: subscription._id,
+          scheduledAt,
+          standingNote: standingNote ?? null,
+          status: VISIT_STATUS.SCHEDULED,
+          statusHistory: [{ status: VISIT_STATUS.SCHEDULED, at: now, byUserId: clientId }],
+        });
+      }
+    }
+    const visits = records.length ? await visitRepository.createMany(records) : [];
+    return {
+      items: visits.map(serializeVisit),
+      message: 'Your visit is scheduled and a caregiver will be assigned shortly.',
+    };
+  },
+
+  async assign(_adminId, visitId, caregiverId) {
+    const [visit, caregiver] = await Promise.all([
+      visitRepository.findById(visitId),
+      caregiverRepository.findVerifiedByUserId(caregiverId),
+    ]);
+    if (!visit) throw new NotFoundError();
+    if (!caregiver || caregiver.status !== CAREGIVER_STATUS.VERIFIED) {
+      throw new ValidationError('The caregiver must be verified before assignment.', {
+        caregiverId: ['Choose a verified caregiver.'],
+      });
+    }
+    const updated = await visitRepository.update(visitId, { $set: { caregiverId } });
+    return serializeVisit(updated);
+  },
+
+  async today(caregiverId, now = new Date()) {
+    const caregiver = await caregiverRepository.findVerifiedByUserId(caregiverId);
+    if (!caregiver) throw new ForbiddenError();
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    const visits = await visitRepository.findTodayByCaregiver(caregiverId, start, end);
+    return { items: visits.map(serializeVisit) };
+  },
+
+  async captureConsent(caregiverId, parentId, { state, recordingRef, choices, byVisitId }) {
+    const [parent, firstVisit] = await Promise.all([
+      parentRepository.findById(parentId),
+      visitRepository.findFirstByParent(parentId),
+    ]);
+    if (!parent || !firstVisit) throw new NotFoundError();
+    if (
+      !firstVisit.caregiverId ||
+      firstVisit.caregiverId.toString() !== caregiverId ||
+      firstVisit._id.toString() !== byVisitId
+    ) {
+      throw new ForbiddenError();
+    }
+    if (parent.consent.state === CONSENT_STATE.GIVEN) {
+      throw new ConflictError('STATE_INVALID', 'Consent has already been recorded.');
+    }
+    const now = new Date();
+    const update = {
+      $set: {
+        'consent.state': state,
+        status: state === CONSENT_STATE.GIVEN ? PARENT_STATUS.ACTIVE : PARENT_STATUS.PAUSED,
+        'consent.recordingRef': recordingRef ? encrypt(recordingRef) : null,
+        'consent.choices': choices
+          ? {
+              preferredTimes: choices.preferredTimes,
+              photoBoundaries: choices.photoBoundaries ? encrypt(choices.photoBoundaries) : null,
+              other: choices.other ? encrypt(choices.other) : null,
+            }
+          : undefined,
+      },
+      $push: { 'consent.history': { state, at: now, byVisitId } },
+    };
+    await parentRepository.updateConsent(parentId, update);
+    if (state === CONSENT_STATE.DECLINED) {
+      await visitRepository.update(firstVisit._id, {
+        $set: { status: VISIT_STATUS.PARENT_DECLINED },
+        $push: {
+          statusHistory: {
+            status: VISIT_STATUS.PARENT_DECLINED,
+            at: now,
+            byUserId: caregiverId,
+            reason: 'consent_declined',
+          },
+        },
+      });
+    }
+    return { state, parentStatus: update.$set.status };
+  },
+
+  async saveChecklist(caregiverId, visitId, data) {
+    const visit = await getAssignedVisit(caregiverId, visitId);
+    const parent = await parentRepository.findById(visit.parentId);
+    if (!parent || parent.consent.state !== CONSENT_STATE.GIVEN) {
+      throw new ConflictError(
+        'CONSENT_REQUIRED',
+        'Consent is required before a visit checklist can be saved.',
+      );
+    }
+    const checklist = {
+      ...data,
+      completedAt: new Date(),
+      note: data.note ? encrypt(data.note) : null,
+    };
+    const updated = await visitRepository.update(visitId, { $set: { checklist } });
+    return serializeVisit(updated);
+  },
+
+  async parentDeclined(caregiverId, visitId, { reason, capturedAt }) {
+    const visit = await getAssignedVisit(caregiverId, visitId);
+    const updated = await visitRepository.update(visit._id, {
+      $set: { status: VISIT_STATUS.PARENT_DECLINED },
+      $push: {
+        statusHistory: {
+          status: VISIT_STATUS.PARENT_DECLINED,
+          at: capturedAt,
+          byUserId: caregiverId,
+          reason: reason ?? null,
+        },
+      },
+    });
+    return serializeVisit(updated);
+  },
+
+  async feed(clientId, parentId, limit = 20) {
+    const parent = await parentRepository.findById(parentId);
+    if (!parent) throw new NotFoundError();
+    if (parent.clientId.toString() !== clientId) throw new ForbiddenError();
+    const visits = await visitRepository.findFeedByParent(parentId, limit);
+    return {
+      items: visits.map((visit) => ({
+        visitId: visit._id.toString(),
+        scheduledAt: visit.scheduledAt,
+        status: visit.status,
+        checklistSummary: visit.checklist
+          ? {
+              medicationTaken: visit.checklist.medicationTaken,
+              mood: visit.checklist.mood,
+              concerns: visit.checklist.concerns,
+            }
+          : null,
+        media: [],
+        missedReason:
+          visit.status === VISIT_STATUS.MISSED
+            ? (visit.statusHistory.at(-1)?.reason ?? null)
+            : null,
+      })),
+      nextCursor: null,
+    };
+  },
+});

@@ -189,6 +189,26 @@ describe('Auth API', () => {
     expect(reused.status).toBe(401);
   });
 
+  it('returns the caregiver verification status at login for role-based portal routing', async () => {
+    const caregiver = await createVerifiedUser({
+      role: 'caregiver',
+      email: 'bilal-caregiver@example.com',
+    });
+    await CaregiverProfile.create({
+      userId: caregiver._id,
+      verification: { cnicNumber: 'test-only-placeholder', gates: {} },
+      serviceArea: { type: 'Point', coordinates: [73.0479, 33.6844], radiusKm: 10 },
+      status: 'verified',
+    });
+
+    const login = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: caregiver.email, password: PASSWORD });
+
+    expect(login.status).toBe(200);
+    expect(login.body.data.user).toMatchObject({ role: 'caregiver', status: 'verified' });
+  });
+
   it('does not reveal whether password-reset email exists and resets a valid token once', async () => {
     const user = await createVerifiedUser();
     const known = await request(app).post('/api/v1/auth/forgot').send({ email: user.email });

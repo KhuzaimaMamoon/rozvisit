@@ -1,5 +1,36 @@
 # Clarifications Needed
 
+## Visit caregiver-assignment dependency — Resolved
+
+- **Question:** How should T-B21..T-B32 create scheduled visits and verify the caregiver for
+  first-visit consent when every `visits` record requires `caregiverId`, but caregiver assignment
+  is documented as `POST /admin/visits/:id/assign` in the later Admin module and no assignment
+  repository/service exists yet?
+- **Searched:** Doc 11 §6 (`visits.caregiverId` is required), Doc 12 Visits scheduling and
+  consent endpoints (caregiver must be assigned to the parent’s first visit), Doc 13 permission
+  matrix (assigned caregiver only), Doc 14 Module 4 (caregiver assigned visits), Doc 07
+  FR-034/FR-040, and Doc 33 §13.2 (Visit precedes Admin).
+- **Resolution:** Founder authorized the minimal documented `POST /admin/visits/:id/assign`
+  capability inside the Visit module. It assigns only a `CAREGIVER_STATUS.VERIFIED` caregiver
+  and stores the documented `caregiverId` on the visit. Verification workflows, admin oversight,
+  disputes, and flag resolution remain in the later Admin module. A verified caregiver may be
+  created only as seed/manual-test setup until the real verification flow exists.
+
+## Visit scheduling before caregiver assignment — Resolved
+
+- **Question:** What documented value should a newly scheduled visit use for required
+  `caregiverId` before `POST /admin/visits/:id/assign` is called? The scheduling endpoint creates
+  visits (`POST /visits/schedule`), while assignment is explicitly by already-created visit id;
+  however, Doc 11 declares `visits.caregiverId` required.
+- **Searched:** Doc 11 §6 (`caregiverId` required), Doc 12 `POST /visits/schedule` and
+  `POST /admin/visits/:id/assign`, Doc 07 FR-030 and FR-034, Doc 14 Module 4 scheduling and
+  assignment rules, and the approved minimal-assignment resolution above.
+- **Resolution:** Founder approved `caregiverId: null` only while a visit is scheduled and awaiting
+  assignment. Only `POST /admin/visits/:id/assign` may set a verified caregiver. Unassigned visits
+  stay off caregiver Today lists and reject every caregiver action with `STATE_INVALID`. Client
+  scheduling confirmation must state that caregiver assignment is pending. Doc 11 is updated in
+  the same PR.
+
 ## Vite security-gate conflict — Resolved
 
 - **Resolution:** Founder approved the upgrade to the latest stable Vite. Vite 8.1.5 is

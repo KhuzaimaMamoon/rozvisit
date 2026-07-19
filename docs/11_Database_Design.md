@@ -159,7 +159,7 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | _id | ObjectId | R | |
 | clientVisitId | String | R | Client-generated id for offline dedupe (Doc 09 §20); unique |
 | parentId | ObjectId → parentProfiles | R | |
-| caregiverId | ObjectId → users | R | Assigned (FR-034) |
+| caregiverId | ObjectId → users | O / nullable until assigned | `null` only while a visit is scheduled and awaiting `POST /admin/visits/:id/assign`; every caregiver action requires a real verified assignment (FR-034) |
 | subscriptionId | ObjectId → subscriptions | R | Allowance accounting (FR-030) |
 | scheduledAt | Date | R | |
 | standingNote | String | O | The client's recurring note (FR-031) |

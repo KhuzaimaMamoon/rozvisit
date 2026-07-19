@@ -62,8 +62,15 @@ function refreshExpiry() {
   return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 }
 
-function userResponse(user) {
-  return { id: user._id.toString(), name: user.name, role: user.role, status: user.status };
+async function userResponse(user) {
+  const caregiver =
+    user.role === ROLES.CAREGIVER ? await caregiverRepository.findByUserId(user._id) : null;
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    role: user.role,
+    status: caregiver?.status ?? user.status,
+  };
 }
 
 function genericCredentialsError() {
@@ -213,7 +220,7 @@ export const authService = Object.freeze({
       tokenHash: hashToken(refreshToken),
       expiresAt: refreshExpiry(),
     });
-    return { accessToken: signAccessToken(user), refreshToken, user: userResponse(user) };
+    return { accessToken: signAccessToken(user), refreshToken, user: await userResponse(user) };
   },
 
   async refresh({ refreshToken }) {

@@ -27,7 +27,17 @@ export default function Button({
       disabled={isDisabled}
       type={type}
     >
-      {loading ? <span aria-live="polite">Loading</span> : children}
+      {loading ? (
+        <span className="inline-flex items-center gap-2" aria-live="polite">
+          <span
+            aria-hidden="true"
+            className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent"
+          />
+          <span className="sr-only">Loading</span>
+        </span>
+      ) : (
+        children
+      )}
     </button>
   );
 }

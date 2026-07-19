@@ -29,4 +29,10 @@ export const parentRepository = Object.freeze({
       runValidators: true,
     }).select(sensitiveSelection);
   },
+  updateConsent(id, update) {
+    if (!mongoose.isValidObjectId(id)) return null;
+    return ParentProfile.findByIdAndUpdate(id, update, { new: true, runValidators: true }).select(
+      sensitiveSelection,
+    );
+  },
 });
