@@ -18,6 +18,19 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run test
+        env:
+          NODE_ENV: test
+          MONGO_URI: mongodb://127.0.0.1:27017/rozvisit_ci
+          JWT_ACCESS_SECRET: ci-fake-access-secret-not-for-production-0001
+          JWT_REFRESH_SECRET: ci-fake-refresh-secret-not-for-production-0002
+          FIELD_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+          CLOUDINARY_CLOUD_NAME: rozvisit-ci-fake
+          CLOUDINARY_API_KEY: '000000000000000'
+          CLOUDINARY_API_SECRET: ci-fake-cloudinary-secret-not-for-production
+          FIREBASE_SERVICE_ACCOUNT_JSON: '{"client_email":"ci@example.invalid","private_key":"fake","project_id":"rozvisit-ci"}'
+          EMAIL_PROVIDER_API_KEY: ci-fake-email-provider-key-not-for-production
+          EMAIL_FROM_ADDRESS: ci-noreply@example.invalid
+          APP_BASE_URL: http://localhost:5173
       - run: npm run build
       - run: npm run check:bundle
       - run: npm audit --audit-level=high
