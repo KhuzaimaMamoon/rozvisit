@@ -7,4 +7,7 @@ export const caregiverRepository = Object.freeze({
   findVerifiedByUserId(userId) {
     return CaregiverProfile.findOne({ userId, status: 'verified' });
   },
+  findByUserId(userId) {
+    return CaregiverProfile.findOne({ userId });
+  },
 });

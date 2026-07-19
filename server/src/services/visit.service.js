@@ -140,6 +140,8 @@ export const visitService = Object.freeze({
   },
 
   async today(caregiverId, now = new Date()) {
+    const caregiver = await caregiverRepository.findVerifiedByUserId(caregiverId);
+    if (!caregiver) throw new ForbiddenError();
     const start = new Date(now);
     start.setHours(0, 0, 0, 0);
     const end = new Date(start);

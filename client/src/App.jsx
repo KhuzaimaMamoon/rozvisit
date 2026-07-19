@@ -1,4 +1,7 @@
 import { lazy, Suspense } from 'react';
+import { useEffect } from 'react';
+import { useAuth } from './context/AuthContext.jsx';
+import Login from './portals/public/Login.jsx';
 
 const portals = {
   client: lazy(() => import('./portals/client/ClientPortal.jsx')),
@@ -8,11 +11,31 @@ const portals = {
 
 function resolvePortal() {
   const [, portal] = window.location.pathname.split('/');
-  return portals[portal] ?? portals.client;
+  if (portal === 'care') return portals.caregiver;
+  return portals[portal] ?? null;
+}
+
+function ProtectedPortal({ Portal }) {
+  const { loading, user } = useAuth();
+  const [, routeRoot] = window.location.pathname.split('/');
+  const requiredRole =
+    routeRoot === 'care' ? 'caregiver' : routeRoot === 'app' ? 'client' : 'admin';
+
+  useEffect(() => {
+    if (!loading && (!user || user.role !== requiredRole)) window.location.replace('/login');
+  }, [loading, requiredRole, user]);
+
+  if (loading || !user || user.role !== requiredRole) {
+    return <main className="portal-placeholder text-sm text-muted">Loading your portal…</main>;
+  }
+  return <Portal />;
 }
 
 export default function App() {
   const Portal = resolvePortal();
+
+  if (window.location.pathname === '/login') return <Login />;
+  if (!Portal) return <main className="portal-placeholder">This page doesn&apos;t exist.</main>;
 
   return (
     <Suspense
@@ -25,7 +48,7 @@ export default function App() {
         </main>
       }
     >
-      <Portal />
+      <ProtectedPortal Portal={Portal} />
     </Suspense>
   );
 }

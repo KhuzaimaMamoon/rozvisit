@@ -137,4 +137,26 @@ describe('Visit API lifecycle', () => {
     expect(checklist.status).toBe(200);
     expect(checklist.body.data.checklist.mood).toBe(4);
   });
+
+  it('allows the today list only for a verified caregiver', async () => {
+    const today = await request(app).get('/api/v1/visits/today').set(auth(caregiver));
+    const unverified = await User.create({
+      role: 'caregiver',
+      name: 'Pending caregiver',
+      email: 'pending@visit.test',
+      phone: '+923001234569',
+      passwordHash: 'hash',
+      status: 'active',
+    });
+    await CaregiverProfile.create({
+      userId: unverified._id,
+      verification: { cnicNumber: 'encrypted', gates: {} },
+      serviceArea: { type: 'Point', coordinates: [73.1, 33.1], radiusKm: 10 },
+      status: 'applied',
+    });
+    const blocked = await request(app).get('/api/v1/visits/today').set(auth(unverified));
+
+    expect(today.status).toBe(200);
+    expect(blocked.status).toBe(403);
+  });
 });
