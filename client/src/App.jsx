@@ -1,5 +1,4 @@
-import { lazy, Suspense } from 'react';
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
 import Login from './portals/public/Login.jsx';
 import Register from './portals/public/Register.jsx';
@@ -10,15 +9,15 @@ const portals = {
   admin: lazy(() => import('./portals/admin/AdminPortal.jsx')),
 };
 
-function resolvePortal() {
-  const [, portal] = window.location.pathname.split('/');
+function resolvePortal(pathname) {
+  const [, portal] = pathname.split('/');
   if (portal === 'care') return portals.caregiver;
   return portals[portal] ?? null;
 }
 
-function ProtectedPortal({ Portal }) {
+function ProtectedPortal({ pathname, Portal }) {
   const { loading, user } = useAuth();
-  const [, routeRoot] = window.location.pathname.split('/');
+  const [, routeRoot] = pathname.split('/');
   const requiredRole =
     routeRoot === 'care' ? 'caregiver' : routeRoot === 'app' ? 'client' : 'admin';
 
@@ -33,10 +32,18 @@ function ProtectedPortal({ Portal }) {
 }
 
 export default function App() {
-  const Portal = resolvePortal();
+  const [pathname, setPathname] = useState(() => window.location.pathname);
 
-  if (window.location.pathname === '/login') return <Login />;
-  if (window.location.pathname === '/register') return <Register />;
+  useEffect(() => {
+    const updatePathname = () => setPathname(window.location.pathname);
+    window.addEventListener('popstate', updatePathname);
+    return () => window.removeEventListener('popstate', updatePathname);
+  }, []);
+
+  const Portal = resolvePortal(pathname);
+
+  if (pathname === '/login') return <Login />;
+  if (pathname === '/register') return <Register />;
   if (!Portal) return <main className="portal-placeholder">This page doesn&apos;t exist.</main>;
 
   return (
@@ -50,7 +57,7 @@ export default function App() {
         </main>
       }
     >
-      <ProtectedPortal Portal={Portal} />
+      <ProtectedPortal pathname={pathname} Portal={Portal} />
     </Suspense>
   );
 }

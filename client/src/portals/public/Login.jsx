@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
 import { roleHome, useAuth } from '../../context/AuthContext.jsx';
+import { navigate } from '../../navigation.js';
 
 export default function Login() {
   const { login } = useAuth();
@@ -17,7 +18,7 @@ export default function Login() {
     setLoading(true);
     try {
       const user = await login({ email, password });
-      window.location.assign(roleHome(user));
+      window.setTimeout(() => navigate(roleHome(user)), 0);
     } catch (requestError) {
       setError(requestError.message);
       setLoading(false);
