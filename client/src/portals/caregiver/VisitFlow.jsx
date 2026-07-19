@@ -8,6 +8,11 @@ import { queuedCompletions, removeCompletion, saveCompletion } from '../../offli
 import CameraCapture from './CameraCapture.jsx';
 
 async function uploadPermit(permit, blob) {
+  const subtype = blob.type.split('/').at(-1)?.toLowerCase();
+  const extension = subtype === 'quicktime' ? 'mov' : subtype;
+  if (blob.size > permit.maxFileSize || !permit.allowedFormats.includes(extension)) {
+    throw new Error('This camera file cannot be uploaded. Please capture it again.');
+  }
   const body = new FormData();
   body.append('file', blob, `${permit.clientMediaId}.jpg`);
   body.append('api_key', permit.apiKey);
@@ -15,8 +20,8 @@ async function uploadPermit(permit, blob) {
   body.append('signature', permit.signature);
   body.append('folder', permit.folder);
   body.append('public_id', permit.publicId);
-  body.append('resource_type', permit.resourceType);
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${permit.cloudName}/auto/upload`, {
+  const uploadEndpoint = `https://api.cloudinary.com/v1_1/${permit.cloudName}/${permit.resourceType}/upload`;
+  const response = await fetch(uploadEndpoint, {
     method: 'POST',
     body,
   });
@@ -172,9 +177,16 @@ export default function VisitFlow() {
             <p className="text-sm leading-6 text-muted sm:text-right">
               Save the checklist, then capture proof with the in-app camera.
             </p>
-            <Button caregiver disabled={!captures.length} loading={state.saving} onClick={complete}>
-              Complete visit
-            </Button>
+            <div className="hidden lg:block">
+              <Button
+                caregiver
+                disabled={!captures.length}
+                loading={state.saving}
+                onClick={complete}
+              >
+                Complete visit
+              </Button>
+            </div>
           </div>
         </header>
         <div className="mt-5 grid min-h-0 flex-1 gap-5 lg:grid-cols-[0.82fr_1.35fr_0.62fr] lg:items-stretch">
@@ -268,6 +280,17 @@ export default function VisitFlow() {
               </div>
             )}
           </aside>
+        </div>
+        <div className="mt-5 lg:hidden">
+          <Button
+            caregiver
+            className="w-full"
+            disabled={!captures.length}
+            loading={state.saving}
+            onClick={complete}
+          >
+            Complete visit
+          </Button>
         </div>
         {selectedCapture ? (
           <div className="fixed inset-0 z-20 grid place-items-center bg-text/90 p-6">

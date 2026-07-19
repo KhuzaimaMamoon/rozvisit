@@ -342,6 +342,7 @@ Example response:
 - **Role:** caregiver (assigned)
 - **Body:** `{ items: [{ clientMediaId, capturedAt, mediaType }] }`, one to five entries. `clientMediaId` is generated on-device at capture time; `capturedAt` is the device's ISO-8601 capture time; `mediaType` is `photo` or `video`.
 - **Success `200`:** `{ permits: [{ clientMediaId, cloudName, apiKey, timestamp, signature, folder, publicId, resourceType: "auto", maxFileSize: 52428800, allowedFormats: ["jpg", "jpeg", "png", "heic", "mp4", "mov"], expiresAt }] }`. Each permit is keyed to its submitted `clientMediaId`, folder-scoped to `rozvisit/visits/<visitId>/`, and expires after 10 minutes (AD-30). `publicId` is `<visitId>*<clientMediaId>*<compact capturedAt>`.
+- **Direct-upload signature:** the client sends `file`, `api_key`, `timestamp`, `signature`, `folder`, and `public_id`. The signature covers exactly `timestamp`, `folder`, and `public_id`; `resourceType` selects the `/auto/upload` URL path, while `maxFileSize` and `allowedFormats` are permit-policy metadata rather than Cloudinary signed form fields.
 - **Errors:** `403`; `409 STATE_INVALID` on closed visits
 
 ### POST /visits/:id/complete — Close the visit
