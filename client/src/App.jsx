@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
+import BrandMark from './design-system/BrandMark.jsx';
 import Login from './portals/public/Login.jsx';
 import Register from './portals/public/Register.jsx';
 
@@ -51,7 +52,7 @@ export default function App() {
       fallback={
         <main className="portal-placeholder bg-background text-center">
           <div className="rounded-md border border-border bg-surface px-6 py-5 shadow-sm">
-            <p className="text-sm font-semibold text-primary">RozVisit</p>
+            <BrandMark className="mx-auto" />
             <p className="mt-2 text-sm text-muted">Waking up — just a moment</p>
           </div>
         </main>

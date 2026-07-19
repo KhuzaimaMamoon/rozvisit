@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import BrandMark from '../../design-system/BrandMark.jsx';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
 
@@ -9,7 +10,7 @@ export default function VisitFlow() {
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-3xl">
         <header className="border-b border-border pb-6">
-          <p className="text-lg font-semibold text-primary">RozVisit</p>
+          <BrandMark />
           <p className="mt-5 text-sm font-medium text-primary">First visit</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
             Ask before you begin

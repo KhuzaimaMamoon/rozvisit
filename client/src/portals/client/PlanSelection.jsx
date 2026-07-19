@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import BrandMark from '../../design-system/BrandMark.jsx';
 import Button from '../../design-system/Button.jsx';
 
 const plans = [
@@ -38,7 +39,7 @@ export default function PlanSelection() {
     <main className="min-h-screen bg-background px-4 py-3 sm:px-6 sm:py-4 lg:h-screen lg:overflow-hidden">
       <div className="mx-auto max-w-7xl">
         <header className="flex items-center border-b border-border pb-4">
-          <p className="text-lg font-semibold tracking-tight text-primary">RozVisit</p>
+          <BrandMark />
         </header>
 
         <section className="mt-4">

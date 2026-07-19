@@ -1,3 +1,4 @@
+import BrandMark from '../../design-system/BrandMark.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 
@@ -13,7 +14,7 @@ export default function ApplicationStatus() {
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
       <section className="mx-auto max-w-xl rounded-lg border border-border bg-surface p-6 shadow-sm sm:p-8">
-        <p className="text-lg font-semibold text-primary">RozVisit</p>
+        <BrandMark />
         <h1 className="mt-7 text-3xl font-semibold tracking-tight text-text">Application status</h1>
         <div className="mt-5">
           <StatusBadge variant="pending">{status.replace('_', ' ')}</StatusBadge>

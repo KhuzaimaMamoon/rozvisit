@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError, api } from '../../api.js';
+import BrandMark from '../../design-system/BrandMark.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 
 export default function Today() {
@@ -27,7 +28,7 @@ export default function Today() {
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-4xl">
         <header className="border-b border-border pb-6">
-          <p className="text-lg font-semibold text-primary">RozVisit</p>
+          <BrandMark />
           <p className="mt-5 text-sm font-medium text-primary">Caregiver portal</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
             Today&apos;s visits
