@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
+import Button from '../../design-system/Button.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 import { navigateFromLink } from '../../navigation.js';
 
@@ -98,6 +99,7 @@ export default function VisitsOversight() {
                 <th className="p-4">Scheduled</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Flag</th>
+                <th className="p-4 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -120,8 +122,30 @@ export default function VisitsOversight() {
                     </StatusBadge>
                   </td>
                   <td className="p-4">{visit.flag && !visit.flag.resolvedAt ? 'Open' : '—'}</td>
+                  <td className="p-4 text-right">
+                    {visit.status === 'scheduled' && !visit.caregiver ? (
+                      <a
+                        href={`/admin/visits/${visit.id}/assign`}
+                        onClick={(event) =>
+                          navigateFromLink(event, `/admin/visits/${visit.id}/assign`)
+                        }
+                      >
+                        <Button>Assign caregiver</Button>
+                      </a>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                 </tr>
               ))}
+              {!visits.length ? (
+                <tr>
+                  <td className="p-5 text-muted" colSpan="6">
+                    No visits match these filters. Scheduled visits appear here after a client has
+                    an active subscription and confirms their weekly schedule.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </section>

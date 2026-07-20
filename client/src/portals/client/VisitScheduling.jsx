@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 
@@ -9,6 +9,17 @@ export default function VisitScheduling() {
   const [slots, setSlots] = useState([{ day: 'Tuesday', time: '10:00' }]);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [allowance, setAllowance] = useState(null);
+  const [planName, setPlanName] = useState('');
+
+  useEffect(() => {
+    api(`/parents/${parentId}`)
+      .then((parent) => {
+        setAllowance(parent.subscriptionSummary?.visitsPerWeek ?? null);
+        setPlanName(parent.subscriptionSummary?.planKey ?? '');
+      })
+      .catch((error) => setMessage(error.message));
+  }, [parentId]);
 
   async function confirmSchedule() {
     setMessage('');
@@ -37,13 +48,16 @@ export default function VisitScheduling() {
             Choose weekly visit times
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Choose the weekly visit times included in your active care plan.
+            {allowance
+              ? `${planName} includes ${allowance === 7 ? 'daily visits' : `${allowance} visit${allowance === 1 ? '' : 's'} each week`}.`
+              : 'Choose the weekly visit times included in your active care plan.'}
           </p>
         </header>
         <section className="mt-6 rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6">
           <h2 className="text-lg font-semibold text-text">Weekly slots</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Your plan allowance is checked when you confirm this schedule.
+            Set this weekly pattern once. RozVisit repeats it for each week in your current paid
+            period.
           </p>
           <div className="mt-5 space-y-3">
             {slots.map((slot, index) => (
@@ -88,6 +102,7 @@ export default function VisitScheduling() {
                       setSlots((current) => current.filter((_, itemIndex) => itemIndex !== index))
                     }
                     variant="ghost"
+                    type="button"
                   >
                     Remove
                   </Button>
@@ -97,11 +112,17 @@ export default function VisitScheduling() {
           </div>
           <Button
             className="mt-4"
-            disabled={slots.length >= 3}
-            onClick={() => setSlots((current) => [...current, { day: 'Thursday', time: '10:00' }])}
+            disabled={!allowance || slots.length >= allowance}
+            onClick={() =>
+              setSlots((current) => [
+                ...current,
+                { day: days[current.length % days.length], time: '10:00' },
+              ])
+            }
+            type="button"
             variant="secondary"
           >
-            Add weekly slot
+            Add weekly slot{allowance ? ` (${slots.length}/${allowance})` : ''}
           </Button>
           <div className="mt-6 flex flex-col gap-4 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted">
@@ -111,6 +132,7 @@ export default function VisitScheduling() {
               className="w-full sm:w-auto"
               loading={saving}
               onClick={() => void confirmSchedule()}
+              disabled={!allowance}
             >
               Confirm schedule
             </Button>
