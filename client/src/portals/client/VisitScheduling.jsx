@@ -1,11 +1,33 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function VisitScheduling() {
+  const parentId = useMemo(() => window.location.pathname.split('/')[3], []);
   const [slots, setSlots] = useState([{ day: 'Tuesday', time: '10:00' }]);
   const [message, setMessage] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function confirmSchedule() {
+    setMessage('');
+    setSaving(true);
+    try {
+      const result = await api('/visits/schedule', {
+        body: JSON.stringify({
+          parentId,
+          slots: slots.map((slot) => ({ dayOfWeek: days.indexOf(slot.day), time: slot.time })),
+        }),
+        method: 'POST',
+      });
+      setMessage(result.message);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setSaving(false);
+    }
+  }
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-7xl">
@@ -15,13 +37,13 @@ export default function VisitScheduling() {
             Choose weekly visit times
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Your Standard plan includes 3 visits each week.
+            Choose the weekly visit times included in your active care plan.
           </p>
         </header>
         <section className="mt-6 rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6">
           <h2 className="text-lg font-semibold text-text">Weekly slots</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Add up to three weekly times included in your current plan.
+            Your plan allowance is checked when you confirm this schedule.
           </p>
           <div className="mt-5 space-y-3">
             {slots.map((slot, index) => (
@@ -87,9 +109,8 @@ export default function VisitScheduling() {
             </p>
             <Button
               className="w-full sm:w-auto"
-              onClick={() =>
-                setMessage('Your visit is scheduled and a caregiver will be assigned shortly.')
-              }
+              loading={saving}
+              onClick={() => void confirmSchedule()}
             >
               Confirm schedule
             </Button>

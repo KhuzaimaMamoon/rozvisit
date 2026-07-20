@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import Card from '../../design-system/Card.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
+import { navigate } from '../../navigation.js';
 
 const DRAFT_KEY = 'rozvisit.parent-profile.draft';
 const initialContact = { name: '', phone: '', relation: '', priority: 1 };
@@ -26,7 +28,8 @@ function loadDraft() {
 
 export default function ParentProfileForm() {
   const [form, setForm] = useState(loadDraft);
-  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
@@ -65,10 +68,36 @@ export default function ParentProfileForm() {
     }));
   }
 
-  function saveDraft(event) {
+  async function saveParent(event) {
     event.preventDefault();
+    if (saving) return;
+
+    setError('');
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
-    setMessage('Your draft is saved on this device.');
+    setSaving(true);
+    try {
+      const parent = await api('/parents', {
+        body: JSON.stringify({
+          name: form.name,
+          age: Number(form.age),
+          phone: form.phone,
+          addressText: form.addressText,
+          location: { lng: Number(form.lng), lat: Number(form.lat) },
+          careNotes: form.careNotes,
+          emergencyContacts: form.emergencyContacts.map((contact) => ({
+            ...contact,
+            priority: Number(contact.priority),
+          })),
+        }),
+        method: 'POST',
+      });
+      window.localStorage.removeItem(DRAFT_KEY);
+      navigate(`/app/parents/${parent.id}`);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -93,7 +122,7 @@ export default function ParentProfileForm() {
           </div>
         </header>
 
-        <form className="mt-6 space-y-6" onSubmit={saveDraft}>
+        <form className="mt-6 space-y-6" onSubmit={saveParent}>
           <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
             <Card className="p-5 sm:p-6" title="Parent details">
               <p className="mt-2 text-sm leading-6 text-muted">
@@ -210,6 +239,7 @@ export default function ParentProfileForm() {
                         aria-label={`Remove emergency contact ${index + 1}`}
                         className="h-8 min-h-0 w-8 px-0 text-lg leading-none"
                         onClick={() => removeContact(index)}
+                        type="button"
                         variant="ghost"
                       >
                         ×
@@ -247,7 +277,12 @@ export default function ParentProfileForm() {
                 </section>
               ))}
             </div>
-            <Button className="mt-5 w-full sm:w-auto" onClick={addContact} variant="secondary">
+            <Button
+              className="mt-5 w-full sm:w-auto"
+              onClick={addContact}
+              type="button"
+              variant="secondary"
+            >
               Add another contact
             </Button>
           </Card>
@@ -259,22 +294,17 @@ export default function ParentProfileForm() {
               assigned caregiver. Nothing is treated as consent until that conversation happens.
             </p>
           </section>
-          {message ? (
-            <section
+          {error ? (
+            <p
               aria-live="polite"
-              className="fixed inset-x-4 top-20 z-30 max-w-md border-l-[3px] border-success bg-success-soft p-4 text-sm text-success shadow-md sm:left-auto sm:right-6 sm:w-full"
+              className="rounded-r-md border-l-[3px] border-emergency bg-emergency-soft p-4 text-sm leading-6 text-emergency"
             >
-              <div className="flex items-start justify-between gap-4">
-                <p>{message}</p>
-                <Button className="shrink-0" onClick={() => setMessage('')} variant="ghost">
-                  Dismiss
-                </Button>
-              </div>
-            </section>
+              {error}
+            </p>
           ) : null}
           <div className="flex flex-col gap-4 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted">You can continue editing after saving this draft.</p>
-            <Button className="w-full sm:w-auto" type="submit">
+            <Button className="w-full sm:w-auto" loading={saving} type="submit">
               Save parent details
             </Button>
           </div>
