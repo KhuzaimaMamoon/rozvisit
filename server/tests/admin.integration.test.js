@@ -14,6 +14,7 @@ import { env } from '../src/config/env.js';
 import { AuditEvent } from '../src/models/AuditEvent.js';
 import { CaregiverProfile } from '../src/models/CaregiverProfile.js';
 import { ParentProfile } from '../src/models/ParentProfile.js';
+import { Notification } from '../src/models/Notification.js';
 import { Subscription } from '../src/models/Subscription.js';
 import { User } from '../src/models/User.js';
 import { Visit } from '../src/models/Visit.js';
@@ -35,6 +36,7 @@ describe('Admin verification API', () => {
     await Promise.all([
       AuditEvent.deleteMany({}),
       CaregiverProfile.deleteMany({}),
+      Notification.deleteMany({}),
       ParentProfile.deleteMany({}),
       Subscription.deleteMany({}),
       User.deleteMany({}),
@@ -360,5 +362,74 @@ describe('Admin verification API', () => {
     expect(
       await AuditEvent.countDocuments({ action: 'visit.flag_resolved', targetId: flagged._id }),
     ).toBe(1);
+  });
+
+  it('marks a scheduled visit missed, preserves the honest update, audits it, and notifies the client', async () => {
+    const client = await User.create({
+      email: 'client-missed@admin.test',
+      name: 'Ayesha Khan',
+      passwordHash: 'hash',
+      phone: '+971501234565',
+      role: ROLES.CLIENT,
+      status: USER_STATUS.ACTIVE,
+    });
+    const parent = await ParentProfile.create({
+      clientId: client._id,
+      name: 'Amina Bibi',
+      age: 68,
+      addressText: encrypt('Rawalpindi'),
+      location: { type: 'Point', coordinates: [73, 33] },
+      emergencyContacts: [
+        { name: 'Ayesha', phone: '+971501234567', relation: 'Daughter', priority: 1 },
+      ],
+    });
+    const subscription = await Subscription.create({
+      clientId: client._id,
+      parentId: parent._id,
+      planKey: 'Standard',
+      planSnapshot: { visitsPerWeek: 3, errandsPerWeek: 1, price: 195, currency: 'AED' },
+      state: 'active',
+      stateHistory: [{ state: 'active', at: new Date() }],
+    });
+    const visit = await Visit.create({
+      clientVisitId: 'admin-missed',
+      parentId: parent._id,
+      subscriptionId: subscription._id,
+      scheduledAt: new Date(),
+      status: 'scheduled',
+      statusHistory: [{ status: 'scheduled', at: new Date() }],
+    });
+
+    const reason = 'Caregiver was unable to reach the area due to weather.';
+    const makeUpPlan = 'Rescheduled for tomorrow at the same time.';
+    const marked = await request(app)
+      .post(`/api/v1/admin/visits/${visit._id}/mark-missed`)
+      .set(auth(admin))
+      .send({ makeUpPlan, reason });
+
+    expect(marked.status).toBe(200);
+    expect(marked.body.data).toMatchObject({ makeUpPlan, status: 'missed' });
+    expect(marked.body.data.statusHistory.at(-1)).toMatchObject({ reason, status: 'missed' });
+    expect(
+      await AuditEvent.countDocuments({ action: 'visit.marked_missed', targetId: visit._id }),
+    ).toBe(1);
+    expect(await Notification.findOne({ type: 'visit_missed', userId: client._id })).toMatchObject({
+      body: "Today's visit with Amina Bibi did not happen. We are looking into it.",
+    });
+
+    const feed = await request(app).get(`/api/v1/feed?parentId=${parent._id}`).set(auth(client));
+    expect(feed.status).toBe(200);
+    expect(feed.body.data.items[0]).toMatchObject({
+      makeUpPlan,
+      missedReason: reason,
+      status: 'missed',
+    });
+
+    const repeated = await request(app)
+      .post(`/api/v1/admin/visits/${visit._id}/mark-missed`)
+      .set(auth(admin))
+      .send({ reason });
+    expect(repeated.status).toBe(409);
+    expect(repeated.body.error.code).toBe('STATE_INVALID');
   });
 });

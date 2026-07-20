@@ -166,9 +166,9 @@ export const notificationService = Object.freeze({
       }
       throw error;
     }
-    for (const channel of requestedChannels) {
-      eventBus.emit('notification.deliver', notification._id.toString(), channel);
-    }
+    await Promise.all(
+      requestedChannels.map((channel) => deliver(notification._id.toString(), channel)),
+    );
     return serialize(notification);
   },
 });

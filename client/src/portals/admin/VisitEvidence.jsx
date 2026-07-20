@@ -8,6 +8,8 @@ import { navigate } from '../../navigation.js';
 export default function VisitEvidence() {
   const visitId = useMemo(() => window.location.pathname.split('/').at(-1), []);
   const [visit, setVisit] = useState(null);
+  const [makeUpPlan, setMakeUpPlan] = useState('');
+  const [missedReason, setMissedReason] = useState('');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -29,6 +31,22 @@ export default function VisitEvidence() {
       });
       setVisit(data);
       setMessage('Flag resolved and the original visit status restored.');
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  async function markMissed(event) {
+    event.preventDefault();
+    setError('');
+    setMessage('');
+    try {
+      const data = await api(`/admin/visits/${visitId}/mark-missed`, {
+        body: JSON.stringify({ makeUpPlan: makeUpPlan || null, reason: missedReason }),
+        method: 'POST',
+      });
+      setVisit(data);
+      setMessage('Visit marked missed. The family has been notified.');
     } catch (requestError) {
       setError(requestError.message);
     }
@@ -137,6 +155,34 @@ export default function VisitEvidence() {
               ))}
             </ol>
           </section>
+          {visit.status === 'scheduled' ? (
+            <section className="rounded-lg border border-border bg-surface p-5">
+              <h2 className="text-lg font-semibold text-text">Mark missed</h2>
+              <p className="mt-2 text-sm text-muted">
+                Record what happened so the family sees an honest care update.
+              </p>
+              <form className="mt-4 space-y-3" onSubmit={markMissed}>
+                <label className="block text-sm font-medium text-text">
+                  Reason
+                  <textarea
+                    className="mt-1 w-full border border-border p-2"
+                    onChange={(event) => setMissedReason(event.target.value)}
+                    required
+                    value={missedReason}
+                  />
+                </label>
+                <label className="block text-sm font-medium text-text">
+                  Make-up plan (optional)
+                  <textarea
+                    className="mt-1 w-full border border-border p-2"
+                    onChange={(event) => setMakeUpPlan(event.target.value)}
+                    value={makeUpPlan}
+                  />
+                </label>
+                <Button type="submit">Mark missed</Button>
+              </form>
+            </section>
+          ) : null}
           <section className="rounded-lg border border-border bg-surface p-5">
             <h2 className="text-lg font-semibold text-text">Flag</h2>
             {visit.flag ? (

@@ -1,5 +1,6 @@
 import { CONSENT_STATE, PARENT_STATUS, ROLES } from '../config/constants.js';
 import { parentRepository } from '../repositories/parent.repo.js';
+import { notifyRecipient } from '../notifications/dispatch.js';
 import { ForbiddenError, NotFoundError } from '../utils/AppError.js';
 import { decrypt, encrypt } from '../utils/crypto.js';
 
@@ -78,6 +79,7 @@ export const profileService = Object.freeze({
       throw new ForbiddenError();
     }
 
+    const wasWithdrawn = existing.consent.state === CONSENT_STATE.WITHDRAWN;
     const profile = await parentRepository.withdrawConsent(parentId, {
       $set: {
         'consent.state': CONSENT_STATE.WITHDRAWN,
@@ -87,6 +89,14 @@ export const profileService = Object.freeze({
         'consent.history': { state: CONSENT_STATE.WITHDRAWN, at: new Date() },
       },
     });
+    if (!wasWithdrawn) {
+      await notifyRecipient({
+        recipientId: profile.clientId,
+        targetId: profile._id,
+        type: 'consent_withdrawn',
+        values: { parentName: profile.name },
+      });
+    }
     return serializeParent(profile);
   },
 });

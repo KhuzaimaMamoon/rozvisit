@@ -14,6 +14,7 @@ import {
   assignmentSuggestions,
   getVisitEvidence,
   listVisits,
+  markMissed,
   resolveFlag,
 } from '../controllers/admin.controller.js';
 import { ADMIN_PERMISSIONS, ROLES } from '../config/constants.js';
@@ -21,7 +22,11 @@ import { requireAuth } from '../middleware/requireAuth.js';
 import { requirePermission } from '../middleware/requirePermission.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { validate, validateQuery } from '../middleware/validate.js';
-import { adminVisitsQuerySchema, resolveFlagSchema } from '../validators/admin.schemas.js';
+import {
+  adminVisitsQuerySchema,
+  markMissedSchema,
+  resolveFlagSchema,
+} from '../validators/admin.schemas.js';
 import {
   assignCaregiverSchema,
   checklistSchema,
@@ -84,6 +89,12 @@ adminVisitsRouter.post(
   requirePermission(ADMIN_PERMISSIONS.VISITS_OVERSEE),
   validate(assignCaregiverSchema),
   assignVisit,
+);
+adminVisitsRouter.post(
+  '/:id/mark-missed',
+  requirePermission(ADMIN_PERMISSIONS.VISITS_OVERSEE),
+  validate(markMissedSchema),
+  markMissed,
 );
 adminVisitsRouter.get(
   '/:id',

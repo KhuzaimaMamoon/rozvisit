@@ -71,7 +71,7 @@ export const visitRepository = Object.freeze({
     return mongoose.isValidObjectId(id)
       ? Visit.findById(id)
           .select('+checklist.note +flag.note')
-          .populate('parentId', '+addressText name')
+          .populate('parentId', '+addressText clientId name')
           .populate('caregiverId', 'name')
       : null;
   },

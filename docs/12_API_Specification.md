@@ -447,6 +447,12 @@ All endpoints: **Role admin**, all mutations audited automatically (FR-082).
 - **Validation:** caregiver `verified` and area-matched (FR-034); previous caregiver suggested by `GET /admin/visits/:id/assignment-suggestions` (continuity)
 - **Success:** visits attached; caregiver notified; reassignment moves future visits and notifies all parties (BR-15 backup flow)
 
+### POST /admin/visits/:id/mark-missed
+
+- **Body:** `{ reason, makeUpPlan? }` — `reason` is required free text; `makeUpPlan` is optional free text or `null`.
+- **Validation:** admin-only; only a `scheduled` visit may transition to `missed`. Every other state is refused with `409 STATE_INVALID`.
+- **Success:** records the missed reason in the append-only status history with the acting admin and time, stores the optional make-up plan, writes the audited `visit.marked_missed` action, and notifies the client with `visit_missed`.
+
 ### GET /admin/visits/:id/assignment-suggestions
 
 - **Success:** the previous caregiver first when present, followed by verified caregivers whose
@@ -597,6 +603,7 @@ paths:
   /admin/applications/{id}/decision: { post }
   /admin/visits: { get }
   /admin/visits/{id}/assign: { post }
+  /admin/visits/{id}/mark-missed: { post }
   /admin/visits/{id}/assignment-suggestions: { get }
   /admin/subscriptions: { get }
   /admin/subscriptions/{id}/state: { patch }

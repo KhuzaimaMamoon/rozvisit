@@ -55,6 +55,7 @@ const visitSchema = new Schema(
     subscriptionId: { type: Schema.Types.ObjectId, ref: 'Subscription', required: true },
     scheduledAt: { type: Date, required: true },
     standingNote: { type: String, default: null },
+    makeUpPlan: { type: String, default: null },
     status: { type: String, enum: Object.values(VISIT_STATUS), required: true },
     statusHistory: { type: [statusHistorySchema], required: true, default: [] },
     statusBeforeFlag: { type: String, enum: Object.values(VISIT_STATUS), default: null },
