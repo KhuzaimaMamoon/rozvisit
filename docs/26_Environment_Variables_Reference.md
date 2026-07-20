@@ -245,6 +245,20 @@ Every variable is specified with the 9 fields from the prompt:
 | Default behavior | Boot refused — an email link without its application origin is not usable |
 | Validation | Must be a valid absolute URL |
 
+### `DEV_LOG_AUTH_LINKS`
+
+| Field | Value |
+|---|---|
+| Variable | `DEV_LOG_AUTH_LINKS` |
+| Service | Server local-development email channel |
+| Purpose | Explicitly permits local console output of a single-use verification or reset URL for manual testing. |
+| Required | Optional; unset/false by default |
+| Development example | `DEV_LOG_AUTH_LINKS=true` only with `NODE_ENV=development` and `APP_BASE_URL=http://localhost:5173` |
+| Production rule | **Never set or enable.** |
+| Sensitivity | Secret-bearing debug output; the variable is Public but enabling it intentionally permits token URLs in local logs. |
+| Default behavior | No verification or reset URL is logged. |
+| Validation | Only `true` or `false`; `true` refuses boot unless the environment is `development` and `APP_BASE_URL` uses `localhost`, `127.0.0.1`, or `::1`. |
+
 ---
 
 ## A.8 Error Tracking — Sentry *(Recommendation)*
@@ -426,6 +440,8 @@ SENTRY_DSN=
 
 # Logging (optional)
 LOG_LEVEL=
+# Development only; logs single-use auth URLs. NEVER enable outside localhost development.
+DEV_LOG_AUTH_LINKS=
 
 # ── Phase 2 additions (not required at MVP) ──────
 TWILIO_ACCOUNT_SID=
@@ -503,6 +519,7 @@ The order is fixed:
 | `EMAIL_FROM_ADDRESS` | Email | Required | Public |
 | `SENTRY_DSN` | Monitoring | Optional | Sensitive |
 | `LOG_LEVEL` | Server runtime | Optional | Public |
+| `DEV_LOG_AUTH_LINKS` | Local auth testing | Optional | Public (enables secret-bearing local logs) |
 | `TWILIO_ACCOUNT_SID` | Third-party (Phase 2) | Phase 2 | Sensitive |
 | `TWILIO_AUTH_TOKEN` | Third-party (Phase 2) | Phase 2 | Secret |
 | `TWILIO_FROM_NUMBER` | Third-party (Phase 2) | Phase 2 | Sensitive |

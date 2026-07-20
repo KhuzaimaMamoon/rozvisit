@@ -1,18 +1,23 @@
 # Clarifications Needed
 
-## Client report-a-problem MVP scope — Open
+## Client report-a-problem MVP scope — Resolved
 
 - **Question:** Is the client `Report a Problem` screen (`/app/visits/:id/report`) MVP scope or Phase 2?
 - **Searched:** Doc 16 S-19 lists it as MVP but says its API is reserved/open; Doc 14 Module 7 places the dispute queue, its data shape, and API dependencies in Phase 2.
 - **Constraint:** Docs 14 and 16 have the same source-of-truth rank. No create-case endpoint or dispute model exists, so a client report form cannot save honestly.
-- **What is needed:** A founder decision to either authorize the minimal MVP create-case contract or defer the client report route with the Phase 2 dispute queue.
+- **Resolution:** Founder confirmed Doc 14 Module 7 controls this scope question. The client report/dispute route remains Phase 2; Doc 16 is annotated accordingly.
 
-## Local auth-email link inspection — Open
+## Client detail-screen follow-ups — Deferred
+
+- **Client visit detail:** S-12 remains deferred until the approved `GET /feed?visitId` capability or a dedicated client visit-detail endpoint exists. The proof feed continues to provide the available evidence summary.
+- **Subscription status:** S-17 remains deferred until parent data exposes an active subscription reference suitable for a safe navigation target. Plan selection remains the available client plan surface.
+
+## Local auth-email link inspection — Resolved
 
 - **Question:** How should a developer obtain a real email-verification or password-reset URL during local manual testing when the local email channel is intentionally a no-op logger and raw single-use tokens must never appear in logs?
 - **Searched:** Doc 13 §§1, 10–11; Doc 18 §23 token/logging rules; Doc 20 auth recovery; `auth.service.js` and `channel.email.js`.
 - **Constraint:** The local email channel currently records delivery type only. Logging the raw URL would expose a credential-bearing reset or verification token, which is prohibited by the secret-handling rules.
-- **What is needed:** An approved secure local mail-capture mechanism or test-only delivery approach that makes a single-use link available without placing it in application logs.
+- **Resolution:** Founder approved `DEV_LOG_AUTH_LINKS=true`, explicitly opt-in and accepted only for `NODE_ENV=development` with a localhost `APP_BASE_URL`. It logs the link with a development-only warning; all other environments remain silent and refuse an unsafe enablement.
 
 ## Account profile data after session refresh — Open
 

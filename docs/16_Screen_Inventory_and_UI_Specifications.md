@@ -196,9 +196,9 @@ Routes under `/app/*`. Layout: sidebar (desktop) / bottom tab bar (mobile 4 item
 - **APIs:** `POST /visits/schedule`, `PATCH /visits/:id/reschedule`, `POST /visits/:id/cancel`.
 - **Analytics:** `visit.scheduled/allowance_blocked/rescheduled/cancelled_before_cutoff/cancelled_after_cutoff`.
 
-## S-19. Report a Problem (support/dispute entry)
+## S-19. Report a Problem (support/dispute entry — Phase 2)
 
-- **Route:** `/app/visits/:id/report` (also `/app/support` general)
+- **Route:** `/app/visits/:id/report` (also `/app/support` general) — **Phase 2; see Doc 14 Module 7.**
 - **Purpose:** Client-side of the dispute flow (Journey C10, BR-085).
 - **Sections:** problem-type chips (visit didn't happen, wrong service, safety concern, billing, other), description, the visit's evidence auto-attached (read-only preview so the client sees what admin will see).
 - **Success:** case created; message: "Nasreen from operations will respond within 24 hours"; toast confirmation.
@@ -419,7 +419,7 @@ Screens available to authenticated users regardless of portal.
 | S-16 | Plan Selection | client | `/app/parents/:id/plan` | yes |
 | S-17 | Subscription Status | client | `/app/subscriptions/:id` | yes |
 | S-18 | Schedule Visits | client | `/app/parents/:id/schedule` | yes |
-| S-19 | Report a Problem | client | `/app/visits/:id/report` | yes (basic) |
+| S-19 | Report a Problem | client | `/app/visits/:id/report` | Phase 2 — see Doc 14 Module 7 |
 | S-20 | Notifications | client | `/app/notifications` | yes |
 | S-21 | Account | client | `/app/account` | yes |
 | S-22 | Application Status | caregiver | `/care/status` | yes |
