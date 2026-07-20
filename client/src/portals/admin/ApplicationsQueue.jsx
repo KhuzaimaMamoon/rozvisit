@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api.js';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 import { navigateFromLink } from '../../navigation.js';
 
@@ -34,13 +33,17 @@ export default function ApplicationsQueue() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-5xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
-          <p className="mt-5 text-sm font-medium text-primary">Admin operations</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <p className="text-sm font-medium uppercase tracking-wide text-primary">
+            Admin operations
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
             Caregiver applications
           </h1>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Review each application and the progress of its verification gates.
+          </p>
         </header>
         <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Application status">
           {filters.map(([value, label]) => (
@@ -54,14 +57,17 @@ export default function ApplicationsQueue() {
             </button>
           ))}
         </div>
-        <section className="mt-5 rounded-lg border border-border bg-surface p-5 shadow-sm">
-          {state.loading ? <p className="text-sm text-muted">Loading applications…</p> : null}
-          {state.error ? <p className="text-sm text-emergency">{state.error}</p> : null}
+        <section className="mt-5 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
+          {state.loading ? <p className="p-5 text-sm text-muted">Loading applications…</p> : null}
+          {state.error ? <p className="p-5 text-sm text-emergency">{state.error}</p> : null}
           {!state.loading && !state.error && !state.items.length ? (
-            <p className="text-sm text-muted">No pending applications.</p>
+            <p className="p-5 text-sm text-muted">No pending applications.</p>
           ) : null}
           {state.items.map((application) => (
-            <article className="border-b border-border py-4 last:border-0" key={application.id}>
+            <article
+              className="border-b border-border px-5 py-4 transition-colors hover:bg-primary-soft last:border-0"
+              key={application.id}
+            >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-semibold text-text">{application.applicant.name}</p>

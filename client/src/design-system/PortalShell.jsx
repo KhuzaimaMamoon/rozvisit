@@ -42,6 +42,7 @@ function isActive(path, href) {
 export default function PortalShell({ children }) {
   const { logout, user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const pathname = window.location.pathname;
   const links = linksByRole[user.role] ?? [];
   const notificationsPath =
@@ -72,22 +73,34 @@ export default function PortalShell({ children }) {
     };
   }, [pathname]);
 
+  useEffect(() => {
+    const refreshUnreadCount = () => {
+      api('/notifications')
+        .then((data) => setUnreadCount(data.unreadCount ?? 0))
+        .catch(() => setUnreadCount(0));
+    };
+    window.addEventListener('rozvisit:notification-read', refreshUnreadCount);
+    return () => window.removeEventListener('rozvisit:notification-read', refreshUnreadCount);
+  }, []);
+
   async function signOut() {
     await logout();
     navigate('/login');
   }
 
+  function closeMenuAndNavigate(event, path) {
+    navigateFromLink(event, path);
+    setMenuOpen(false);
+  }
+
   return (
     <div className="min-h-screen bg-background text-text">
       <header className="sticky top-0 z-20 border-b border-border bg-surface">
-        <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <a href={roleHome(user)} onClick={(event) => navigateFromLink(event, roleHome(user))}>
             <BrandMark />
           </a>
-          <nav
-            aria-label="Portal navigation"
-            className="order-3 flex w-full gap-1 overflow-x-auto sm:order-none sm:w-auto sm:flex-1"
-          >
+          <nav aria-label="Portal navigation" className="hidden flex-1 gap-1 sm:flex">
             {links.map(([label, href]) => (
               <a
                 aria-current={isActive(pathname, href) ? 'page' : undefined}
@@ -102,7 +115,7 @@ export default function PortalShell({ children }) {
           </nav>
           <a
             aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
-            className="relative rounded-sm px-3 py-2 text-sm font-medium text-primary hover:bg-primary-soft"
+            className="relative hidden rounded-sm px-3 py-2 text-sm font-medium text-primary hover:bg-primary-soft sm:block"
             href={notificationsPath}
             onClick={(event) => navigateFromLink(event, notificationsPath)}
           >
@@ -114,21 +127,97 @@ export default function PortalShell({ children }) {
             ) : null}
           </a>
           <a
-            className="rounded-sm px-3 py-2 text-sm font-medium text-primary hover:bg-primary-soft"
+            className="hidden rounded-sm px-3 py-2 text-sm font-medium text-primary hover:bg-primary-soft sm:block"
             href={accountPath}
             onClick={(event) => navigateFromLink(event, accountPath)}
           >
             Account
           </a>
           <button
-            className="rounded-sm px-3 py-2 text-sm font-medium text-primary hover:bg-primary-soft"
+            className="hidden rounded-sm px-3 py-2 text-sm font-medium text-primary hover:bg-primary-soft sm:block"
             onClick={() => void signOut()}
             type="button"
           >
             Log out
           </button>
+          <button
+            aria-controls="portal-mobile-menu"
+            aria-expanded={menuOpen}
+            className="inline-flex min-h-10 items-center justify-center rounded-md border border-border bg-surface px-4 text-sm font-medium text-primary hover:bg-primary-soft sm:hidden"
+            onClick={() => setMenuOpen(true)}
+            type="button"
+          >
+            Menu
+          </button>
         </div>
       </header>
+      {menuOpen ? (
+        <div className="fixed inset-0 z-40 sm:hidden">
+          <button
+            aria-label="Close navigation menu"
+            className="absolute inset-0 h-full w-full bg-text/40"
+            onClick={() => setMenuOpen(false)}
+            type="button"
+          />
+          <aside
+            aria-label="Portal navigation"
+            className="relative flex h-full w-72 max-w-full flex-col bg-surface p-5 shadow-lg"
+            id="portal-mobile-menu"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-border pb-5">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wide text-primary">
+                  Signed in as
+                </p>
+                <p className="mt-1 truncate text-sm font-semibold text-text">{user.name}</p>
+                <p className="mt-1 truncate text-xs text-muted">{user.email}</p>
+              </div>
+              <button
+                aria-label="Close navigation menu"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border text-lg text-primary hover:bg-primary-soft"
+                onClick={() => setMenuOpen(false)}
+                type="button"
+              >
+                ×
+              </button>
+            </div>
+            <nav className="mt-5 space-y-1" aria-label="Mobile portal navigation">
+              {links.map(([label, href]) => (
+                <a
+                  aria-current={isActive(pathname, href) ? 'page' : undefined}
+                  className={`block rounded-md px-4 py-3 text-sm font-medium ${isActive(pathname, href) ? 'bg-primary-soft text-primary' : 'text-text hover:bg-background'}`}
+                  href={href}
+                  key={href}
+                  onClick={(event) => closeMenuAndNavigate(event, href)}
+                >
+                  {label}
+                </a>
+              ))}
+              <a
+                className="block rounded-md px-4 py-3 text-sm font-medium text-text hover:bg-background"
+                href={notificationsPath}
+                onClick={(event) => closeMenuAndNavigate(event, notificationsPath)}
+              >
+                Notifications{unreadCount ? ` · ${unreadCount} unread` : ''}
+              </a>
+              <a
+                className="block rounded-md px-4 py-3 text-sm font-medium text-text hover:bg-background"
+                href={accountPath}
+                onClick={(event) => closeMenuAndNavigate(event, accountPath)}
+              >
+                Account
+              </a>
+            </nav>
+            <button
+              className="mt-auto min-h-10 rounded-md border border-border px-4 text-left text-sm font-medium text-primary hover:bg-primary-soft"
+              onClick={() => void signOut()}
+              type="button"
+            >
+              Log out
+            </button>
+          </aside>
+        </div>
+      ) : null}
       {back ? (
         <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6">
           <a
@@ -145,10 +234,18 @@ export default function PortalShell({ children }) {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 text-sm text-muted">
           <p>RozVisit · Clear, accountable care coordination.</p>
           <div className="flex gap-4">
-            <a className="font-medium text-primary underline" href="/privacy">
+            <a
+              className="font-medium text-primary underline"
+              href="/privacy"
+              onClick={(event) => navigateFromLink(event, '/privacy')}
+            >
               Privacy
             </a>
-            <a className="font-medium text-primary underline" href="/terms">
+            <a
+              className="font-medium text-primary underline"
+              href="/terms"
+              onClick={(event) => navigateFromLink(event, '/terms')}
+            >
               Terms
             </a>
           </div>

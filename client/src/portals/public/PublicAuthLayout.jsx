@@ -6,10 +6,26 @@ const trustPoints = Object.freeze([
   'Visits work offline and sync when the connection returns.',
 ]);
 
-export default function PublicAuthLayout({ children, subtitle, title }) {
+export default function PublicAuthLayout({
+  children,
+  scrollable = false,
+  subtitle,
+  title,
+  wide = false,
+}) {
+  const mainClass = scrollable
+    ? 'min-h-dvh bg-surface sm:bg-background sm:p-5 lg:p-6'
+    : 'min-h-dvh bg-surface sm:bg-background sm:p-5 lg:h-dvh lg:overflow-hidden lg:p-6';
+  const shellClass = scrollable
+    ? 'mx-auto grid min-h-dvh max-w-6xl bg-surface sm:min-h-[calc(100dvh-40px)] sm:overflow-hidden sm:rounded-lg sm:border sm:border-border sm:shadow-sm lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]'
+    : 'mx-auto grid min-h-dvh max-w-6xl bg-surface sm:min-h-[calc(100dvh-40px)] sm:overflow-hidden sm:rounded-lg sm:border sm:border-border sm:shadow-sm lg:h-[calc(100dvh-48px)] lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]';
+  const formColumnClass = scrollable
+    ? 'min-h-0 lg:flex lg:items-start lg:justify-center lg:px-12 lg:py-12'
+    : 'min-h-0 lg:flex lg:items-center lg:justify-center lg:px-12';
+
   return (
-    <main className="min-h-dvh bg-surface sm:bg-background sm:p-5 lg:h-dvh lg:overflow-hidden lg:p-6">
-      <div className="mx-auto grid min-h-dvh max-w-6xl bg-surface sm:min-h-[calc(100dvh-40px)] sm:overflow-hidden sm:rounded-lg sm:border sm:border-border sm:shadow-sm lg:h-[calc(100dvh-48px)] lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+    <main className={mainClass}>
+      <div className={shellClass}>
         <aside className="hidden flex-col justify-between bg-primary-soft p-8 lg:flex xl:p-12">
           <div>
             <BrandMark />
@@ -32,8 +48,8 @@ export default function PublicAuthLayout({ children, subtitle, title }) {
             ))}
           </ul>
         </aside>
-        <section className="min-h-0 lg:flex lg:items-center lg:justify-center lg:px-12">
-          <div className="w-full max-w-md lg:mx-auto">
+        <section className={formColumnClass}>
+          <div className={`w-full ${wide ? 'max-w-2xl' : 'max-w-md'} lg:mx-auto`}>
             <div className="flex h-16 items-center border-b border-border bg-primary-soft px-5 sm:px-8 lg:hidden">
               <BrandMark />
             </div>

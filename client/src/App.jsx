@@ -92,8 +92,8 @@ export default function App() {
   if (pathname === '/reset') return <ResetPassword />;
   if (pathname === '/verify-email') return <VerifyPrompt />;
   if (pathname === '/verify') return <VerifyEmail />;
-  if (pathname === '/privacy') return <StaticPage title="Privacy policy" />;
-  if (pathname === '/terms') return <StaticPage title="Terms of service" />;
+  if (pathname === '/privacy') return <StaticPage kind="privacy" />;
+  if (pathname === '/terms') return <StaticPage kind="terms" />;
   if (!Portal) return <NotFound />;
 
   return (

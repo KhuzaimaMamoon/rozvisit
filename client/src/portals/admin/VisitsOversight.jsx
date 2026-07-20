@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
-import BrandMark from '../../design-system/BrandMark.jsx';
+import Button from '../../design-system/Button.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 import { navigateFromLink } from '../../navigation.js';
 
@@ -35,11 +35,17 @@ export default function VisitsOversight() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-6xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
-          <p className="mt-5 text-sm font-medium text-primary">Admin operations</p>
-          <h1 className="mt-1 text-3xl font-semibold text-text">Visits oversight</h1>
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <p className="text-sm font-medium uppercase tracking-wide text-primary">
+            Admin operations
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+            Visits oversight
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Review scheduled care, completed evidence, missed visits, and flags.
+          </p>
         </header>
         <section className="mt-6 grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-4">
           <label className="text-sm text-text">
@@ -84,7 +90,7 @@ export default function VisitsOversight() {
           </label>
         </section>
         {error ? <p className="mt-4 text-sm text-emergency">{error}</p> : null}
-        <section className="mt-6 overflow-x-auto rounded-lg border border-border bg-surface">
+        <section className="mt-6 overflow-x-auto rounded-lg border border-border bg-surface shadow-sm">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-border text-muted">
               <tr>
@@ -93,6 +99,7 @@ export default function VisitsOversight() {
                 <th className="p-4">Scheduled</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Flag</th>
+                <th className="p-4 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -115,8 +122,30 @@ export default function VisitsOversight() {
                     </StatusBadge>
                   </td>
                   <td className="p-4">{visit.flag && !visit.flag.resolvedAt ? 'Open' : '—'}</td>
+                  <td className="p-4 text-right">
+                    {visit.status === 'scheduled' && !visit.caregiver ? (
+                      <a
+                        href={`/admin/visits/${visit.id}/assign`}
+                        onClick={(event) =>
+                          navigateFromLink(event, `/admin/visits/${visit.id}/assign`)
+                        }
+                      >
+                        <Button>Assign caregiver</Button>
+                      </a>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                 </tr>
               ))}
+              {!visits.length ? (
+                <tr>
+                  <td className="p-5 text-muted" colSpan="6">
+                    No visits match these filters. Scheduled visits appear here after a client has
+                    an active subscription and confirms their weekly schedule.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </section>

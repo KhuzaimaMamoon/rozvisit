@@ -4,7 +4,7 @@ export default function SyncStateBar({ state }) {
   const pending = state === 'pending';
   return (
     <div
-      className={`flex items-center justify-between gap-3 border px-4 py-3 text-sm ${
+      className={`flex flex-col gap-3 border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between ${
         pending
           ? 'border-pending bg-pending-soft text-pending'
           : 'border-success bg-success-soft text-success'

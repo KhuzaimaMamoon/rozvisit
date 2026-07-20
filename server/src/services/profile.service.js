@@ -1,5 +1,6 @@
 import { CONSENT_STATE, PARENT_STATUS, ROLES } from '../config/constants.js';
 import { parentRepository } from '../repositories/parent.repo.js';
+import { subscriptionRepository } from '../repositories/subscription.repo.js';
 import { notifyRecipient } from '../notifications/dispatch.js';
 import { ForbiddenError, NotFoundError } from '../utils/AppError.js';
 import { decrypt, encrypt } from '../utils/crypto.js';
@@ -8,7 +9,7 @@ function decryptOptional(value) {
   return value ? decrypt(value) : null;
 }
 
-function serializeParent(profile) {
+function serializeParent(profile, subscription = null) {
   return {
     id: profile._id.toString(),
     clientId: profile.clientId.toString(),
@@ -22,6 +23,16 @@ function serializeParent(profile) {
     emergencyContacts: profile.emergencyContacts,
     consent: { state: profile.consent.state },
     status: profile.status,
+    subscriptionSummary: subscription
+      ? {
+          id: subscription._id.toString(),
+          state: subscription.state,
+          planKey: subscription.planKey,
+          visitsPerWeek: ['active', 'grace'].includes(subscription.state)
+            ? subscription.planSnapshot.visitsPerWeek
+            : null,
+        }
+      : null,
   };
 }
 
@@ -60,7 +71,8 @@ export const profileService = Object.freeze({
     if (!profile) throw new NotFoundError();
     if (actor.role !== ROLES.ADMIN && profile.clientId.toString() !== actor.sub)
       throw new ForbiddenError();
-    return serializeParent(profile);
+    const subscription = await subscriptionRepository.findLatestByParent(parentId);
+    return serializeParent(profile, subscription);
   },
 
   async updateParent(clientId, parentId, data) {

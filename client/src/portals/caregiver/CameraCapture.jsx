@@ -87,7 +87,7 @@ export default function CameraCapture({ captureLimitReached = false, disabled, o
   return (
     <section className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
       <div className="border-b border-border bg-primary-soft px-5 py-4 sm:px-6">
-        <p className="text-sm font-medium text-primary">Visit proof</p>
+        <p className="text-sm font-medium uppercase tracking-wide text-primary">Visit proof</p>
         <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-text">Capture a new photo</h2>
@@ -101,11 +101,20 @@ export default function CameraCapture({ captureLimitReached = false, disabled, o
               Open camera
             </Button>
           ) : (
-            <div className="flex items-center gap-2">
-              <Button disabled={disabled || !previewReady || captureLimitReached} onClick={capture}>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <Button
+                className="w-full sm:w-auto"
+                disabled={disabled || !previewReady || captureLimitReached}
+                onClick={capture}
+              >
                 Capture photo
               </Button>
-              <Button disabled={disabled} onClick={closeCamera} variant="ghost">
+              <Button
+                className="w-full sm:w-auto"
+                disabled={disabled}
+                onClick={closeCamera}
+                variant="ghost"
+              >
                 Close camera
               </Button>
             </div>

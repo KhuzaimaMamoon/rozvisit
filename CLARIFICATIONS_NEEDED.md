@@ -312,3 +312,21 @@ note }`, and `POST /admin/flags/:id/resolve` must close a flag with a note. Afte
   Doc 16 S-24, Doc 17 Visit Flow brief, Doc 27 analytics (pre-defined chip ids), and
   `server/src/config/constants.js`.
 - **Resolution:** Founder approved the non-diagnostic enum `appetite`, `mobility`, `medication`, `mood_change`, `home_condition`, and `other`, with the labels supplied in the resolution. Doc 07, Doc 11, and `config/constants.js` record it.
+
+## Client parent overview subscription-state read — Resolved
+
+- **Question:** Which documented endpoint should the client parent overview use to read the current
+  subscription for a specific parent, including whether it is `selected` or `active` and its plan
+  allowance, so it can enforce the required journey: choose plan once → wait for payment activation
+  → schedule visits → view proof?
+- **Searched:** Doc 12 Plans and Subscriptions (`POST /subscriptions`, `GET /subscriptions/:id`,
+  `PATCH /admin/subscriptions/:id/state`); Doc 11 subscriptions schema; Doc 14 Billing &
+  Subscription module; `ParentOverview.jsx`; `profileService.getParent`; and
+  `subscriptionService`/subscription routes.
+- **Blocking fact:** The parent response has no `subscriptionId` or subscription state. The only
+  client read endpoint requires a subscription ID, and there is no client endpoint to retrieve a
+  subscription by `parentId`. Local storage would be stale after an admin activates payment and
+  cannot safely control these actions.
+- **Resolution:** Founder approved Option A: `GET /parents/:id` includes `subscriptionSummary`.
+  It is `null` with no subscription; otherwise it provides `id`, `state`, `planKey`, and
+  `visitsPerWeek` once the plan is active (including grace). Doc 12 records the response.

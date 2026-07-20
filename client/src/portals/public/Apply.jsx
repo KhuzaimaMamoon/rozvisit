@@ -50,6 +50,7 @@ export default function Apply() {
     <PublicAuthLayout
       subtitle="Apply to provide verified local care."
       title="Caregiver application"
+      wide
     >
       {submitted ? (
         <div
@@ -63,10 +64,10 @@ export default function Apply() {
           </a>
         </div>
       ) : (
-        <form className="mt-7 space-y-5" onSubmit={submit}>
+        <form className="mt-6 grid gap-4 lg:grid-cols-2" onSubmit={submit}>
           {error ? (
             <p
-              className="border-l-[3px] border-emergency bg-emergency-soft px-4 py-3 text-sm text-emergency"
+              className="border-l-[3px] border-emergency bg-emergency-soft px-4 py-3 text-sm text-emergency lg:col-span-2"
               role="alert"
             >
               {error}
@@ -104,16 +105,18 @@ export default function Apply() {
             required
             value={form.cnicNumber}
           />
-          <FormInput
-            helperText="At least 8 characters, with letters and numbers."
-            id="password"
-            label="Password"
-            onChange={update('password')}
-            required
-            type="password"
-            value={form.password}
-          />
-          <div className="grid gap-5 sm:grid-cols-3">
+          <div className="lg:col-span-2">
+            <FormInput
+              helperText="At least 8 characters, with letters and numbers."
+              id="password"
+              label="Password"
+              onChange={update('password')}
+              required
+              type="password"
+              value={form.password}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2">
             <FormInput
               id="lat"
               label="Service latitude"
@@ -140,7 +143,7 @@ export default function Apply() {
               value={form.radiusKm}
             />
           </div>
-          <Button className="w-full" loading={loading} type="submit">
+          <Button className="w-full lg:col-span-2" loading={loading} type="submit">
             Submit application
           </Button>
         </form>

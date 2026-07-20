@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api.js';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import ProofFeed from './ProofFeed.jsx';
 
 export default function FeedHome() {
@@ -23,18 +22,28 @@ export default function FeedHome() {
 
   if (state.loading) {
     return (
-      <main className="portal-placeholder text-sm text-muted">Loading your care updates…</main>
+      <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
+        <section className="mx-auto max-w-7xl rounded-lg border border-border bg-surface p-6 shadow-sm">
+          <p className="text-sm text-muted">Loading your care updates…</p>
+        </section>
+      </main>
     );
   }
   if (state.error) {
-    return <main className="portal-placeholder text-sm text-emergency">{state.error}</main>;
+    return (
+      <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
+        <section className="mx-auto max-w-7xl rounded-lg border border-emergency bg-emergency-soft p-6 shadow-sm">
+          <p className="text-sm text-emergency">{state.error}</p>
+        </section>
+      </main>
+    );
   }
   if (!state.items.length) {
     return (
       <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-        <div className="mx-auto max-w-4xl rounded-lg border border-border bg-surface p-6 shadow-sm">
-          <BrandMark />
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight text-text">
+        <div className="mx-auto max-w-7xl rounded-lg border border-border bg-primary-soft p-6 shadow-sm">
+          <p className="text-sm font-medium uppercase tracking-wide text-primary">Care updates</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
             Your care updates
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted">
@@ -50,10 +59,15 @@ export default function FeedHome() {
   if (!state.selectedId) {
     return (
       <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-        <div className="mx-auto max-w-4xl rounded-lg border border-border bg-surface p-6 shadow-sm">
-          <BrandMark />
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight text-text">Choose a parent</h1>
-          <label className="mt-5 block text-sm font-medium text-text" htmlFor="feed-parent">
+        <div className="mx-auto max-w-7xl rounded-lg border border-border bg-primary-soft p-6 shadow-sm">
+          <p className="text-sm font-medium uppercase tracking-wide text-primary">Care updates</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+            Choose a parent
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Select the parent whose visit updates you would like to review.
+          </p>
+          <label className="mt-6 block text-sm font-medium text-text" htmlFor="feed-parent">
             Care updates for
           </label>
           <select

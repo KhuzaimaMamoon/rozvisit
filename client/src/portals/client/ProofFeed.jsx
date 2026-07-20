@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 
 export default function ProofFeed({ parentId: parentIdProp = null }) {
@@ -14,11 +13,12 @@ export default function ProofFeed({ parentId: parentIdProp = null }) {
   }, [parentId]);
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-4xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
-          <p className="mt-5 text-sm font-medium text-primary">Care updates</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">Visit proof</h1>
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <p className="text-sm font-medium uppercase tracking-wide text-primary">Care updates</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+            Visit proof
+          </h1>
           <p className="mt-2 text-sm leading-6 text-muted">
             Completed visits show the care checklist and the camera proof recorded during the visit.
           </p>
@@ -41,36 +41,61 @@ export default function ProofFeed({ parentId: parentIdProp = null }) {
           ) : null}
           {state.items.map((visit) => (
             <article
-              className="rounded-lg border border-border bg-surface p-5 shadow-sm"
+              className="rounded-lg border border-border bg-surface p-4 shadow-sm sm:p-5"
               key={visit.visitId}
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="font-semibold text-text">
-                  {new Date(visit.scheduledAt).toLocaleDateString()}
-                </p>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                    Visit date
+                  </p>
+                  <p className="mt-1 break-words text-lg font-bold tracking-tight text-text sm:text-xl">
+                    {new Date(visit.scheduledAt).toLocaleDateString(undefined, {
+                      dateStyle: 'full',
+                    })}
+                  </p>
+                </div>
                 <StatusBadge variant={visit.status === 'completed' ? 'success' : 'pending'}>
                   {visit.status.replace('_', ' ')}
                 </StatusBadge>
               </div>
               {visit.checklistSummary ? (
-                <p className="mt-3 text-sm text-muted">
-                  Medication: {visit.checklistSummary.medicationTaken ? 'taken' : 'not taken'} ·
-                  Mood: {visit.checklistSummary.mood}/5
-                </p>
+                <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-md bg-primary-soft p-3">
+                    <dt className="text-xs font-medium uppercase tracking-wide text-muted">
+                      Medication
+                    </dt>
+                    <dd className="mt-1 text-sm font-medium text-text">
+                      {visit.checklistSummary.medicationTaken ? 'Taken' : 'Not taken'}
+                    </dd>
+                  </div>
+                  <div className="rounded-md bg-primary-soft p-3">
+                    <dt className="text-xs font-medium uppercase tracking-wide text-muted">Mood</dt>
+                    <dd className="mt-1 text-sm font-medium text-text">
+                      {visit.checklistSummary.mood}/5
+                    </dd>
+                  </div>
+                </dl>
               ) : null}
               {visit.status === 'missed' ? (
-                <div className="mt-3 text-sm text-muted">
-                  <p>
-                    <span className="font-medium text-text">Reason: </span>
-                    {visit.missedReason || 'No reason was recorded.'}
-                  </p>
+                <dl className="mt-4 space-y-3 rounded-md bg-primary-soft p-4 text-sm">
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-muted">
+                      Reason
+                    </dt>
+                    <dd className="mt-1 leading-6 text-text">
+                      {visit.missedReason || 'No reason was recorded.'}
+                    </dd>
+                  </div>
                   {visit.makeUpPlan ? (
-                    <p className="mt-1">
-                      <span className="font-medium text-text">Make-up plan: </span>
-                      {visit.makeUpPlan}
-                    </p>
+                    <div>
+                      <dt className="text-xs font-medium uppercase tracking-wide text-muted">
+                        Make-up plan
+                      </dt>
+                      <dd className="mt-1 leading-6 text-text">{visit.makeUpPlan}</dd>
+                    </div>
                   ) : null}
-                </div>
+                </dl>
               ) : null}
               {visit.media?.length ? (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import BrandMark from '../../design-system/BrandMark.jsx';
+import { useEffect, useState } from 'react';
+import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
@@ -29,36 +29,76 @@ function filterStyle(state, activeState) {
 }
 
 export default function SubscriptionWorkbench() {
-  const [state, setState] = useState('link_sent');
+  const [state, setState] = useState(null);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [activationOpen, setActivationOpen] = useState(false);
   const [paymentRef, setPaymentRef] = useState('');
   const [agreedPrice, setAgreedPrice] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [message, setMessage] = useState('');
 
-  function activate(event) {
+  useEffect(() => {
+    api(`/admin/subscriptions${state ? `?state=${state}` : ''}`)
+      .then(({ items }) => setSubscriptions(items))
+      .catch((error) => setMessage(error.message));
+  }, [state]);
+
+  async function activate(event) {
     event.preventDefault();
     if (!paymentRef || !agreedPrice) return;
-    setMessage(`Activation recorded for ${currency} ${agreedPrice}.`);
-    setActivationOpen(false);
+    try {
+      const updated = await api(`/admin/subscriptions/${selectedSubscription.id}/state`, {
+        body: JSON.stringify({
+          state: 'active',
+          paymentRef,
+          price: Number(agreedPrice),
+          currency,
+        }),
+        method: 'PATCH',
+      });
+      setSubscriptions((items) =>
+        items.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
+      );
+      setMessage(`Activation recorded for ${currency} ${agreedPrice}.`);
+      setActivationOpen(false);
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function sendPaymentLink(subscription) {
+    try {
+      const updated = await api(`/admin/subscriptions/${subscription.id}/state`, {
+        body: JSON.stringify({ state: 'link_sent' }),
+        method: 'PATCH',
+      });
+      setSubscriptions((items) =>
+        items.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
+      );
+      setMessage('Payment link marked as sent.');
+    } catch (error) {
+      setMessage(error.message);
+    }
   }
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-6xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
-          <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-primary">Administration</p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
+              <p className="text-sm font-medium uppercase tracking-wide text-primary">
+                Administration
+              </p>
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
                 Subscriptions
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
                 Review a subscription and record its agreed payment when it is activated.
               </p>
             </div>
-            <p className="rounded-full border border-border bg-primary-soft px-3 py-2 text-xs font-medium text-primary">
+            <p className="w-full rounded-full border border-border bg-surface px-3 py-2 text-center text-xs font-medium text-primary sm:w-auto">
               Manual payment tracking
             </p>
           </div>
@@ -78,6 +118,14 @@ export default function SubscriptionWorkbench() {
               <p className="mt-1 text-sm text-muted">Filter records by their current state.</p>
             </div>
             <div className="flex flex-wrap gap-2" aria-label="Subscription state filters">
+              <button
+                aria-pressed={state === null}
+                className={`rounded-full border px-3 py-2 text-xs font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/25 ${state === null ? 'border-primary bg-primary-soft text-primary ring-2 ring-primary/25 ring-offset-2' : 'border-border bg-surface text-text'}`}
+                onClick={() => setState(null)}
+                type="button"
+              >
+                All
+              </button>
               {Object.entries(stateLabels).map(([key, label]) => (
                 <button
                   aria-pressed={state === key}
@@ -105,18 +153,51 @@ export default function SubscriptionWorkbench() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-t border-border transition-colors hover:bg-background">
-                  <td className="px-6 py-5 font-semibold text-text">Ayesha Khan</td>
-                  <td className="px-6 py-5 text-text">Amina Bibi</td>
-                  <td className="px-6 py-5 text-text">Standard</td>
-                  <td className="px-6 py-5">
-                    <StatusBadge variant={statusVariant(state)}>{stateLabels[state]}</StatusBadge>
-                  </td>
-                  <td className="px-6 py-5 text-muted">—</td>
-                  <td className="px-6 py-5 text-right">
-                    <Button onClick={() => setActivationOpen(true)}>Activate</Button>
-                  </td>
-                </tr>
+                {subscriptions.map((subscription) => (
+                  <tr
+                    className="border-t border-border transition-colors hover:bg-background"
+                    key={subscription.id}
+                  >
+                    <td className="px-6 py-5 font-semibold text-text">{subscription.clientName}</td>
+                    <td className="px-6 py-5 text-text">{subscription.parentName}</td>
+                    <td className="px-6 py-5 text-text">{subscription.planKey}</td>
+                    <td className="px-6 py-5">
+                      <StatusBadge variant={statusVariant(subscription.state)}>
+                        {stateLabels[subscription.state]}
+                      </StatusBadge>
+                    </td>
+                    <td className="px-6 py-5 text-muted">
+                      {subscription.currentPeriodEnd
+                        ? new Date(subscription.currentPeriodEnd).toLocaleDateString()
+                        : '—'}
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      {subscription.state === 'selected' ? (
+                        <Button onClick={() => void sendPaymentLink(subscription)}>
+                          Send link
+                        </Button>
+                      ) : subscription.state === 'link_sent' ? (
+                        <Button
+                          onClick={() => {
+                            setSelectedSubscription(subscription);
+                            setActivationOpen(true);
+                          }}
+                        >
+                          Activate
+                        </Button>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {!subscriptions.length ? (
+                  <tr>
+                    <td className="px-6 py-5 text-muted" colSpan="6">
+                      No subscriptions match this filter.
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
@@ -124,7 +205,7 @@ export default function SubscriptionWorkbench() {
         {message ? (
           <p
             aria-live="polite"
-            className="fixed bottom-4 right-4 z-10 max-w-md border-l-[3px] border-success bg-success-soft p-4 text-sm text-success shadow-md"
+            className="fixed inset-x-4 bottom-4 z-30 max-w-md border-l-[3px] border-success bg-success-soft p-4 text-sm text-success shadow-md sm:left-auto sm:right-6 sm:w-full"
           >
             {message}
           </p>
@@ -138,15 +219,17 @@ export default function SubscriptionWorkbench() {
               className="w-full max-w-lg rounded-lg border border-border bg-surface shadow-lg"
               role="dialog"
             >
-              <div className="border-b border-border p-6">
-                <p className="text-sm font-medium text-primary">Payment confirmation</p>
+              <div className="border-b border-border p-5 sm:p-6">
+                <p className="text-sm font-medium uppercase tracking-wide text-primary">
+                  Payment confirmation
+                </p>
                 <h2 className="mt-1 text-xl font-semibold text-text">Activate subscription</h2>
                 <p className="mt-2 text-sm leading-6 text-muted">
                   Record the actual amount agreed with the client. This price is locked to the
                   subscription.
                 </p>
               </div>
-              <form className="space-y-5 p-6" onSubmit={activate}>
+              <form className="space-y-5 p-5 sm:p-6" onSubmit={activate}>
                 <FormInput
                   id="payment-reference"
                   label="Payoneer reference"
@@ -176,11 +259,17 @@ export default function SubscriptionWorkbench() {
                   <option>AED</option>
                   <option>SAR</option>
                 </select>
-                <div className="flex justify-between gap-3 border-t border-border pt-5">
-                  <Button onClick={() => setActivationOpen(false)} variant="ghost">
+                <div className="grid gap-3 border-t border-border pt-5 sm:flex sm:justify-between">
+                  <Button
+                    className="w-full sm:w-auto"
+                    onClick={() => setActivationOpen(false)}
+                    variant="ghost"
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit">Activate subscription</Button>
+                  <Button className="w-full sm:w-auto" type="submit">
+                    Activate subscription
+                  </Button>
                 </div>
               </form>
             </section>

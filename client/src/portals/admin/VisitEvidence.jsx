@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import Button from '../../design-system/Button.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 import { navigate } from '../../navigation.js';
@@ -52,26 +51,43 @@ export default function VisitEvidence() {
     }
   }
 
-  if (!visit && !error) return <main className="portal-placeholder">Loading visit evidence…</main>;
-  if (!visit) return <main className="portal-placeholder text-emergency">{error}</main>;
+  if (!visit && !error)
+    return (
+      <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
+        <section className="mx-auto max-w-7xl rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6">
+          <p className="text-sm text-muted">Loading visit evidence…</p>
+        </section>
+      </main>
+    );
+  if (!visit)
+    return (
+      <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
+        <section className="mx-auto max-w-7xl rounded-lg border border-emergency bg-emergency-soft p-5 shadow-sm sm:p-6">
+          <p className="text-sm text-emergency">{error}</p>
+        </section>
+      </main>
+    );
   const openFlag = visit.flag && !visit.flag.resolvedAt;
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-5xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
           <button
-            className="mt-5 text-sm text-primary underline"
+            className="text-sm text-primary underline"
             onClick={() => navigate('/admin/visits')}
             type="button"
           >
             Back to visits
           </button>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-primary">Visit evidence</p>
-              <h1 className="mt-1 text-3xl font-semibold text-text">{visit.parent?.name}</h1>
+          <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium uppercase tracking-wide text-primary">
+                Visit evidence
+              </p>
+              <h1 className="mt-2 break-words text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+                {visit.parent?.name}
+              </h1>
               <p className="mt-2 text-sm text-muted">
                 {new Date(visit.scheduledAt).toLocaleString()} ·{' '}
                 {visit.caregiver?.name ?? 'Unassigned'}
@@ -93,7 +109,7 @@ export default function VisitEvidence() {
         {message ? <p className="mt-4 text-sm text-success">{message}</p> : null}
         {error ? <p className="mt-4 text-sm text-emergency">{error}</p> : null}
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
-          <section className="rounded-lg border border-border bg-surface p-5">
+          <section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-text">Checklist</h2>
             {visit.checklist ? (
               <dl className="mt-4 space-y-2 text-sm text-text">
@@ -120,7 +136,7 @@ export default function VisitEvidence() {
               <p className="mt-3 text-sm text-muted">No checklist saved.</p>
             )}
           </section>
-          <section className="rounded-lg border border-border bg-surface p-5">
+          <section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-text">Media proof</h2>
             <div className="mt-4 grid grid-cols-2 gap-3">
               {visit.media.map((media) => (
@@ -140,7 +156,7 @@ export default function VisitEvidence() {
               ))}
             </div>
           </section>
-          <section className="rounded-lg border border-border bg-surface p-5">
+          <section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-text">Status history</h2>
             <ol className="mt-4 space-y-2 text-sm">
               {visit.statusHistory.map((entry, index) => (
@@ -156,7 +172,7 @@ export default function VisitEvidence() {
             </ol>
           </section>
           {visit.status === 'scheduled' ? (
-            <section className="rounded-lg border border-border bg-surface p-5">
+            <section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
               <h2 className="text-lg font-semibold text-text">Mark missed</h2>
               <p className="mt-2 text-sm text-muted">
                 Record what happened so the family sees an honest care update.
@@ -179,11 +195,13 @@ export default function VisitEvidence() {
                     value={makeUpPlan}
                   />
                 </label>
-                <Button type="submit">Mark missed</Button>
+                <Button className="w-full sm:w-auto" type="submit">
+                  Mark missed
+                </Button>
               </form>
             </section>
           ) : null}
-          <section className="rounded-lg border border-border bg-surface p-5">
+          <section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-text">Flag</h2>
             {visit.flag ? (
               <div className="mt-3 text-sm text-text">
@@ -212,7 +230,9 @@ export default function VisitEvidence() {
                         value={note}
                       />
                     </label>
-                    <Button type="submit">Resolve flag</Button>
+                    <Button className="w-full sm:w-auto" type="submit">
+                      Resolve flag
+                    </Button>
                   </form>
                 ) : (
                   <p className="mt-2 text-muted">{visit.flag.note || 'Flag resolved.'}</p>

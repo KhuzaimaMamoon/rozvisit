@@ -17,6 +17,9 @@ export const subscriptionRepository = Object.freeze({
   findActiveByParent(parentId) {
     return Subscription.findOne({ parentId, state: SUBSCRIPTION_STATE.ACTIVE });
   },
+  findLatestByParent(parentId) {
+    return Subscription.findOne({ parentId }).sort({ updatedAt: -1 });
+  },
   update(id, update) {
     return Subscription.findByIdAndUpdate(id, update, { new: true, runValidators: true });
   },

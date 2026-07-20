@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ApiError, api } from '../../api.js';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
@@ -288,18 +287,33 @@ export default function VisitFlow() {
     }
   }
 
-  if (visitError) return <main className="portal-placeholder text-emergency">{visitError}</main>;
-  if (!visit) return <main className="portal-placeholder text-muted">Loading visit details…</main>;
+  if (visitError)
+    return (
+      <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
+        <section className="mx-auto max-w-7xl rounded-lg border border-emergency bg-emergency-soft p-5 shadow-sm sm:p-6">
+          <p className="text-sm text-emergency">{visitError}</p>
+        </section>
+      </main>
+    );
+  if (!visit)
+    return (
+      <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
+        <section className="mx-auto max-w-7xl rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6">
+          <p className="text-sm text-muted">Loading visit details…</p>
+        </section>
+      </main>
+    );
 
   return (
     <main className="min-h-screen bg-background px-4 py-5 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-6xl pb-28">
-        <header className="rounded-xl border border-border bg-primary-soft px-5 py-5 shadow-sm sm:px-7 sm:py-6">
+      <div className="mx-auto max-w-7xl pb-28">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <BrandMark />
-              <p className="mt-5 text-sm font-medium text-primary">Caregiver visit</p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
+            <div className="min-w-0">
+              <p className="text-sm font-medium uppercase tracking-wide text-primary">
+                Caregiver visit
+              </p>
+              <h1 className="mt-2 break-words text-2xl font-semibold tracking-tight text-text sm:text-3xl">
                 {visit.parentName}
               </h1>
               <p className="mt-3 text-sm leading-6 text-muted">
@@ -315,7 +329,7 @@ export default function VisitFlow() {
                 </p>
               ) : null}
             </div>
-            <div className="max-w-sm rounded-lg border border-border bg-surface/80 p-4 text-sm leading-6 text-muted">
+            <div className="w-full rounded-lg border border-border bg-surface/80 p-4 text-sm leading-6 text-muted sm:max-w-sm">
               <p className="font-medium text-text">Care plan reminder</p>
               {visit.consentChoices ? (
                 <p className="mt-1">
@@ -348,7 +362,7 @@ export default function VisitFlow() {
           </div>
         ) : null}
         <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(19rem,0.8fr)_minmax(0,1.2fr)] lg:items-start">
-          <section className="rounded-xl border border-border bg-surface p-5 shadow-sm lg:row-span-2 lg:p-6">
+          <section className="rounded-lg border border-border bg-surface p-5 shadow-sm lg:row-span-2 lg:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
               <div>
                 <p className="text-sm font-medium text-primary">Step 1</p>
@@ -427,7 +441,7 @@ export default function VisitFlow() {
               onCapture={addCapture}
             />
           </div>
-          <aside className="flex min-h-56 flex-col rounded-xl border border-border bg-surface p-5 shadow-sm">
+          <aside className="flex min-h-56 flex-col rounded-lg border border-border bg-surface p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
               <div>
                 <p className="text-sm font-semibold text-text">Captured proof</p>
@@ -473,14 +487,15 @@ export default function VisitFlow() {
             )}
           </aside>
         </div>
-        <div className="sticky bottom-3 z-10 mt-6 flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="sticky bottom-3 z-10 mt-6 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <span className="text-sm leading-6 text-muted">
             Review: medication {form.medicationTaken}, mood {form.mood}/5, {form.concerns.length}{' '}
             concern{form.concerns.length === 1 ? '' : 's'}, and {captures.length} photo
             {captures.length === 1 ? '' : 's'}.
           </span>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center">
             <Button
+              className="w-full sm:w-auto"
               disabled={state.saving || visit.consentState !== 'given'}
               onClick={markParentDeclined}
               variant="ghost"
@@ -489,6 +504,7 @@ export default function VisitFlow() {
             </Button>
             <Button
               caregiver
+              className="w-full sm:w-auto"
               disabled={!captures.length || visit.consentState !== 'given'}
               loading={state.saving}
               onClick={complete}

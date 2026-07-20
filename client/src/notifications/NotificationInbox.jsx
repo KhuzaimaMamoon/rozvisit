@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
-import BrandMark from '../design-system/BrandMark.jsx';
 
 function timestamp(value) {
   return new Intl.DateTimeFormat(undefined, {
@@ -35,6 +34,7 @@ export default function NotificationInbox() {
         items: current.items.map((item) => (item.id === id ? updated : item)),
         unreadCount: Math.max(0, current.unreadCount - (updated.readAt ? 1 : 0)),
       }));
+      window.dispatchEvent(new CustomEvent('rozvisit:notification-read'));
     } catch (error) {
       setState((current) => ({ ...current, error: error.message }));
     }
@@ -42,14 +42,20 @@ export default function NotificationInbox() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-3xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
-          <p className="mt-5 text-sm font-medium text-primary">RozVisit notifications</p>
-          <div className="mt-1 flex flex-wrap items-baseline justify-between gap-2">
-            <h1 className="text-3xl font-semibold tracking-tight text-text">Notifications</h1>
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <p className="text-sm font-medium uppercase tracking-wide text-primary">
+            RozVisit notifications
+          </p>
+          <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+              Notifications
+            </h1>
             <p className="text-sm text-muted">{state.unreadCount} unread</p>
           </div>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Keep track of care updates, account activity, and important next steps.
+          </p>
         </header>
         <section className="mt-6 rounded-lg border border-border bg-surface shadow-sm">
           {state.loading ? <p className="p-6 text-sm text-muted">Loading notifications…</p> : null}
@@ -59,7 +65,7 @@ export default function NotificationInbox() {
           ) : null}
           {state.items.map((item) => (
             <article
-              className={`border-b border-border p-5 last:border-0 ${item.readAt ? '' : 'bg-primary-soft'}`}
+              className={`border-b border-border p-4 sm:p-5 last:border-0 ${item.readAt ? '' : 'bg-primary-soft'}`}
               key={item.id}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
