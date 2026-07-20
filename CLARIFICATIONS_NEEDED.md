@@ -1,5 +1,19 @@
 # Clarifications Needed
 
+## Local auth-email link inspection — Open
+
+- **Question:** How should a developer obtain a real email-verification or password-reset URL during local manual testing when the local email channel is intentionally a no-op logger and raw single-use tokens must never appear in logs?
+- **Searched:** Doc 13 §§1, 10–11; Doc 18 §23 token/logging rules; Doc 20 auth recovery; `auth.service.js` and `channel.email.js`.
+- **Constraint:** The local email channel currently records delivery type only. Logging the raw URL would expose a credential-bearing reset or verification token, which is prohibited by the secret-handling rules.
+- **What is needed:** An approved secure local mail-capture mechanism or test-only delivery approach that makes a single-use link available without placing it in application logs.
+
+## Account profile data after session refresh — Open
+
+- **Question:** Should a documented `GET /users/me` endpoint be added so the client and caregiver account screens can reliably display name and email after a browser refresh?
+- **Searched:** Doc 16 S-21, S-22, and S-26; Doc 12 endpoint list; `AuthContext.jsx`; Auth routes and user repository.
+- **Constraint:** The existing login response supplies the name, and the login form supplies the email for the fresh session, but refresh returns only an access token. No `GET /users/me` route exists.
+- **What is needed:** Approval to add the documented account-read endpoint, or confirmation that the account screen may intentionally show only session/role details after refresh.
+
 ## Notification-trigger coverage for unavailable visit transitions — Resolved / N/A
 
 - **Question:** Where should the canonical `visit_changed` and `visit_missed` notifications fire
