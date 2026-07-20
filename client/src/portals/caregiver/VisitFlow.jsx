@@ -292,52 +292,46 @@ export default function VisitFlow() {
   if (!visit) return <main className="portal-placeholder text-muted">Loading visit details…</main>;
 
   return (
-    <main className="min-h-screen bg-background px-4 py-4 sm:px-6 sm:py-5 lg:h-screen lg:overflow-hidden">
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col lg:h-full lg:min-h-0">
-        <header className="flex flex-none flex-col items-start gap-4 rounded-lg border border-border bg-primary-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div>
-            <BrandMark />
-            <p className="mt-3 text-sm font-medium text-primary">Caregiver visit</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-text">
-              {visit.parentName}
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              {new Date(visit.scheduledAt).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}{' '}
-              · {visit.addressText}
-            </p>
-            {visit.standingNote ? (
-              <p className="mt-2 rounded-full bg-surface px-3 py-1 text-sm text-primary">
-                {visit.standingNote}
+    <main className="min-h-screen bg-background px-4 py-5 sm:px-6 sm:py-8">
+      <div className="mx-auto max-w-6xl pb-28">
+        <header className="rounded-xl border border-border bg-primary-soft px-5 py-5 shadow-sm sm:px-7 sm:py-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <BrandMark />
+              <p className="mt-5 text-sm font-medium text-primary">Caregiver visit</p>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
+                {visit.parentName}
+              </h1>
+              <p className="mt-3 text-sm leading-6 text-muted">
+                {new Date(visit.scheduledAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}{' '}
+                · {visit.addressText}
               </p>
-            ) : null}
-            {visit.consentChoices ? (
-              <p className="mt-2 text-xs text-muted">
-                Preferred times:{' '}
-                {visit.consentChoices.preferredTimes?.join(', ') || 'Not specified'} · Photo
-                boundaries: {visit.consentChoices.photoBoundaries || 'Not specified'}
-              </p>
-            ) : null}
-          </div>
-          <div className="flex max-w-xs flex-col items-start gap-3 sm:items-end">
-            <p className="text-sm leading-6 text-muted sm:text-right">
-              Save the checklist, then capture proof with the in-app camera.
-            </p>
-            <div className="hidden lg:block">
-              <Button
-                caregiver
-                disabled={!captures.length}
-                loading={state.saving}
-                onClick={complete}
-              >
-                Complete visit
-              </Button>
+              {visit.standingNote ? (
+                <p className="mt-3 inline-flex rounded-full border border-border bg-surface px-3 py-1.5 text-sm text-primary">
+                  {visit.standingNote}
+                </p>
+              ) : null}
+            </div>
+            <div className="max-w-sm rounded-lg border border-border bg-surface/80 p-4 text-sm leading-6 text-muted">
+              <p className="font-medium text-text">Care plan reminder</p>
+              {visit.consentChoices ? (
+                <p className="mt-1">
+                  Preferred times:{' '}
+                  {visit.consentChoices.preferredTimes?.join(', ') || 'Not specified'} · Photo
+                  boundaries: {visit.consentChoices.photoBoundaries || 'Not specified'}
+                </p>
+              ) : (
+                <p className="mt-1">
+                  Save the checklist, then capture proof with the in-app camera.
+                </p>
+              )}
             </div>
           </div>
         </header>
-        <div className="mt-4">
+        <div className="mt-5">
           <SyncStateBar state={state.sync} />
           {state.message ? <p className="mt-2 text-sm text-muted">{state.message}</p> : null}
         </div>
@@ -353,10 +347,16 @@ export default function VisitFlow() {
             />
           </div>
         ) : null}
-        <div className="mt-5 grid min-h-0 flex-1 gap-5 lg:grid-cols-[0.82fr_1.35fr_0.62fr] lg:items-stretch">
-          <section className="flex min-h-0 flex-col rounded-lg border border-border bg-surface p-5 shadow-sm lg:h-full">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-text">Visit checklist</h2>
+        <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(19rem,0.8fr)_minmax(0,1.2fr)] lg:items-start">
+          <section className="rounded-xl border border-border bg-surface p-5 shadow-sm lg:row-span-2 lg:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+              <div>
+                <p className="text-sm font-medium text-primary">Step 1</p>
+                <h2 className="mt-1 text-xl font-semibold text-text">Visit checklist</h2>
+              </div>
+              <span className="rounded-full bg-success-soft px-3 py-1 text-xs font-medium text-success">
+                Auto-save on
+              </span>
             </div>
             <div className="mt-5 space-y-4">
               <label className="space-y-2 text-sm font-medium text-text">
@@ -415,19 +415,19 @@ export default function VisitFlow() {
                 value={form.note}
               />
             </div>
-            <div className="mt-auto border-t border-border pt-4 text-sm leading-6 text-muted">
+            <div className="mt-6 border-t border-border pt-4 text-sm leading-6 text-muted">
               Checklist changes save automatically. Capture at least one in-app camera photo to
               complete this visit.
             </div>
           </section>
-          <div className="min-h-[28rem] lg:min-h-0">
+          <div className="min-h-[32rem]">
             <CameraCapture
               captureLimitReached={captures.length >= 5}
               disabled={state.saving}
               onCapture={addCapture}
             />
           </div>
-          <aside className="flex min-h-56 flex-col rounded-lg border border-border bg-surface p-4 shadow-sm lg:min-h-0">
+          <aside className="flex min-h-56 flex-col rounded-xl border border-border bg-surface p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
               <div>
                 <p className="text-sm font-semibold text-text">Captured proof</p>
@@ -438,7 +438,7 @@ export default function VisitFlow() {
               </StatusBadge>
             </div>
             {captures.length ? (
-              <div className="mt-3 grid grid-cols-3 content-start gap-3 sm:grid-cols-4 lg:min-h-0 lg:grid-cols-2 lg:overflow-y-auto lg:pr-1">
+              <div className="mt-4 grid grid-cols-3 content-start gap-3 sm:grid-cols-5">
                 {captures.map((capture) => (
                   <div className="relative" key={capture.clientMediaId}>
                     <button
@@ -473,30 +473,29 @@ export default function VisitFlow() {
             )}
           </aside>
         </div>
-        <div className="mt-5 lg:hidden">
-          <Button
-            caregiver
-            className="w-full"
-            disabled={!captures.length}
-            loading={state.saving}
-            onClick={complete}
-          >
-            Complete visit
-          </Button>
-        </div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-sm text-muted">
-          <span>
+        <div className="sticky bottom-3 z-10 mt-6 flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <span className="text-sm leading-6 text-muted">
             Review: medication {form.medicationTaken}, mood {form.mood}/5, {form.concerns.length}{' '}
             concern{form.concerns.length === 1 ? '' : 's'}, and {captures.length} photo
             {captures.length === 1 ? '' : 's'}.
           </span>
-          <Button
-            disabled={state.saving || visit.consentState !== 'given'}
-            onClick={markParentDeclined}
-            variant="ghost"
-          >
-            Parent declined
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              disabled={state.saving || visit.consentState !== 'given'}
+              onClick={markParentDeclined}
+              variant="ghost"
+            >
+              Parent declined
+            </Button>
+            <Button
+              caregiver
+              disabled={!captures.length || visit.consentState !== 'given'}
+              loading={state.saving}
+              onClick={complete}
+            >
+              Complete visit
+            </Button>
+          </div>
         </div>
         {selectedCapture ? (
           <div className="fixed inset-0 z-20 grid place-items-center bg-text/90 p-6">
