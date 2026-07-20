@@ -37,16 +37,26 @@ export default function SubscriptionWorkbench() {
   const [agreedPrice, setAgreedPrice] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     api(`/admin/subscriptions${state ? `?state=${state}` : ''}`)
       .then(({ items }) => setSubscriptions(items))
-      .catch((error) => setMessage(error.message));
+      .catch((requestError) => setError(requestError.message));
   }, [state]);
+
+  useEffect(() => {
+    if (!message) return undefined;
+    const timer = window.setTimeout(() => setMessage(''), 4500);
+    return () => window.clearTimeout(timer);
+  }, [message]);
 
   async function activate(event) {
     event.preventDefault();
-    if (!paymentRef || !agreedPrice) return;
+    if (!paymentRef || !agreedPrice || saving) return;
+    setSaving(true);
+    setError('');
     try {
       const updated = await api(`/admin/subscriptions/${selectedSubscription.id}/state`, {
         body: JSON.stringify({
@@ -62,12 +72,17 @@ export default function SubscriptionWorkbench() {
       );
       setMessage(`Activation recorded for ${currency} ${agreedPrice}.`);
       setActivationOpen(false);
-    } catch (error) {
-      setMessage(error.message);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSaving(false);
     }
   }
 
   async function sendPaymentLink(subscription) {
+    if (saving) return;
+    setSaving(true);
+    setError('');
     try {
       const updated = await api(`/admin/subscriptions/${subscription.id}/state`, {
         body: JSON.stringify({ state: 'link_sent' }),
@@ -77,8 +92,10 @@ export default function SubscriptionWorkbench() {
         items.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
       );
       setMessage('Payment link marked as sent.');
-    } catch (error) {
-      setMessage(error.message);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -109,6 +126,25 @@ export default function SubscriptionWorkbench() {
           <p className="mt-1 text-sm leading-6 text-muted">
             Enter the Payoneer reference and agreed price only after payment has been verified.
           </p>
+        </section>
+
+        <section className="mt-5 rounded-lg border border-border bg-surface p-4 text-sm leading-6 text-muted shadow-sm">
+          <h2 className="font-semibold text-text">Subscription states</h2>
+          <ul className="mt-2 space-y-1">
+            <li>
+              <span className="font-medium text-text">Grace:</span> payment renewal is pending;
+              scheduling remains available during the grace period.
+            </li>
+            <li>
+              <span className="font-medium text-text">Paused:</span> scheduling is locked while the
+              family can still view its visit history.
+            </li>
+            <li>
+              <span className="font-medium text-text">Cancelled:</span> client-initiated
+              cancellation runs through the paid period, then locks scheduling while history remains
+              available.
+            </li>
+          </ul>
         </section>
 
         <section className="mt-6 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
@@ -173,7 +209,7 @@ export default function SubscriptionWorkbench() {
                     </td>
                     <td className="px-6 py-5 text-right">
                       {subscription.state === 'selected' ? (
-                        <Button onClick={() => void sendPaymentLink(subscription)}>
+                        <Button loading={saving} onClick={() => void sendPaymentLink(subscription)}>
                           Send link
                         </Button>
                       ) : subscription.state === 'link_sent' ? (
@@ -208,6 +244,15 @@ export default function SubscriptionWorkbench() {
             className="fixed inset-x-4 bottom-4 z-30 max-w-md border-l-[3px] border-success bg-success-soft p-4 text-sm text-success shadow-md sm:left-auto sm:right-6 sm:w-full"
           >
             {message}
+          </p>
+        ) : null}
+        {error ? (
+          <p
+            aria-live="polite"
+            className="fixed inset-x-4 bottom-4 z-30 max-w-md border-l-[3px] border-emergency bg-emergency-soft p-4 text-sm text-emergency shadow-md sm:left-auto sm:right-6 sm:w-full"
+            role="alert"
+          >
+            {error}
           </p>
         ) : null}
 
@@ -267,7 +312,7 @@ export default function SubscriptionWorkbench() {
                   >
                     Cancel
                   </Button>
-                  <Button className="w-full sm:w-auto" type="submit">
+                  <Button className="w-full sm:w-auto" loading={saving} type="submit">
                     Activate subscription
                   </Button>
                 </div>

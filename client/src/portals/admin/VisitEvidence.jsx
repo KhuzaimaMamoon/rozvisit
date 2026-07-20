@@ -12,6 +12,7 @@ export default function VisitEvidence() {
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const load = () => {
     api(`/admin/visits/${visitId}`)
@@ -22,7 +23,9 @@ export default function VisitEvidence() {
 
   async function resolveFlag(event) {
     event.preventDefault();
+    if (saving) return;
     setError('');
+    setSaving(true);
     try {
       const data = await api(`/admin/flags/${visitId}/resolve`, {
         body: JSON.stringify({ note }),
@@ -32,13 +35,17 @@ export default function VisitEvidence() {
       setMessage('Flag resolved and the original visit status restored.');
     } catch (requestError) {
       setError(requestError.message);
+    } finally {
+      setSaving(false);
     }
   }
 
   async function markMissed(event) {
     event.preventDefault();
+    if (saving) return;
     setError('');
     setMessage('');
+    setSaving(true);
     try {
       const data = await api(`/admin/visits/${visitId}/mark-missed`, {
         body: JSON.stringify({ makeUpPlan: makeUpPlan || null, reason: missedReason }),
@@ -48,6 +55,8 @@ export default function VisitEvidence() {
       setMessage('Visit marked missed. The family has been notified.');
     } catch (requestError) {
       setError(requestError.message);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -195,7 +204,7 @@ export default function VisitEvidence() {
                     value={makeUpPlan}
                   />
                 </label>
-                <Button className="w-full sm:w-auto" type="submit">
+                <Button className="w-full sm:w-auto" loading={saving} type="submit">
                   Mark missed
                 </Button>
               </form>
@@ -230,7 +239,7 @@ export default function VisitEvidence() {
                         value={note}
                       />
                     </label>
-                    <Button className="w-full sm:w-auto" type="submit">
+                    <Button className="w-full sm:w-auto" loading={saving} type="submit">
                       Resolve flag
                     </Button>
                   </form>

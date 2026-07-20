@@ -26,6 +26,7 @@ export default function ApplicationDetail() {
   });
   const [reference, setReference] = useState({ note: '', referenceOutcome: 'unreachable' });
   const [decisionNote, setDecisionNote] = useState('');
+  const [savingAction, setSavingAction] = useState('');
 
   const loadApplication = useCallback(() => {
     api(`/admin/applications/${applicationId}`)
@@ -54,8 +55,10 @@ export default function ApplicationDetail() {
   }, [loadApplication]);
 
   async function saveGate(path, body) {
+    if (savingAction) return;
     setError('');
     setMessage('');
+    setSavingAction(path);
     try {
       const data = await api(`/admin/applications/${applicationId}/${path}`, {
         body: JSON.stringify(body),
@@ -65,12 +68,16 @@ export default function ApplicationDetail() {
       setMessage('Verification gate recorded.');
     } catch (requestError) {
       setError(requestError.message);
+    } finally {
+      setSavingAction('');
     }
   }
 
   async function decide(decision) {
+    if (savingAction) return;
     setError('');
     setMessage('');
+    setSavingAction(decision);
     try {
       const data = await api(`/admin/applications/${applicationId}/decision`, {
         body: JSON.stringify({ decision, note: decisionNote || undefined }),
@@ -80,6 +87,8 @@ export default function ApplicationDetail() {
       setMessage('Application decision recorded.');
     } catch (requestError) {
       setError(requestError.message);
+    } finally {
+      setSavingAction('');
     }
   }
 
@@ -158,6 +167,7 @@ export default function ApplicationDetail() {
               />
               <Button
                 className="w-full sm:w-auto"
+                loading={savingAction === 'cnic-gate'}
                 onClick={() => saveGate('cnic-gate', cnic)}
                 type="button"
               >
@@ -187,6 +197,7 @@ export default function ApplicationDetail() {
               />
               <Button
                 className="w-full sm:w-auto"
+                loading={savingAction === 'interview-gate'}
                 onClick={() => saveGate('interview-gate', interview)}
                 type="button"
               >
@@ -215,6 +226,7 @@ export default function ApplicationDetail() {
               />
               <Button
                 className="w-full sm:w-auto"
+                loading={savingAction === 'reference-gate'}
                 onClick={() => saveGate('reference-gate', reference)}
                 type="button"
               >
@@ -237,6 +249,7 @@ export default function ApplicationDetail() {
                 <Button
                   className="w-full"
                   disabled={!allGatesComplete}
+                  loading={savingAction === 'approve'}
                   onClick={() => decide('approve')}
                   type="button"
                 >
@@ -245,6 +258,7 @@ export default function ApplicationDetail() {
                 <Button
                   className="w-full"
                   onClick={() => decide('request_info')}
+                  loading={savingAction === 'request_info'}
                   type="button"
                   variant="secondary"
                 >
@@ -253,6 +267,7 @@ export default function ApplicationDetail() {
                 <Button
                   className="w-full"
                   onClick={() => decide('reject')}
+                  loading={savingAction === 'reject'}
                   type="button"
                   variant="secondary"
                 >

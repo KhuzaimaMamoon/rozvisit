@@ -208,7 +208,7 @@ describe('Visit API lifecycle', () => {
     const permit = await request(app)
       .post(`/api/v1/parents/${parent._id}/consent-permit`)
       .set(auth(caregiver))
-      .send({ mediaType: 'audio' });
+      .send({ byVisitId: visit._id.toString(), mediaType: 'audio' });
     expect(permit.status).toBe(200);
     expect(permit.body.data).toMatchObject({
       folder: `rozvisit/consent/${parent._id}/`,
@@ -216,6 +216,25 @@ describe('Visit API lifecycle', () => {
       resourceType: 'auto',
       allowedFormats: ['mp3', 'm4a', 'wav', 'mp4', 'mov'],
     });
+  });
+
+  it('returns existing visits when the same weekly schedule is submitted again', async () => {
+    const body = {
+      parentId: parent._id.toString(),
+      slots: [{ dayOfWeek: 2, time: '10:00' }],
+    };
+    const first = await request(app).post('/api/v1/visits/schedule').set(auth(client)).send(body);
+    const repeated = await request(app)
+      .post('/api/v1/visits/schedule')
+      .set(auth(client))
+      .send(body);
+
+    expect(first.status).toBe(201);
+    expect(repeated.status).toBe(201);
+    expect(repeated.body.data.items.map((visit) => visit.id)).toEqual(
+      first.body.data.items.map((visit) => visit.id),
+    );
+    expect(await Visit.countDocuments({ parentId: parent._id })).toBe(first.body.data.items.length);
   });
 
   it('mints camera-only permits and completes an offline retry exactly once', async () => {

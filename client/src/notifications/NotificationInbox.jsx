@@ -10,6 +10,7 @@ function timestamp(value) {
 
 export default function NotificationInbox() {
   const [state, setState] = useState({ error: '', items: [], loading: true, unreadCount: 0 });
+  const [readingIds, setReadingIds] = useState([]);
 
   useEffect(() => {
     let active = true;
@@ -27,6 +28,8 @@ export default function NotificationInbox() {
   }, []);
 
   async function markRead(id) {
+    if (readingIds.includes(id)) return;
+    setReadingIds((items) => [...items, id]);
     try {
       const updated = await api(`/notifications/${id}/read`, { method: 'POST' });
       setState((current) => ({
@@ -37,6 +40,8 @@ export default function NotificationInbox() {
       window.dispatchEvent(new CustomEvent('rozvisit:notification-read'));
     } catch (error) {
       setState((current) => ({ ...current, error: error.message }));
+    } finally {
+      setReadingIds((items) => items.filter((item) => item !== id));
     }
   }
 
@@ -77,6 +82,7 @@ export default function NotificationInbox() {
                 {!item.readAt ? (
                   <button
                     className="text-sm font-medium text-primary underline"
+                    disabled={readingIds.includes(item.id)}
                     onClick={() => void markRead(item.id)}
                     type="button"
                   >

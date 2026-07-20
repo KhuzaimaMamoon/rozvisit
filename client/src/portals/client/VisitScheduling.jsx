@@ -22,6 +22,7 @@ export default function VisitScheduling() {
   }, [parentId]);
 
   async function confirmSchedule() {
+    if (saving) return;
     setMessage('');
     setSaving(true);
     try {
@@ -132,7 +133,7 @@ export default function VisitScheduling() {
               className="w-full sm:w-auto"
               loading={saving}
               onClick={() => void confirmSchedule()}
-              disabled={!allowance}
+              disabled={!allowance || saving}
             >
               Confirm schedule
             </Button>
