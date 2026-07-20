@@ -3,8 +3,9 @@ import { api } from '../../api.js';
 import BrandMark from '../../design-system/BrandMark.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 
-export default function ProofFeed() {
-  const parentId = useMemo(() => window.location.pathname.split('/')[3], []);
+export default function ProofFeed({ parentId: parentIdProp = null }) {
+  const parentIdFromPath = useMemo(() => window.location.pathname.split('/')[3], []);
+  const parentId = parentIdProp ?? parentIdFromPath;
   const [state, setState] = useState({ items: [], loading: true, error: '' });
   useEffect(() => {
     api(`/feed?parentId=${encodeURIComponent(parentId)}`)
