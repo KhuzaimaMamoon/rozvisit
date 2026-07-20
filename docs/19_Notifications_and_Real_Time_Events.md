@@ -62,38 +62,37 @@ Design constants:
   - Caregiver fallback — critical time-of-day messages (an assignment change, a missed check-in) as a second channel when push isn't reliable on their device.
 - **Not for:** promotional messages ever, or routine visit-completed notifications.
 
-## 7. Notification Preferences
+## 7. Deferred Preferences and Device Registration
 
-- Every user has a preferences screen (Document 16 S-21/S-26 §Notifications).
-- Two lists: **essential** (cannot be turned off — NOT-002) and **optional** (toggleable).
-- The essential list is the same in the UI and the code — a single source (Document 10 §20 `constants.js`).
-- Preferences apply per channel — a user can turn off email for optional types while keeping in-app on. Essential types remain on all channels.
+Notification preferences and Firebase device-token registration are deferred. The MVP invokes a
+push channel through `NotificationChannel`, but local delivery is a no-op logger; in-app and email
+remain the reliable MVP routes.
 
-## 8. Mandatory Notifications (essential — cannot be turned off)
+## 8. Canonical MVP Notification Map
 
-| Event | Sent to | Channels |
-|---|---|---|
-| Verification email | New user | Email |
-| Password reset link | User | Email |
-| Subscription state change (activated, grace entered, paused, cancelled) | Client | In-app + email |
-| Visit missed with reason | Client | In-app + push + email |
-| Visit flagged for admin review | Admin | In-app |
-| Emergency alert (Phase 2) | Client + admins + emergency contacts (escalation) | All available: in-app + push + email + SMS + WhatsApp |
-| Consent withdrawn | Client + admins | In-app + email |
-| Account disabled | User | Email |
+This table supersedes the partial summary in Document 05 Part D. Curly-brace values are plain-text
+substitutions from the relevant record, never HTML.
 
-## 9. Optional Notifications (toggleable, on by default)
+| type | recipient | channels | title | body |
+|---|---|---|---|---|
+| registration_verify | client/caregiver | email | Confirm your email | Tap the link to confirm your email and get started with RozVisit. |
+| application_received | caregiver | in-app, email | We received your application | Thank you for applying. We will review your details and be in touch soon. |
+| admin_new_application | admin | in-app | New caregiver application | A new caregiver application is ready for review. |
+| application_decision | caregiver | in-app, email | Update on your application | Approved: Good news -- your application is approved. Welcome to RozVisit. Rejected: Thank you for applying. We are not able to move forward at this time. Request-info: We need a bit more information to continue your application. |
+| subscription_active | client | in-app, email | Your plan is active | Your {planKey} plan is now active. You can schedule visits for {parentName}. |
+| admin_payment_reconciled | admin | in-app | Payment recorded | A payment has been recorded for {clientName}'s subscription. |
+| visit_assigned | client | in-app, push | A caregiver has been assigned | {caregiverName} will visit {parentName} on {scheduledDate}. |
+| visit_changed | client | in-app, push | Your visit was updated | Your visit for {parentName} on {scheduledDate} has been updated. |
+| visit_completed | client | in-app, push | Visit complete | {caregiverName} completed today's visit with {parentName}. See the details in your feed. |
+| visit_missed | client | in-app, push, email | A visit was missed | Today's visit with {parentName} did not happen. We are looking into it. |
+| visit_parent_declined | client | in-app, email | Your parent declined today's visit | {parentName} chose not to have today's visit. No action is needed from you. |
+| consent_withdrawn | client | in-app, email | Consent was withdrawn | {parentName} has withdrawn consent for visits. Scheduling is paused until this is resolved. |
+| subscription_grace | client | in-app, email | Your plan needs renewal | Your {planKey} plan is in a grace period. Please renew to avoid a pause in visits. |
+| subscription_paused | client | in-app, email | Your plan is paused | Your {planKey} plan is now paused. Renew anytime to resume visits. |
+| subscription_cancelled | client | in-app, email | Your plan was cancelled | Your {planKey} plan has been cancelled. You can view your visit history anytime. |
+| flag_raised | admin | in-app | A visit needs attention | A visit for {parentName} has been flagged: {reason}. |
 
-| Event | Sent to | Channels (defaults) |
-|---|---|---|
-| Visit completed | Client | In-app + push |
-| Visit rescheduled by admin | Client, Caregiver | In-app + push |
-| Errand completed (Phase 2) | Client | In-app + push |
-| Ratings request (Phase 2) | Client | In-app only |
-| Caregiver application decision | Caregiver | In-app + email |
-| Assignment / reassignment | Caregiver | In-app + push |
-
-## 10. Notification Templates
+## 9. Notification Templates
 
 Templates are code-first, defined once per type in `server/src/notifications/templates/`:
 
@@ -115,55 +114,55 @@ Each template exports: `title`, `body`, `channels` (from the mandatory/optional 
 
 **Localization:** every template's copy lives in the same `i18n/en.json` structure the UI uses (Document 10 §2, LOC-002). Phase 5 Urdu is a translation file, not a new template set.
 
-## 11. Delivery States
+## 10. Delivery States
 
-Every send attempt writes to the notification document's `delivery` array (Document 11):
+Every send attempt writes to the notification document's `deliveries` array (Document 11):
 
 ```
-delivery: [
-  { channel: "inapp",  state: "sent",      at: "…" },
-  { channel: "push",   state: "sent",      at: "…" },
-  { channel: "email",  state: "retrying",  at: "…" },
-  { channel: "sms",    state: "failed",    at: "…" }   // Phase 2
+deliveries: [
+  { channel: "in_app", state: "sent", attempts: 1, lastAttemptAt: "…" },
+  { channel: "push", state: "retrying", attempts: 1, nextAttemptAt: "…" },
+  { channel: "email", state: "failed", attempts: 4, failedPermanently: true }
 ]
 ```
 
 State machine per channel: `queued → sent → (retrying) → sent | failed`. The in-app channel state is the source of truth for user-visible unread state; other channels are for reach, not for read state.
 
-## 12. Read / Unread State
+## 11. Read / Unread State
 
 - Marked read when the user opens the notification (list open or explicit tap).
 - `readAt` timestamp on the notification document.
 - Unread count computed from `readAt: null` filter with the userId + createdAt index (Document 11).
 - The bell dot color rule from §3 uses the list contents, not just the count.
 
-## 13. Retry Strategy
+## 12. Retry Strategy
 
 Per channel (all handled by the notification dispatcher, Document 09 §16):
 
 | Channel | First retry | Backoff | Give up |
 |---|---|---|---|
-| Push | 30 s | ×2 each attempt | after 4 attempts *(Recommendation)* |
-| Email | 60 s | ×2 each attempt | after 4 attempts |
-| SMS (Phase 2) | 15 s | ×2 each attempt | after 3 attempts |
-| WhatsApp (Phase 2) | 15 s | ×2 each attempt | after 3 attempts |
+| Push | 30 s | ×2 each attempt | after 4 total attempts |
+| Email | 30 s | ×2 each attempt | after 4 total attempts |
 | In-app | never fails (write to DB) | — | — |
 
-**Give-up behavior:** the delivery entry moves to `failed`, and the admin's `notif.failed` flag surfaces the record (FR-091). Notifications are never silently dropped — the failure is data.
+**Runner:** the existing EventEmitter plus in-process `setTimeout` scheduling runs the 30/60/120
+second retry chain. No external queue is introduced at MVP. **Give-up behavior:** the delivery
+entry moves to `failed`, `failedPermanently: true`, and an admin-visible `notif.failed` record
+references the notification. Notifications are never silently dropped — the failure is data.
 
-## 14. Deduplication
+## 13. Deduplication
 
 - Every notification carries a stable `idempotencyKey` derived from `{eventType, eventTargetId, recipientId}` — the same event never produces two records for the same person.
 - Delivery per channel is idempotent within the retry window by the same key + channel pair.
 - Client-side push handlers use FCM's own delivery-once semantics.
 
-## 15. Scheduling
+## 14. Scheduling
 
 - Most notifications fire on the event that triggered them (event bus → dispatcher, Document 09 §16). No scheduling needed.
 - The tiny scheduled work — grace transitions (FR-025), visit generation from weekly schedules — runs in the in-process scheduler with boot catch-up (Document 09 §16). When those jobs fire an event (e.g. `subscription.grace_entered`), the notification path is exactly the same as any event-driven send.
 - **No digest notifications at MVP.** They come only when a real use case names them.
 
-## 16. Time Zones
+## 15. Time Zones
 
 - Every user's row carries an inferred time zone from their `countryCode` at MVP *(Recommendation — inferred; an explicit setting joins the account screen when a user reports a mismatch)*.
 - Notification bodies always include the local time in the recipient's zone with the zone visible where ambiguity matters (Document 15 §34): "Visit at 10:00 (Rawalpindi time)" for a Dubai client.

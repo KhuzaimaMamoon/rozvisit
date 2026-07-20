@@ -3,8 +3,10 @@ import FeedHome from './FeedHome.jsx';
 import PlanSelection from './PlanSelection.jsx';
 import ProofFeed from './ProofFeed.jsx';
 import VisitScheduling from './VisitScheduling.jsx';
+import NotificationInbox from '../../notifications/NotificationInbox.jsx';
 
 export default function ClientPortal() {
+  if (window.location.pathname === '/app/notifications') return <NotificationInbox />;
   if (window.location.pathname === '/app/feed') return <FeedHome />;
   if (window.location.pathname === '/app/parents/new') return <ParentProfileForm />;
   if (/^\/app\/parents\/[^/]+\/plan$/.test(window.location.pathname)) return <PlanSelection />;

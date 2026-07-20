@@ -1,5 +1,42 @@
 # Clarifications Needed
 
+## Notification event map, persistence, and failed-delivery contract — Resolved
+
+- **Question 1:** What is the canonical MVP notification definition table — exact event `type`,
+  recipient(s), channel set, and approved calm title/body — for the full Phase 1 map? Doc 05 Part
+  D includes registration/application-received/admin-new-application, subscription active/admin
+  payment reconciled, visit assigned/changed, completed, and parent declined. Doc 19's mandatory
+  and optional tables include a different partial set (including grace/paused/cancelled,
+  application decision, flag raised, and consent withdrawn), while its template list gives names
+  but not copy for several required events. The implementation cannot invent missing type names
+  or product wording.
+- **Question 2:** What exact persisted fields and job mechanism implement Doc 19's required
+  idempotency and retry behavior? Doc 19 requires an `idempotencyKey`, per-channel attempts,
+  30/60-second exponential retries, and a `notif.failed` admin-visible flag after four attempts;
+  Doc 11's notification schema currently has only `userId`, `type`, `title`, `body`, `readAt`,
+  and `{ channel, state, at }` delivery entries. It does not define a retry-count/next-at field,
+  a unique key/index, or where the admin failure flag lives. There is also no approved background
+  runner/library despite the required delays.
+- **Question 3:** Does this task include notification preferences and FCM device-token registration?
+  Doc 19 §4/§7 describes both, while Doc 12 defines only list and mark-read endpoints and the
+  requested frontend scope names the inbox and documented indicator only. Neither the User nor a
+  separate device/preferences schema is documented.
+- **Searched:** Doc 19 §§2–16 and 24–30; Doc 05 Part D; Doc 06 US-NOTIF-001; Doc 07
+  FR-090–093 and NOT-001/NOT-002; Doc 09 §§15–16 and §24; Doc 11 `notifications` schema and
+  indexes; Doc 12 Notification endpoints; Doc 14 Module 8; Doc 16 S-20/S-37; Doc 18 notification
+  privacy requirements; Doc 26 Firebase/email variables; and the existing `NotificationChannel`
+  and local email logger.
+- **Resolution:** Founder approved the complete canonical MVP event table (exact type names,
+  recipients, channels, calm plain-text copy, and substitutions) in the Notification-module
+  clarification dated 2026-07-20. Doc 19 becomes the source of truth; Doc 05 points to it.
+  Notifications gain a unique `idempotencyKey` plus per-channel `queued|sent|retrying|failed`,
+  attempts, timestamps, and permanent-failure fields. The MVP retry runner uses the existing
+  EventEmitter/in-process `setTimeout` approach with 30/60/120-second backoff and four total
+  attempts; permanent failure creates/updates an admin-visible `notif.failed` record. Preferences
+  and FCM device-token registration are explicitly deferred: push remains an invoked local no-op
+  channel alongside email's existing local logger. The canonical contracts are updated in Docs
+  05, 11, and 19 in this work.
+
 ## Admin oversight: assignment-load ordering and flag-resolution transition — Resolved
 
 - **Question 1:** For S-32's documented "verified caregivers in-area sorted by current load",

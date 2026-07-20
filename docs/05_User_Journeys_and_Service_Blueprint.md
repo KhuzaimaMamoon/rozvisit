@@ -448,6 +448,9 @@ flowchart TD
 
 # Part D — Notification Map (All Roles)
 
+> **Canonical source:** the complete MVP event, recipient, channel, and copy contract lives in
+> Document 19 §8. This summary is intentionally not a second definition table.
+
 | Event | Client (Ayesha) | Caregiver (Bilal) | Admin (Nasreen) | Phase |
 |---|---|---|---|---|
 | Registration | Verification email | Application received | New application flag | 1 |

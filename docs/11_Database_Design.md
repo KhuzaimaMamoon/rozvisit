@@ -44,7 +44,7 @@ From DATA-001 and the ER model in Document 08:
 
 Collection names are plural camelCase, matching Mongoose defaults:
 
-`users`, `clientProfiles`, `parentProfiles`, `caregiverProfiles`, `carePlans`, `subscriptions`, `visits`, `notifications`, `refreshTokens`, `authTokens`, `auditEvents` — and at Phase 2: `errands`, `emergencyAlerts`.
+`users`, `clientProfiles`, `parentProfiles`, `caregiverProfiles`, `carePlans`, `subscriptions`, `visits`, `notifications`, `notificationFailures`, `refreshTokens`, `authTokens`, `auditEvents` — and at Phase 2: `errands`, `emergencyAlerts`.
 
 ---
 
@@ -184,8 +184,18 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | type | String | R | From the message-definition list (NOT-001) |
 | title / body | String | R | Calm wording rule (FR-092) |
 | readAt | Date | O | |
-| delivery | [{ channel, state: `sent` \| `failed` \| `retrying`, at }] | R | Honesty per channel (FR-091) |
+| idempotencyKey | String | R | Unique; `${type}:${userId}:${targetId}` prevents duplicate sends for one event recipient |
+| deliveries | [{ channel, state, attempts, lastAttemptAt, nextAttemptAt, failedPermanently }] | R | `in_app` \| `push` \| `email`; state `queued` \| `sent` \| `retrying` \| `failed`; failures remain durable data (FR-091) |
 | createdAt | Date | R | |
+
+### notificationFailures
+
+| Field | Type | Req | Notes |
+|---|---|---|---|
+| notificationId | ObjectId → notifications | R | Unique reference to the permanently failed notification |
+| type | String | R | Always `notif.failed` at MVP |
+| state | String | R | `open` while it remains admin-visible |
+| createdAt / updatedAt | Date | R | |
 
 ### refreshTokens
 
@@ -312,6 +322,9 @@ Bounded-array note: embedded histories are bounded by nature (a visit has a hand
 | visits | parentId, scheduledAt desc | Compound | The feed (FR-050, PERF-001) |
 | visits | status, scheduledAt | Compound | Admin filters + flag queries (FR-083/084) |
 | notifications | userId, createdAt desc | Compound | Notification list + unread |
+| notifications | idempotencyKey | Unique | One durable record per event recipient |
+| notificationFailures | notificationId | Unique | One admin-visible failure record per notification |
+| notificationFailures | state, createdAt desc | Compound | Open failure list |
 | refreshTokens | tokenHash | Unique | Refresh lookup |
 | refreshTokens | expiresAt | TTL | Auto-cleanup of expired sessions |
 | authTokens | tokenHash | Single | Verification/reset lookup |
