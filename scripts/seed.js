@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
 import { env } from '../server/src/config/env.js';
 import {
+  ADMIN_PERMISSIONS,
   CAREGIVER_STATUS,
   CONSENT_STATE,
   PARENT_STATUS,
@@ -27,6 +28,7 @@ const SEEDED_USERS = Object.freeze({
     password: 'adminPass123',
     phone: '+923001234568',
     role: ROLES.ADMIN,
+    permissions: Object.values(ADMIN_PERMISSIONS),
   },
   caregiver: {
     email: 'bilal-caregiver@example.com',
@@ -66,6 +68,7 @@ async function upsertVerifiedUser(person) {
         phone: person.phone,
         role: person.role,
         status: USER_STATUS.ACTIVE,
+        permissions: person.permissions ?? [],
       },
       $setOnInsert: { email: person.email },
     },

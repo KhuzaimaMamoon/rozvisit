@@ -4,6 +4,25 @@ export const ROLES = Object.freeze({
   ADMIN: 'admin',
 });
 
+export const ADMIN_PERMISSIONS = Object.freeze({
+  APPLICATIONS_REVIEW: 'applications.review',
+  FLAGS_RESOLVE: 'flags.resolve',
+  SUBSCRIPTIONS_MANAGE: 'subscriptions.manage',
+  VISITS_OVERSEE: 'visits.oversee',
+});
+
+export const APPLICATION_DECISIONS = Object.freeze({
+  APPROVE: 'approve',
+  REJECT: 'reject',
+  REQUEST_INFO: 'request_info',
+});
+
+export const REFERENCE_OUTCOMES = Object.freeze({
+  POSITIVE: 'positive',
+  NEGATIVE: 'negative',
+  UNREACHABLE: 'unreachable',
+});
+
 export const USER_STATUS = Object.freeze({ ACTIVE: 'active', DISABLED: 'disabled' });
 
 export const PARENT_STATUS = Object.freeze({

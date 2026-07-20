@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { ROLES, USER_STATUS } from '../config/constants.js';
+import { ADMIN_PERMISSIONS, ROLES, USER_STATUS } from '../config/constants.js';
 
 const { Schema } = mongoose;
 
@@ -12,6 +12,11 @@ const userSchema = new Schema(
     passwordHash: { type: String, required: true, select: false },
     emailVerifiedAt: { type: Date, default: null },
     status: { type: String, enum: Object.values(USER_STATUS), required: true },
+    permissions: {
+      type: [{ type: String, enum: Object.values(ADMIN_PERMISSIONS) }],
+      required: true,
+      default: [],
+    },
   },
   { strict: 'throw', timestamps: true },
 );

@@ -16,3 +16,19 @@ export function validate(schema) {
     return next();
   };
 }
+
+export function validateQuery(schema) {
+  return (req, res, next) => {
+    const result = schema.safeParse(req.query);
+    if (!result.success) {
+      return next(
+        new ValidationError(
+          'Please fix the highlighted fields.',
+          result.error.flatten().fieldErrors,
+        ),
+      );
+    }
+    req.validatedQuery = result.data;
+    return next();
+  };
+}
