@@ -5,6 +5,24 @@ export const visitRepository = Object.freeze({
   createMany(data) {
     return Visit.insertMany(data);
   },
+  async upsertScheduled(records) {
+    if (!records.length) return [];
+    await Visit.bulkWrite(
+      records.map((record) => ({
+        updateOne: {
+          filter: { clientVisitId: record.clientVisitId },
+          update: { $setOnInsert: record },
+          upsert: true,
+        },
+      })),
+      { ordered: false },
+    );
+    return Visit.find({
+      clientVisitId: { $in: records.map((record) => record.clientVisitId) },
+    }).sort({
+      scheduledAt: 1,
+    });
+  },
   findById(id) {
     return mongoose.isValidObjectId(id) ? Visit.findById(id).select('+checklist.note') : null;
   },

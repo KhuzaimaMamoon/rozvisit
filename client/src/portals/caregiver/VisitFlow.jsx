@@ -12,6 +12,7 @@ import {
 import CameraCapture from './CameraCapture.jsx';
 import ConsentPanel from './ConsentPanel.jsx';
 import SyncStateBar from './SyncStateBar.jsx';
+import { navigate } from '../../navigation.js';
 
 const CONCERN_CHIPS = [
   ['appetite', 'Ate less than usual'],
@@ -264,8 +265,9 @@ export default function VisitFlow() {
       setState({
         saving: false,
         sync: 'synced',
-        message: 'Visit completed and proof is ready for the family.',
+        message: 'Visit completed. The family has been notified. Returning to today’s visits…',
       });
+      window.setTimeout(() => navigate('/care/today'), 1400);
     } catch {
       setState({
         saving: false,

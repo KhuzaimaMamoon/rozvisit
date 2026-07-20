@@ -242,7 +242,8 @@ POST /api/v1/auth/register
 
 ### POST /parents/:id/consent — Record the first-visit consent
 
-- **Role:** caregiver (assigned to that parent's first visit)
+- **Role:** caregiver assigned to the parent visit identified by `byVisitId`; the visit must belong
+  to the pending-consent parent.
 - **Body:** `{ state: "given" | "declined", recordingRef?, choices?: { preferredTimes?, photoBoundaries?, other? }, byVisitId }`
 - **Validation:** `given` requires recordingRef (FR-013); choices free-form short strings
 - **Success `200`:** profile status → `active` (given) or stays `pending_consent` with the declined event appended; the visit closes accordingly (no-fault path, FR-036)
@@ -250,11 +251,14 @@ POST /api/v1/auth/register
 
 ### POST /parents/:id/consent-permit — Signed consent-recording upload permit
 
-- **Role:** caregiver assigned to the parent's pending-consent first visit
-- **Body:** `{ mediaType: "audio" | "video" }`
+- **Role:** caregiver assigned to the parent visit identified by `byVisitId`, while that parent is
+  pending consent.
+- **Body:** `{ byVisitId, mediaType: "audio" | "video" }`; `byVisitId` is the assigned visit
+  currently recording the consent and is used for the ownership check.
 - **Success `200`:** `{ cloudName, apiKey, timestamp, signature, folder: "rozvisit/consent/<parentId>/", publicId: "<parentId>_<compact ISO timestamp>", resourceType: "auto", maxFileSize: 52428800, allowedFormats: ["mp3", "m4a", "wav", "mp4", "mov"], expiresAt }`. The permit expires after 10 minutes (AD-31).
 - **Behavior:** audio is a first-class consent option. After direct upload, the caregiver sends the returned Cloudinary `secure_url` or `public_id` as `recordingRef` to `POST /parents/:id/consent`.
-- **Errors:** `403` unless the caregiver is assigned to that parent's pending-consent first visit; `422` invalid media type.
+- **Errors:** `403` unless the caregiver is assigned to that parent's pending-consent visit; `422`
+  invalid media type or missing `byVisitId`.
 
 ### POST /parents/:id/consent/withdraw
 
@@ -318,7 +322,9 @@ Example response:
 - **Role:** client
 - **Body:** `{ parentId, slots: [{ dayOfWeek: 0-6, time: "HH:mm" }], standingNote? }`
 - **Validation:** slots within service hours (08:00–20:00 *(Recommendation)*); slot count ≤ plan allowance (FR-030); active subscription required; consented or first-visit-pending parent
-- **Success `201`:** generated visits for the coming period; `{ items: [visits] }`
+- **Success `201`:** generated visits for the coming period; `{ items: [visits] }`. Repeating the
+  same parent-and-slot request is idempotent: existing visits for those exact times are returned,
+  never duplicated.
 - **Errors:** `409 ALLOWANCE_EXCEEDED` with limit and upgrade path in message; `409 CONSENT_REQUIRED` if profile paused by withdrawal; `403`
 
 ### PATCH /visits/:id/reschedule
