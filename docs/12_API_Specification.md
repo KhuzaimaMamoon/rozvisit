@@ -231,7 +231,10 @@ POST /api/v1/auth/register
 
 ### GET /parents/:id
 
-- **Role:** client (owner), admin — **Errors:** `403` not owner; `404` unknown id
+- **Role:** client (owner), admin — **Success `200`:** parent detail plus `subscriptionSummary`:
+  `null` when no subscription exists, otherwise `{ id, state, planKey, visitsPerWeek }`.
+  `visitsPerWeek` is present only after activation (`active` or `grace`); it is `null` while
+  payment is pending. — **Errors:** `403` not owner; `404` unknown id
 
 ### PATCH /parents/:id — Edit profile
 

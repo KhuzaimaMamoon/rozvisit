@@ -27,10 +27,30 @@ export default function ParentOverview() {
       </main>
     );
   const p = state.item;
+  const subscription = p.subscriptionSummary;
+  const subscriptionState = subscription?.state ?? null;
+  const scheduleEnabled = subscriptionState === 'active' || subscriptionState === 'grace';
+  const proofEnabled =
+    scheduleEnabled || subscriptionState === 'paused' || subscriptionState === 'cancelled';
   const links = [
-    ['Visit proof', `/app/parents/${id}/feed`],
-    ['Schedule visits', `/app/parents/${id}/schedule`],
-    ['Choose a plan', `/app/parents/${id}/plan`],
+    [
+      'Choose a plan',
+      `/app/parents/${id}/plan`,
+      !subscription,
+      'A plan has already been selected.',
+    ],
+    [
+      'Schedule visits',
+      `/app/parents/${id}/schedule`,
+      scheduleEnabled,
+      'Available once your plan is active.',
+    ],
+    [
+      'Visit proof',
+      `/app/parents/${id}/feed`,
+      proofEnabled,
+      'Available after your plan is active and visits have begun.',
+    ],
   ];
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
@@ -69,15 +89,35 @@ export default function ParentOverview() {
             </div>
           </dl>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {links.map(([label, href]) => (
-              <a
-                className="rounded-md border border-border bg-surface px-4 py-4 text-center text-sm font-medium text-primary transition-colors hover:bg-primary-soft"
-                href={href}
-                key={href}
-                onClick={(event) => navigateFromLink(event, href)}
-              >
-                {label}
-              </a>
+            {links.map(([label, href, enabled, explanation]) => (
+              <div key={href}>
+                {enabled ? (
+                  <a
+                    className="block rounded-md border border-border bg-surface px-4 py-4 text-center text-sm font-medium text-primary transition-colors hover:bg-primary-soft"
+                    href={href}
+                    onClick={(event) => navigateFromLink(event, href)}
+                  >
+                    {label}
+                  </a>
+                ) : (
+                  <button
+                    aria-describedby={`${label.replaceAll(' ', '-').toLowerCase()}-reason`}
+                    className="w-full cursor-not-allowed rounded-md border border-border bg-surface-sunken px-4 py-4 text-center text-sm font-medium text-muted"
+                    disabled
+                    type="button"
+                  >
+                    {label}
+                  </button>
+                )}
+                {!enabled ? (
+                  <p
+                    className="mt-2 text-xs leading-5 text-muted"
+                    id={`${label.replaceAll(' ', '-').toLowerCase()}-reason`}
+                  >
+                    {explanation}
+                  </p>
+                ) : null}
+              </div>
             ))}
           </div>
         </section>
