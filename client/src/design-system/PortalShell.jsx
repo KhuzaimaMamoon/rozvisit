@@ -73,6 +73,16 @@ export default function PortalShell({ children }) {
     };
   }, [pathname]);
 
+  useEffect(() => {
+    const refreshUnreadCount = () => {
+      api('/notifications')
+        .then((data) => setUnreadCount(data.unreadCount ?? 0))
+        .catch(() => setUnreadCount(0));
+    };
+    window.addEventListener('rozvisit:notification-read', refreshUnreadCount);
+    return () => window.removeEventListener('rozvisit:notification-read', refreshUnreadCount);
+  }, []);
+
   async function signOut() {
     await logout();
     navigate('/login');

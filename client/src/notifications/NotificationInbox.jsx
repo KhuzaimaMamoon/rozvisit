@@ -34,6 +34,7 @@ export default function NotificationInbox() {
         items: current.items.map((item) => (item.id === id ? updated : item)),
         unreadCount: Math.max(0, current.unreadCount - (updated.readAt ? 1 : 0)),
       }));
+      window.dispatchEvent(new CustomEvent('rozvisit:notification-read'));
     } catch (error) {
       setState((current) => ({ ...current, error: error.message }));
     }
