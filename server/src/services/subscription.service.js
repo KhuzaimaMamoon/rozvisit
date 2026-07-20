@@ -3,6 +3,7 @@ import { parentRepository } from '../repositories/parent.repo.js';
 import { planRepository } from '../repositories/plan.repo.js';
 import { subscriptionRepository } from '../repositories/subscription.repo.js';
 import { userRepository } from '../repositories/user.repo.js';
+import { notifyRecipient } from '../notifications/dispatch.js';
 import {
   ConflictError,
   ForbiddenError,
@@ -44,6 +45,11 @@ function canTransition(from, to) {
     (from === SUBSCRIPTION_STATE.GRACE &&
       (to === SUBSCRIPTION_STATE.ACTIVE || to === SUBSCRIPTION_STATE.PAUSED))
   );
+}
+
+function transitionTargetId(subscription) {
+  const latest = subscription.stateHistory.at(-1);
+  return `${subscription._id}:${latest.at.toISOString()}`;
 }
 
 async function updateState(subscription, { state, byUserId = null, paymentRef = null, now }) {
@@ -134,6 +140,12 @@ export const subscriptionService = Object.freeze({
       byUserId: clientId,
       now: new Date(),
     });
+    await notifyRecipient({
+      recipientId: updated.clientId,
+      targetId: transitionTargetId(updated),
+      type: 'subscription_cancelled',
+      values: { planKey: updated.planKey },
+    });
     return {
       ...serializeSubscription(updated),
       message: 'Your plan remains available until the end of the current paid period.',
@@ -171,6 +183,31 @@ export const subscriptionService = Object.freeze({
       update.$set.currentPeriodEnd = nextMonthlyPeriodEnd(now);
     }
     const updated = await subscriptionRepository.update(subscription._id, update);
+    if (state === SUBSCRIPTION_STATE.ACTIVE) {
+      const [parent, client, admins] = await Promise.all([
+        parentRepository.findById(updated.parentId),
+        userRepository.findById(updated.clientId),
+        userRepository.findAdmins(),
+      ]);
+      if (!parent || !client) throw new NotFoundError();
+      const targetId = transitionTargetId(updated);
+      await Promise.all([
+        notifyRecipient({
+          recipientId: updated.clientId,
+          targetId,
+          type: 'subscription_active',
+          values: { parentName: parent.name, planKey: updated.planKey },
+        }),
+        ...admins.map((admin) =>
+          notifyRecipient({
+            recipientId: admin._id,
+            targetId,
+            type: 'admin_payment_reconciled',
+            values: { clientName: client.name },
+          }),
+        ),
+      ]);
+    }
     return serializeSubscription(updated);
   },
 
@@ -192,11 +229,25 @@ export const subscriptionService = Object.freeze({
         subscription.state === SUBSCRIPTION_STATE.GRACE &&
         now.getTime() >= subscription.currentPeriodEnd.getTime() + GRACE_PERIOD_MS;
       if (subscription.state === SUBSCRIPTION_STATE.ACTIVE) {
-        updates.push(updateState(subscription, { state: SUBSCRIPTION_STATE.GRACE, now }));
+        const updated = await updateState(subscription, { state: SUBSCRIPTION_STATE.GRACE, now });
+        updates.push(updated);
+        await notifyRecipient({
+          recipientId: updated.clientId,
+          targetId: transitionTargetId(updated),
+          type: 'subscription_grace',
+          values: { planKey: updated.planKey },
+        });
       } else if (graceExpired) {
-        updates.push(updateState(subscription, { state: SUBSCRIPTION_STATE.PAUSED, now }));
+        const updated = await updateState(subscription, { state: SUBSCRIPTION_STATE.PAUSED, now });
+        updates.push(updated);
+        await notifyRecipient({
+          recipientId: updated.clientId,
+          targetId: transitionTargetId(updated),
+          type: 'subscription_paused',
+          values: { planKey: updated.planKey },
+        });
       }
     }
-    return Promise.all(updates);
+    return updates;
   },
 });

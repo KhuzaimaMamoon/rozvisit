@@ -8,6 +8,7 @@ import { auditRepository } from '../repositories/audit.repo.js';
 import { caregiverRepository } from '../repositories/caregiver.repo.js';
 import { parentRepository } from '../repositories/parent.repo.js';
 import { visitRepository } from '../repositories/visit.repo.js';
+import { notifyRecipient } from '../notifications/dispatch.js';
 import { ConflictError, NotFoundError } from '../utils/AppError.js';
 import { decrypt, encrypt } from '../utils/crypto.js';
 
@@ -264,6 +265,12 @@ export const adminService = Object.freeze({
     await audit(actorId, `caregiver.${decision}`, application._id, {
       note: note ? encrypt(note) : null,
     });
+    await notifyRecipient({
+      recipientId: updated.userId._id,
+      targetId: `${updated._id}:${updated.verification.decidedAt.toISOString()}`,
+      type: 'application_decision',
+      values: { decision },
+    });
     return serializeApplication(updated, { includeSensitive: true });
   },
 
@@ -348,6 +355,16 @@ export const adminService = Object.freeze({
     const updated = await visitRepository.update(visit._id, { $set: { caregiverId } });
     await audit(actorId, reassigned ? 'visit.reassigned' : 'visit.assigned', visit._id, {
       caregiverId,
+    });
+    await notifyRecipient({
+      recipientId: parent.clientId,
+      targetId: `${updated._id}:${updated.caregiverId}`,
+      type: 'visit_assigned',
+      values: {
+        caregiverName: profile.userId.name,
+        parentName: parent.name,
+        scheduledDate: updated.scheduledAt.toISOString().slice(0, 10),
+      },
     });
     return serializeOversightVisit(await visitRepository.findByIdForAdmin(updated._id));
   },

@@ -1,5 +1,19 @@
 # Clarifications Needed
 
+## Notification-trigger coverage for unavailable visit transitions — Resolved / N/A
+
+- **Question:** Where should the canonical `visit_changed` and `visit_missed` notifications fire
+  when the current MVP API has neither a visit reschedule/change operation nor a service/endpoint
+  that transitions a visit to `missed`?
+- **Searched:** Doc 19 §8 canonical map; Doc 12 Visits endpoints; Doc 14 Module 4; Doc 07
+  visit functional requirements; `visit.service.js`, `visits.routes.js`, and their validators and
+  controllers.
+- **Resolution:** These two notification types are N/A for `feat/notifications-triggers` because
+  their documented event occasions do not yet exist in code. No rescheduling or missed-visit
+  mechanism was invented merely to emit a notification. Every other existing event occasion is
+  wired and integration-tested in this PR; a future implementation of either transition must add
+  its canonical notification at the actual state-change point.
+
 ## Notification event map, persistence, and failed-delivery contract — Resolved
 
 - **Question 1:** What is the canonical MVP notification definition table — exact event `type`,

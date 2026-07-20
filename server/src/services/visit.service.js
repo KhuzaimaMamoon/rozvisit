@@ -9,8 +9,10 @@ import {
 import { caregiverRepository } from '../repositories/caregiver.repo.js';
 import { parentRepository } from '../repositories/parent.repo.js';
 import { subscriptionRepository } from '../repositories/subscription.repo.js';
+import { userRepository } from '../repositories/user.repo.js';
 import { visitRepository } from '../repositories/visit.repo.js';
 import { cloudinaryMediaStorage } from '../interfaces/media.cloudinary.js';
+import { notifyRecipient } from '../notifications/dispatch.js';
 import {
   ConflictError,
   ForbiddenError,
@@ -311,6 +313,8 @@ export const visitService = Object.freeze({
 
   async parentDeclined(caregiverId, visitId, { reason, capturedAt }) {
     const visit = await getAssignedVisit(caregiverId, visitId);
+    const parent = await parentRepository.findById(visit.parentId);
+    if (!parent) throw new NotFoundError();
     const updated = await visitRepository.update(visit._id, {
       $set: { status: VISIT_STATUS.PARENT_DECLINED },
       $push: {
@@ -321,6 +325,12 @@ export const visitService = Object.freeze({
           reason: reason ?? null,
         },
       },
+    });
+    await notifyRecipient({
+      recipientId: parent.clientId,
+      targetId: visit._id,
+      type: 'visit_parent_declined',
+      values: { parentName: parent.name },
     });
     return serializeVisit(updated);
   },
@@ -402,6 +412,27 @@ export const visitService = Object.freeze({
         },
       },
     });
+    const caregiver = await userRepository.findById(caregiverId);
+    if (!caregiver) throw new NotFoundError();
+    await notifyRecipient({
+      recipientId: parent.clientId,
+      targetId: updated._id,
+      type: 'visit_completed',
+      values: { caregiverName: caregiver.name, parentName: parent.name },
+    });
+    if (uploadDelayed) {
+      const admins = await userRepository.findAdmins();
+      await Promise.all(
+        admins.map((admin) =>
+          notifyRecipient({
+            recipientId: admin._id,
+            targetId: updated._id,
+            type: 'flag_raised',
+            values: { parentName: parent.name, reason: 'UPLOAD_DELAYED' },
+          }),
+        ),
+      );
+    }
     return serializeVisit(updated);
   },
 

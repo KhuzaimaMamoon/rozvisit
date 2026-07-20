@@ -13,6 +13,7 @@ import { AUTH_TOKEN_TYPES } from '../models/AuthToken.js';
 import { caregiverRepository } from '../repositories/caregiver.repo.js';
 import { tokenRepository } from '../repositories/token.repo.js';
 import { userRepository } from '../repositories/user.repo.js';
+import { notifyRecipient } from '../notifications/dispatch.js';
 import {
   ConflictError,
   ForbiddenError,
@@ -142,6 +143,11 @@ export const authService = Object.freeze({
       currency: COUNTRY_CURRENCY_MAP[countryCode] ?? DEFAULT_CURRENCY,
     });
     await issueEmailToken(user, AUTH_TOKEN_TYPES.EMAIL_VERIFICATION);
+    await notifyRecipient({
+      recipientId: user._id,
+      targetId: user._id,
+      type: 'registration_verify',
+    });
     return { userId: user._id.toString() };
   },
 
@@ -162,7 +168,7 @@ export const authService = Object.freeze({
       passwordHash: await bcrypt.hash(password, BCRYPT_COST),
       status: USER_STATUS.ACTIVE,
     });
-    await caregiverRepository.create({
+    const application = await caregiverRepository.create({
       userId: user._id,
       verification: { cnicNumber: encrypt(cnicNumber), gates: {} },
       serviceArea: {
@@ -173,6 +179,29 @@ export const authService = Object.freeze({
       status: CAREGIVER_STATUS.APPLIED,
     });
     await issueEmailToken(user, AUTH_TOKEN_TYPES.EMAIL_VERIFICATION);
+    await Promise.all([
+      notifyRecipient({
+        recipientId: user._id,
+        targetId: application._id,
+        type: 'registration_verify',
+      }),
+      notifyRecipient({
+        recipientId: user._id,
+        targetId: application._id,
+        type: 'application_received',
+      }),
+      userRepository.findAdmins().then((admins) =>
+        Promise.all(
+          admins.map((admin) =>
+            notifyRecipient({
+              recipientId: admin._id,
+              targetId: application._id,
+              type: 'admin_new_application',
+            }),
+          ),
+        ),
+      ),
+    ]);
     return {
       userId: user._id.toString(),
       status: CAREGIVER_STATUS.APPLIED,
