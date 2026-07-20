@@ -3,25 +3,76 @@ import { ApiError, api } from '../../api.js';
 import BrandMark from '../../design-system/BrandMark.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 import { navigateFromLink } from '../../navigation.js';
+import { queuedCompletions } from '../../offline/visitQueue.js';
+import SyncStateBar from './SyncStateBar.jsx';
+
+const statusVariants = Object.freeze({
+  completed: 'success',
+  flagged: 'emergency',
+  in_progress: 'pending',
+  missed: 'emergency',
+  parent_declined: 'pending',
+  scheduled: 'neutral',
+});
+
+function statusLabel(status) {
+  return status.replaceAll('_', ' ');
+}
+
+function mapsUrl(location) {
+  if (!Number.isFinite(location?.lat) || !Number.isFinite(location?.lng)) return null;
+  return `https://www.google.com/maps?q=${encodeURIComponent(`${location.lat},${location.lng}`)}`;
+}
+
+function todayLabel() {
+  return new Intl.DateTimeFormat(undefined, {
+    day: 'numeric',
+    month: 'long',
+    weekday: 'long',
+  }).format(new Date());
+}
 
 export default function Today() {
-  const [state, setState] = useState({ error: '', items: [], loading: true });
+  const [state, setState] = useState({
+    error: '',
+    items: [],
+    loading: true,
+    pendingVisitIds: [],
+  });
 
   useEffect(() => {
     let active = true;
-    api('/visits/today')
-      .then(({ items }) => {
-        if (active) setState({ error: '', items, loading: false });
-      })
-      .catch((error) => {
+
+    async function loadToday() {
+      try {
+        const [{ items }, queued] = await Promise.all([
+          api('/visits/today'),
+          queuedCompletions().catch(() => []),
+        ]);
+        if (active) {
+          setState({
+            error: '',
+            items,
+            loading: false,
+            pendingVisitIds: queued.map((item) => item.visitId),
+          });
+        }
+      } catch (error) {
         if (error instanceof ApiError && error.status === 403) {
           window.location.assign('/care/status');
           return;
         }
-        if (active) setState({ error: error.message, items: [], loading: false });
-      });
+        if (active) {
+          setState({ error: error.message, items: [], loading: false, pendingVisitIds: [] });
+        }
+      }
+    }
+
+    void loadToday();
+    window.addEventListener('online', loadToday);
     return () => {
       active = false;
+      window.removeEventListener('online', loadToday);
     };
   }, []);
 
@@ -31,12 +82,8 @@ export default function Today() {
         <header className="border-b border-border pb-6">
           <BrandMark />
           <p className="mt-5 text-sm font-medium text-primary">Caregiver portal</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
-            Today&apos;s visits
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-muted">
-            Your assigned visits are saved for offline viewing.
-          </p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">{todayLabel()}</h1>
+          <p className="mt-2 text-sm leading-6 text-muted">Today&apos;s assigned visits.</p>
         </header>
         <section className="mt-6 rounded-lg border border-border bg-surface p-6 shadow-sm">
           {state.loading ? (
@@ -50,25 +97,52 @@ export default function Today() {
             </>
           ) : null}
           {state.items.map((visit) => (
-            <a
-              className="block border-b border-border py-4 last:border-0"
-              href={`/care/visits/${visit.id}`}
-              key={visit.id}
-              onClick={(event) => navigateFromLink(event, `/care/visits/${visit.id}`)}
-            >
-              <p className="font-semibold text-text">Scheduled visit</p>
-              <p className="mt-1 text-sm text-muted">
-                {new Date(visit.scheduledAt).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </p>
-            </a>
+            <article className="border-b border-border py-4 last:border-0" key={visit.id}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <a
+                  className="min-w-0 flex-1"
+                  href={`/care/visits/${visit.id}`}
+                  onClick={(event) => navigateFromLink(event, `/care/visits/${visit.id}`)}
+                >
+                  <p className="font-semibold text-text">
+                    {new Date(visit.scheduledAt).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                  <p className="mt-1 font-medium text-text">{visit.parentName}</p>
+                  <p className="mt-1 text-sm text-muted">{visit.addressText}</p>
+                </a>
+                <StatusBadge variant={statusVariants[visit.status] ?? 'neutral'}>
+                  {statusLabel(visit.status)}
+                </StatusBadge>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                {mapsUrl(visit.location) ? (
+                  <a
+                    className="text-sm font-medium text-primary underline"
+                    href={mapsUrl(visit.location)}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Open location in maps
+                  </a>
+                ) : (
+                  <span className="text-sm text-muted">Location unavailable</span>
+                )}
+                <SyncStateBar
+                  state={state.pendingVisitIds.includes(visit.id) ? 'pending' : 'synced'}
+                />
+              </div>
+            </article>
           ))}
-          <div className="mt-5 border-t border-border pt-5">
-            <StatusBadge variant="neutral">Saved for offline viewing</StatusBadge>
-          </div>
         </section>
+        <a
+          className="sticky bottom-0 mt-6 block border border-border bg-surface px-4 py-3 text-sm font-medium text-primary"
+          href="/care/earnings"
+        >
+          Earnings
+        </a>
       </div>
     </main>
   );
