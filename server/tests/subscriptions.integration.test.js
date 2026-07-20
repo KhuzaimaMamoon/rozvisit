@@ -6,6 +6,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { env } from '../src/config/env.js';
+import { ADMIN_PERMISSIONS } from '../src/config/constants.js';
 import { CarePlan } from '../src/models/CarePlan.js';
 import { ClientProfile } from '../src/models/ClientProfile.js';
 import { ParentProfile } from '../src/models/ParentProfile.js';
@@ -53,6 +54,7 @@ describe('Plans and subscriptions API', () => {
         phone: '+923001234568',
         passwordHash,
         emailVerifiedAt: new Date(),
+        permissions: [ADMIN_PERMISSIONS.SUBSCRIPTIONS_MANAGE],
         status: 'active',
       },
     ]);

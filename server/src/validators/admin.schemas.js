@@ -1,0 +1,125 @@
+import {
+  APPLICATION_DECISIONS,
+  CAREGIVER_STATUS,
+  REFERENCE_OUTCOMES,
+} from '../config/constants.js';
+
+function failure(fields) {
+  return { success: false, error: { flatten: () => ({ fieldErrors: fields }) } };
+}
+
+function object(value, message) {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? null
+    : failure({ form: [message] });
+}
+
+function optionalNote(value, fields) {
+  if (value === undefined) return null;
+  if (typeof value !== 'string' || value.trim().length > 1000) {
+    fields.note = ['Enter a note of up to 1,000 characters.'];
+    return null;
+  }
+  return value.trim() || null;
+}
+
+export const cnicGateSchema = {
+  safeParse(value) {
+    const invalid = object(value, 'Please provide the CNIC gate details.');
+    if (invalid) return invalid;
+    const fields = {};
+    if (typeof value.cnicDocRef !== 'string' || !value.cnicDocRef.trim()) {
+      fields.cnicDocRef = ['A CNIC document reference is required.'];
+    }
+    if (typeof value.verified !== 'boolean') {
+      fields.verified = ['Confirm whether the CNIC check passed.'];
+    }
+    const note = optionalNote(value.note, fields);
+    return Object.keys(fields).length
+      ? failure(fields)
+      : {
+          success: true,
+          data: { cnicDocRef: value.cnicDocRef.trim(), note, verified: value.verified },
+        };
+  },
+};
+
+export const interviewGateSchema = {
+  safeParse(value) {
+    const invalid = object(value, 'Please provide the interview gate details.');
+    if (invalid) return invalid;
+    const fields = {};
+    if (typeof value.passed !== 'boolean') {
+      fields.passed = ['Confirm whether the interview passed.'];
+    }
+    if (
+      value.interviewRecordingRef !== undefined &&
+      (typeof value.interviewRecordingRef !== 'string' || !value.interviewRecordingRef.trim())
+    ) {
+      fields.interviewRecordingRef = ['Enter a valid interview recording reference.'];
+    }
+    const note = optionalNote(value.note, fields);
+    return Object.keys(fields).length
+      ? failure(fields)
+      : {
+          success: true,
+          data: {
+            interviewRecordingRef: value.interviewRecordingRef?.trim() || null,
+            note,
+            passed: value.passed,
+          },
+        };
+  },
+};
+
+export const referenceGateSchema = {
+  safeParse(value) {
+    const invalid = object(value, 'Please provide the reference gate details.');
+    if (invalid) return invalid;
+    const fields = {};
+    if (!Object.values(REFERENCE_OUTCOMES).includes(value.referenceOutcome)) {
+      fields.referenceOutcome = ['Choose positive, negative, or unreachable.'];
+    }
+    const note = optionalNote(value.note, fields);
+    if (value.referenceOutcome !== REFERENCE_OUTCOMES.POSITIVE && !note) {
+      fields.note = ['Explain why this reference did not pass.'];
+    }
+    return Object.keys(fields).length
+      ? failure(fields)
+      : { success: true, data: { note, referenceOutcome: value.referenceOutcome } };
+  },
+};
+
+export const applicationDecisionSchema = {
+  safeParse(value) {
+    const invalid = object(value, 'Please provide an application decision.');
+    if (invalid) return invalid;
+    const fields = {};
+    if (!Object.values(APPLICATION_DECISIONS).includes(value.decision)) {
+      fields.decision = ['Choose approve, reject, or request info.'];
+    }
+    const note = optionalNote(value.note, fields);
+    return Object.keys(fields).length
+      ? failure(fields)
+      : { success: true, data: { decision: value.decision, note } };
+  },
+};
+
+export const applicationListQuerySchema = {
+  safeParse(value) {
+    const fields = {};
+    const status = value.status || undefined;
+    if (status && ![CAREGIVER_STATUS.APPLIED, CAREGIVER_STATUS.IN_REVIEW].includes(status)) {
+      fields.status = ['Choose applied or in review.'];
+    }
+    const page = value.page === undefined ? 1 : Number(value.page);
+    const limit = value.limit === undefined ? 20 : Number(value.limit);
+    if (!Number.isInteger(page) || page < 1) fields.page = ['Enter a valid page number.'];
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      fields.limit = ['Choose a limit from 1 to 100.'];
+    }
+    return Object.keys(fields).length
+      ? failure(fields)
+      : { success: true, data: { limit, page, status } };
+  },
+};

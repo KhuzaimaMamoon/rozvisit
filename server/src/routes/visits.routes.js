@@ -10,7 +10,9 @@ import {
   scheduleVisits,
   today,
 } from '../controllers/visits.controller.js';
+import { ADMIN_PERMISSIONS, ROLES } from '../config/constants.js';
 import { requireAuth } from '../middleware/requireAuth.js';
+import { requirePermission } from '../middleware/requirePermission.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { validate } from '../middleware/validate.js';
 import {
@@ -58,7 +60,11 @@ visitsRouter.post(
 );
 
 export const adminVisitsRouter = Router();
-adminVisitsRouter.use(requireAuth, requireRole('admin'));
+adminVisitsRouter.use(
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  requirePermission(ADMIN_PERMISSIONS.VISITS_OVERSEE),
+);
 adminVisitsRouter.post('/:id/assign', validate(assignCaregiverSchema), assignCaregiver);
 
 export const feedRouter = Router();

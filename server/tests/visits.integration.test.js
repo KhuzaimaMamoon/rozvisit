@@ -5,6 +5,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { env } from '../src/config/env.js';
+import { ADMIN_PERMISSIONS } from '../src/config/constants.js';
 import { CaregiverProfile } from '../src/models/CaregiverProfile.js';
 import { ParentProfile } from '../src/models/ParentProfile.js';
 import { Subscription } from '../src/models/Subscription.js';
@@ -55,6 +56,7 @@ describe('Visit API lifecycle', () => {
         email: 'admin@visit.test',
         phone: '+923001234568',
         passwordHash: 'hash',
+        permissions: [ADMIN_PERMISSIONS.VISITS_OVERSEE],
         status: 'active',
       },
     ]);

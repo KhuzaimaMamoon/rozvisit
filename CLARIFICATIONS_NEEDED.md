@@ -1,5 +1,16 @@
 # Clarifications Needed
 
+## Caregiver verification gate-recording contract — Resolved
+
+- **Question:** The caregiver profile defines three verification gates, but Doc 12 previously
+  defined no endpoint or body for independently recording CNIC, interview, and reference outcomes.
+- **Searched:** Doc 07 FR-080–082; Doc 11 `caregiverProfiles.verification`; Doc 12 Admin
+  endpoints; Doc 13 §§16–17 and 23; Doc 14 Module 7; Docs 16–17 S-28/S-29; Doc 18 §§7 and 24.
+- **Resolution:** Founder approved independent `PATCH` endpoints for CNIC, interview, and
+  reference gates. Each records its own result, acting admin, timestamp, and optional sensitive
+  note. Approval stays on the existing decision endpoint and is refused until all three gate
+  booleans are true. Doc 11 and Doc 12 are updated in the Admin verification PR.
+
 ## Cloudinary signed-upload permit contract — Resolved
 
 - **Resolution:** Approved for the Visit offline-media task: 10-minute TTL, 50 MB maximum,

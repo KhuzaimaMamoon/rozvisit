@@ -416,6 +416,25 @@ All endpoints: **Role admin**, all mutations audited automatically (FR-082).
 
 - Includes CNIC data and recording references — **this read itself writes an audit event** (`cnic.viewed`, AUD-004)
 
+### PATCH /admin/applications/:id/cnic-gate — Record CNIC verification
+
+- **Body:** `{ cnicDocRef, verified, note? }`
+- **Validation:** `cnicDocRef` is required; `verified` is Boolean.
+- **Success:** stores the encrypted CNIC document reference, updates `gates.cnic` to `verified`, and records the acting admin and timestamp for this gate.
+- **Security:** admin-only; every read or mutation involving CNIC verification is audited (SEC-009, AUD-004).
+
+### PATCH /admin/applications/:id/interview-gate — Record interview outcome
+
+- **Body:** `{ interviewRecordingRef?, passed, note? }`
+- **Validation:** `passed` is Boolean; the recording reference is optional because an interview may be conducted by phone.
+- **Success:** stores an encrypted recording reference when supplied, updates `gates.interview` to `passed`, and records the acting admin and timestamp for this gate.
+
+### PATCH /admin/applications/:id/reference-gate — Record reference outcome
+
+- **Body:** `{ referenceOutcome: "positive" | "negative" | "unreachable", note? }`
+- **Validation:** a note is required for `negative` or `unreachable` outcomes.
+- **Success:** stores the outcome, updates `gates.reference` only when the outcome is `positive`, and records the acting admin and timestamp for this gate.
+
 ### POST /admin/applications/:id/decision
 
 - **Body:** `{ decision: "approve" | "reject" | "request_info", note? }`

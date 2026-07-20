@@ -3,16 +3,39 @@ import { CAREGIVER_STATUS } from '../config/constants.js';
 
 const { Schema } = mongoose;
 
+const gateRecordSchema = new Schema(
+  {
+    recordedAt: { type: Date, default: null },
+    recordedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    note: { type: String, default: null, select: false },
+  },
+  { _id: false },
+);
+
 const caregiverProfileSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     verification: {
       cnicNumber: { type: String, required: true, select: false },
+      cnicDocRef: { type: String, default: null, select: false },
+      interviewRecordingRef: { type: String, default: null, select: false },
+      referenceOutcome: {
+        type: String,
+        enum: ['positive', 'negative', 'unreachable'],
+        default: null,
+      },
       gates: {
         cnic: { type: Boolean, required: true, default: false },
         interview: { type: Boolean, required: true, default: false },
         reference: { type: Boolean, required: true, default: false },
       },
+      gateRecords: {
+        cnic: { type: gateRecordSchema, default: () => ({}) },
+        interview: { type: gateRecordSchema, default: () => ({}) },
+        reference: { type: gateRecordSchema, default: () => ({}) },
+      },
+      decidedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+      decidedAt: { type: Date, default: null },
     },
     serviceArea: {
       type: { type: String, enum: ['Point'], required: true, default: 'Point' },

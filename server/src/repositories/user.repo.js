@@ -14,6 +14,9 @@ export const userRepository = Object.freeze({
   findById(id) {
     return User.findById(id);
   },
+  findByIdWithPermissions(id) {
+    return User.findById(id).select('role status permissions');
+  },
   markEmailVerified(id, at) {
     return User.findByIdAndUpdate(id, { emailVerifiedAt: at }, { new: true });
   },

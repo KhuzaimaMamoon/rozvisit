@@ -64,6 +64,7 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | passwordHash | String | R | bcrypt only (SEC-001); never selected by default |
 | emailVerifiedAt | Date | O | Null until verified (FR-002) |
 | status | String enum | R | `active` \| `disabled` |
+| permissions | [String enum] | R (empty unless admin) | Admin-only scoped permissions: `applications.review`, `subscriptions.manage`, `visits.oversee`, `flags.resolve` (SEC-010) |
 | createdAt / updatedAt | Date | R | Mongoose timestamps |
 
 ### clientProfiles
@@ -123,8 +124,9 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | cnicNumber | String **(E)** | 13 digits; admin-only visibility (SEC-009) |
 | cnicDocRef | String **(E)** | Media reference |
 | interviewRecordingRef | String **(E)** | (FR-080) |
-| referenceOutcome | { note: String **(E)**, checkedAt: Date } | |
+| referenceOutcome | String enum | `positive` \| `negative` \| `unreachable` |
 | gates | { cnic: Boolean, interview: Boolean, reference: Boolean } | Approval impossible unless all true (FR-081) |
+| gateRecords | `{ cnic, interview, reference: { recordedAt, recordedBy, note (E) } }` | Each gate independently retains the recording admin, timestamp, and optional sensitive note |
 | decidedBy / decidedAt | ObjectId, Date | Audit pair (FR-082) |
 
 ### carePlans (reference data, seeded)
