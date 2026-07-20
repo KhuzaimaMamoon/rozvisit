@@ -254,7 +254,7 @@
 
 **Functional requirements:** FR-080–085. **Business rules:** zero unverified caregivers ever active — structural, not aspirational (FR-081); flag-for-review never auto-punish (SEC-011 posture everywhere); viewing CNIC data is itself an audited event (AUD-004); dispute outcomes follow the business rules (refund/credit per rules), closing on client confirmation or timeout.
 
-**Validation:** decision enum; assignment requires verified + area match; flag resolution requires a note.
+**Validation:** decision enum; assignment requires verified + area match; flag resolution requires a note. Assignment suggestions put the parent's previous caregiver first when present; remaining verified, in-area caregivers sort by today's assigned `scheduled`-visit count (ascending), then caregiver name alphabetically. A flag stores the pre-flag status; resolution retains the flag evidence and restores that status with an append-only `flag_resolved` history entry.
 
 **Data entities:** caregiverProfiles.verification, visits.flag, auditEvents; (Phase 2) disputes shape at Phase 2 design *(Open)*. **API dependencies:** Admin endpoints (Document 12).
 

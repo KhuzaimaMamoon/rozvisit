@@ -41,3 +41,21 @@ export const decideApplication = run(async (req, res) =>
     await adminService.decideApplication(req.auth.sub, req.params.id, req.validatedBody),
   ),
 );
+export const assignmentSuggestions = run(async (req, res) =>
+  respond.ok(res, await adminService.assignmentSuggestions(req.params.id)),
+);
+export const assignVisit = run(async (req, res) =>
+  respond.ok(
+    res,
+    await adminService.assignVisit(req.auth.sub, req.params.id, req.validatedBody.caregiverId),
+  ),
+);
+export const listVisits = run(async (req, res) =>
+  respond.ok(res, await adminService.listVisits(req.validatedQuery)),
+);
+export const getVisitEvidence = run(async (req, res) =>
+  respond.ok(res, await adminService.getVisitEvidence(req.auth.sub, req.params.id)),
+);
+export const resolveFlag = run(async (req, res) =>
+  respond.ok(res, await adminService.resolveFlag(req.auth.sub, req.params.id, req.validatedBody)),
+);

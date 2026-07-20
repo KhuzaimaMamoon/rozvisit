@@ -22,6 +22,59 @@ export const visitRepository = Object.freeze({
   findFeedByParent(parentId, limit) {
     return Visit.find({ parentId }).sort({ scheduledAt: -1 }).limit(limit);
   },
+  findMostRecentAssignedCaregiverForParent(parentId, before) {
+    return Visit.findOne({
+      parentId,
+      caregiverId: { $ne: null },
+      ...(before ? { scheduledAt: { $lt: before } } : {}),
+    })
+      .sort({ scheduledAt: -1 })
+      .select('caregiverId');
+  },
+  countScheduledTodayByCaregiverIds(caregiverIds, start, end) {
+    return Visit.aggregate([
+      {
+        $match: {
+          caregiverId: { $in: caregiverIds },
+          scheduledAt: { $gte: start, $lt: end },
+          status: 'scheduled',
+        },
+      },
+      { $group: { _id: '$caregiverId', count: { $sum: 1 } } },
+    ]);
+  },
+  findForAdmin({ caregiverId, from, limit, skip, status, to }) {
+    const filter = {
+      ...(status ? { status } : {}),
+      ...(caregiverId ? { caregiverId } : {}),
+      ...(from || to
+        ? { scheduledAt: { ...(from ? { $gte: from } : {}), ...(to ? { $lte: to } : {}) } }
+        : {}),
+    };
+    return Visit.find(filter)
+      .populate('parentId', 'name')
+      .populate('caregiverId', 'name')
+      .sort({ scheduledAt: -1 })
+      .skip(skip)
+      .limit(limit);
+  },
+  countForAdmin({ caregiverId, from, status, to }) {
+    return Visit.countDocuments({
+      ...(status ? { status } : {}),
+      ...(caregiverId ? { caregiverId } : {}),
+      ...(from || to
+        ? { scheduledAt: { ...(from ? { $gte: from } : {}), ...(to ? { $lte: to } : {}) } }
+        : {}),
+    });
+  },
+  findByIdForAdmin(id) {
+    return mongoose.isValidObjectId(id)
+      ? Visit.findById(id)
+          .select('+checklist.note +flag.note')
+          .populate('parentId', '+addressText name')
+          .populate('caregiverId', 'name')
+      : null;
+  },
   update(id, update) {
     return Visit.findByIdAndUpdate(id, update, { new: true, runValidators: true }).select(
       '+checklist.note',

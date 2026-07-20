@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import {
-  assignCaregiver,
   completeVisit,
   createMediaPermit,
   feed,
@@ -10,11 +9,19 @@ import {
   scheduleVisits,
   today,
 } from '../controllers/visits.controller.js';
+import {
+  assignVisit,
+  assignmentSuggestions,
+  getVisitEvidence,
+  listVisits,
+  resolveFlag,
+} from '../controllers/admin.controller.js';
 import { ADMIN_PERMISSIONS, ROLES } from '../config/constants.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requirePermission } from '../middleware/requirePermission.js';
 import { requireRole } from '../middleware/requireRole.js';
-import { validate } from '../middleware/validate.js';
+import { validate, validateQuery } from '../middleware/validate.js';
+import { adminVisitsQuerySchema, resolveFlagSchema } from '../validators/admin.schemas.js';
 import {
   assignCaregiverSchema,
   checklistSchema,
@@ -60,12 +67,37 @@ visitsRouter.post(
 );
 
 export const adminVisitsRouter = Router();
-adminVisitsRouter.use(
+adminVisitsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
+adminVisitsRouter.get(
+  '/',
+  requirePermission(ADMIN_PERMISSIONS.VISITS_OVERSEE),
+  validateQuery(adminVisitsQuerySchema),
+  listVisits,
+);
+adminVisitsRouter.get(
+  '/:id/assignment-suggestions',
+  requirePermission(ADMIN_PERMISSIONS.VISITS_OVERSEE),
+  assignmentSuggestions,
+);
+adminVisitsRouter.post(
+  '/:id/assign',
+  requirePermission(ADMIN_PERMISSIONS.VISITS_OVERSEE),
+  validate(assignCaregiverSchema),
+  assignVisit,
+);
+adminVisitsRouter.get(
+  '/:id',
+  requirePermission(ADMIN_PERMISSIONS.VISITS_OVERSEE),
+  getVisitEvidence,
+);
+
+export const adminFlagsRouter = Router();
+adminFlagsRouter.use(
   requireAuth,
   requireRole(ROLES.ADMIN),
-  requirePermission(ADMIN_PERMISSIONS.VISITS_OVERSEE),
+  requirePermission(ADMIN_PERMISSIONS.FLAGS_RESOLVE),
 );
-adminVisitsRouter.post('/:id/assign', validate(assignCaregiverSchema), assignCaregiver);
+adminFlagsRouter.post('/:id/resolve', validate(resolveFlagSchema), resolveFlag);
 
 export const feedRouter = Router();
 feedRouter.use(requireAuth, requireRole('client'));

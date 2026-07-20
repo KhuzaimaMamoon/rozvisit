@@ -323,6 +323,49 @@ describe('Visit API lifecycle', () => {
     expect(response.body.error.code).toBe('VALIDATION_FAILED');
   });
 
+  it('flags a completed visit when camera proof reaches the server more than 24 hours late', async () => {
+    const visit = await Visit.create({
+      clientVisitId: 'delayed-upload-visit',
+      parentId: parent._id,
+      caregiverId: caregiver._id,
+      subscriptionId: (await Subscription.findOne())._id,
+      scheduledAt: new Date(),
+      status: 'scheduled',
+      statusHistory: [{ status: 'scheduled', at: new Date(), byUserId: client._id }],
+      checklist: { medicationTaken: true, mood: 4, concerns: [], capturedAt: new Date() },
+    });
+    await ParentProfile.updateOne(
+      { _id: parent._id },
+      { $set: { 'consent.state': 'given', status: 'active' } },
+    );
+    const response = await request(app)
+      .post(`/api/v1/visits/${visit._id}/complete`)
+      .set(auth(caregiver))
+      .send({
+        clientVisitId: visit.clientVisitId,
+        completedAt: new Date().toISOString(),
+        media: [
+          {
+            clientMediaId: 'late-camera-proof',
+            ref: 'proof',
+            capturedAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+            uploadedAt: new Date().toISOString(),
+            sourceFlag: 'in_app_camera',
+          },
+        ],
+      });
+    expect(response.status).toBe(200);
+    expect(response.body.data).toMatchObject({
+      status: 'flagged',
+      statusBeforeFlag: 'completed',
+      flag: { reason: 'UPLOAD_DELAYED' },
+    });
+    expect(response.body.data.statusHistory.at(-1)).toMatchObject({
+      status: 'flagged',
+      reason: 'UPLOAD_DELAYED',
+    });
+  });
+
   it('records the documented parent-declined no-fault path', async () => {
     await ParentProfile.updateOne(
       { _id: parent._id },

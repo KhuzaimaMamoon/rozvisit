@@ -36,6 +36,17 @@ const mediaSchema = new Schema(
   { _id: false },
 );
 
+const flagSchema = new Schema(
+  {
+    reason: { type: String, required: true, trim: true },
+    raisedAt: { type: Date, required: true },
+    resolvedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    resolvedAt: { type: Date, default: null },
+    note: { type: String, default: null, select: false },
+  },
+  { _id: false },
+);
+
 const visitSchema = new Schema(
   {
     clientVisitId: { type: String, required: true, trim: true, unique: true },
@@ -46,8 +57,10 @@ const visitSchema = new Schema(
     standingNote: { type: String, default: null },
     status: { type: String, enum: Object.values(VISIT_STATUS), required: true },
     statusHistory: { type: [statusHistorySchema], required: true, default: [] },
+    statusBeforeFlag: { type: String, enum: Object.values(VISIT_STATUS), default: null },
     checklist: { type: checklistSchema, default: null },
     media: { type: [mediaSchema], default: [] },
+    flag: { type: flagSchema, default: null },
   },
   { strict: 'throw', timestamps: true },
 );

@@ -20,6 +20,8 @@ import {
 import { encrypt } from '../utils/crypto.js';
 import { decrypt } from '../utils/crypto.js';
 
+const UPLOAD_FLAG_DELAY_MS = 24 * 60 * 60 * 1000;
+
 function startOfWeek(date) {
   const value = new Date(date);
   value.setHours(0, 0, 0, 0);
@@ -45,6 +47,7 @@ function serializeVisit(visit) {
     scheduledAt: visit.scheduledAt,
     standingNote: visit.standingNote,
     status: visit.status,
+    statusBeforeFlag: visit.statusBeforeFlag,
     statusHistory: visit.statusHistory,
     checklist: visit.checklist
       ? {
@@ -62,6 +65,13 @@ function serializeVisit(visit) {
       uploadedAt: item.uploadedAt,
       sourceFlag: item.sourceFlag,
     })),
+    flag: visit.flag
+      ? {
+          reason: visit.flag.reason,
+          raisedAt: visit.flag.raisedAt,
+          resolvedAt: visit.flag.resolvedAt,
+        }
+      : null,
   };
 }
 
@@ -339,7 +349,9 @@ export const visitService = Object.freeze({
     if (visit.clientVisitId !== clientVisitId) {
       throw new ConflictError('STATE_INVALID', 'The visit sync ID does not match this visit.');
     }
-    if (visit.status === VISIT_STATUS.COMPLETED) return serializeVisit(visit);
+    if ([VISIT_STATUS.COMPLETED, VISIT_STATUS.FLAGGED].includes(visit.status)) {
+      return serializeVisit(visit);
+    }
     if (!visit.checklist || !media.length) {
       throw new ValidationError(
         'Checklist and at least one photo are required to complete a visit',
@@ -355,13 +367,38 @@ export const visitService = Object.freeze({
         'Consent is required before a visit can be completed.',
       );
     }
+    const uploadDelayed = media.some(
+      (item) =>
+        new Date(item.uploadedAt).getTime() - new Date(item.capturedAt).getTime() >
+        UPLOAD_FLAG_DELAY_MS,
+    );
+    const status = uploadDelayed ? VISIT_STATUS.FLAGGED : VISIT_STATUS.COMPLETED;
     const updated = await visitRepository.update(visit._id, {
-      $set: { status: VISIT_STATUS.COMPLETED, media },
+      $set: {
+        status,
+        media,
+        ...(uploadDelayed
+          ? {
+              statusBeforeFlag: VISIT_STATUS.COMPLETED,
+              flag: { reason: 'UPLOAD_DELAYED', raisedAt: new Date() },
+            }
+          : {}),
+      },
       $push: {
         statusHistory: {
-          status: VISIT_STATUS.COMPLETED,
-          at: completedAt,
-          byUserId: caregiverId,
+          $each: [
+            { status: VISIT_STATUS.COMPLETED, at: completedAt, byUserId: caregiverId },
+            ...(uploadDelayed
+              ? [
+                  {
+                    status: VISIT_STATUS.FLAGGED,
+                    at: new Date(),
+                    byUserId: caregiverId,
+                    reason: 'UPLOAD_DELAYED',
+                  },
+                ]
+              : []),
+          ],
         },
       },
     });
