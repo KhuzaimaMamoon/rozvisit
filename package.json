@@ -13,7 +13,7 @@
     "dev": "npm run dev -w server & npm run dev -w client",
     "build": "npm run build -w client",
     "test": "npm run test -w server",
-    "seed": "node scripts/seed.js",
+    "seed": "DOTENV_CONFIG_PATH=server/.env node scripts/seed.js",
     "lint": "oxlint client server",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

@@ -154,3 +154,20 @@
   pending Phase 0 evidence: Basic USD 25–35 / GBP 20–28 / AED 90–130 / SAR 95–135; Standard USD
   45–60 / GBP 35–48 / AED 165–220 / SAR 170–230; Premium USD 75–95 / GBP 60–75 / AED 275–350 /
   SAR 285–360. Docs 03, 11, and 12 were updated with the lifecycle contract.
+
+## Development seed personas needed for live end-to-end verification — Resolved
+
+- **Question:** What approved development-only credentials and creation flow should be used for
+  the documented Ayesha client and Nasreen admin personas when a live browser end-to-end test
+  needs scheduling and assignment?
+- **Searched:** Doc 11 §23 (idempotent seed requires one admin, one verified caregiver, one
+  client, a consented Rawalpindi parent, active subscription, and mixed-state visits), Doc 25
+  §§1–2 (fresh checkout reaches a working feed through the seed), README Local Setup (states
+  seeded credentials are printed), `scripts/seed.js` (currently seeds care plans only), and Doc
+  04 personas.
+- **Resolution:** Founder approved idempotent development-only fixtures in `scripts/seed.js`:
+  Nasreen Shah (`nasreen-admin@example.com` / `adminPass123`), Ayesha Khan
+  (`ayesha-client@example.com` / `safePass123`), and verified Bilal Ahmed
+  (`bilal-caregiver@example.com` / `caregiverPass123`), plus consented Amina Bibi in Rawalpindi,
+  an active Standard subscription at AED 195, and scheduled/completed/missed visits. The script
+  refuses production and README now records the values printed by the seed command.

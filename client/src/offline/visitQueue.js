@@ -39,3 +39,13 @@ export async function removeCompletion(clientVisitId) {
     transaction.onerror = () => reject(transaction.error);
   });
 }
+
+export async function clearQueuedCompletions() {
+  const database = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(STORE, 'readwrite');
+    transaction.objectStore(STORE).clear();
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}

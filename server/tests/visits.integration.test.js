@@ -216,6 +216,18 @@ describe('Visit API lifecycle', () => {
     expect(
       retry.body.data.statusHistory.filter((item) => item.status === 'completed'),
     ).toHaveLength(1);
+
+    const staleChecklistReplay = await request(app)
+      .post(`/api/v1/visits/${visit._id}/checklist`)
+      .set(auth(caregiver))
+      .send({
+        medicationTaken: false,
+        mood: 1,
+        concerns: [],
+        capturedAt: new Date().toISOString(),
+      });
+    expect(staleChecklistReplay.status).toBe(409);
+    expect(staleChecklistReplay.body.error.code).toBe('STATE_INVALID');
   });
 
   it('rejects gallery-origin proof when completing a visit', async () => {

@@ -1,4 +1,5 @@
 let accessToken = null;
+let refreshInFlight = null;
 
 export class ApiError extends Error {
   constructor({ code, fields, message, status }) {
@@ -31,13 +32,21 @@ async function decode(response) {
 }
 
 export async function refreshAccessToken() {
-  const response = await fetch('/api/v1/auth/refresh', {
-    credentials: 'include',
-    method: 'POST',
-  });
-  const data = await decode(response);
-  setAccessToken(data.accessToken);
-  return data.accessToken;
+  if (!refreshInFlight) {
+    refreshInFlight = fetch('/api/v1/auth/refresh', {
+      credentials: 'include',
+      method: 'POST',
+    })
+      .then(decode)
+      .then((data) => {
+        setAccessToken(data.accessToken);
+        return data.accessToken;
+      })
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
 }
 
 export async function api(path, { retry = true, ...options } = {}) {

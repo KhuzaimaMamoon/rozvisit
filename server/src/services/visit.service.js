@@ -209,6 +209,13 @@ export const visitService = Object.freeze({
 
   async saveChecklist(caregiverId, visitId, data) {
     const visit = await getAssignedVisit(caregiverId, visitId);
+    if (
+      [VISIT_STATUS.COMPLETED, VISIT_STATUS.MISSED, VISIT_STATUS.PARENT_DECLINED].includes(
+        visit.status,
+      )
+    ) {
+      throw new ConflictError('STATE_INVALID', 'A checklist cannot be saved for a closed visit.');
+    }
     const parent = await parentRepository.findById(visit.parentId);
     if (!parent || parent.consent.state !== CONSENT_STATE.GIVEN) {
       throw new ConflictError(

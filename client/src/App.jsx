@@ -13,6 +13,7 @@ const portals = {
 function resolvePortal(pathname) {
   const [, portal] = pathname.split('/');
   if (portal === 'care') return portals.caregiver;
+  if (portal === 'app') return portals.client;
   return portals[portal] ?? null;
 }
 

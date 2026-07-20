@@ -1,17 +1,36 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api } from '../../api.js';
+import { ApiError, api } from '../../api.js';
 import BrandMark from '../../design-system/BrandMark.jsx';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
-import { queuedCompletions, removeCompletion, saveCompletion } from '../../offline/visitQueue.js';
+import {
+  clearQueuedCompletions,
+  queuedCompletions,
+  removeCompletion,
+  saveCompletion,
+} from '../../offline/visitQueue.js';
 import CameraCapture from './CameraCapture.jsx';
+
+const syncingCompletionIds = new Set();
+
+class UploadError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function isPermanentCompletionError(error) {
+  const status = error instanceof ApiError || error instanceof UploadError ? error.status : null;
+  return Number.isInteger(status) && status >= 400 && status < 500;
+}
 
 async function uploadPermit(permit, blob) {
   const subtype = blob.type.split('/').at(-1)?.toLowerCase();
   const extension = subtype === 'quicktime' ? 'mov' : subtype;
   if (blob.size > permit.maxFileSize || !permit.allowedFormats.includes(extension)) {
-    throw new Error('This camera file cannot be uploaded. Please capture it again.');
+    throw new UploadError('This camera file cannot be uploaded. Please capture it again.', 422);
   }
   const body = new FormData();
   body.append('file', blob, `${permit.clientMediaId}.jpg`);
@@ -25,7 +44,9 @@ async function uploadPermit(permit, blob) {
     method: 'POST',
     body,
   });
-  if (!response.ok) throw new Error('The media upload could not be completed yet.');
+  if (!response.ok) {
+    throw new UploadError('The media upload could not be completed yet.', response.status);
+  }
   return response.json();
 }
 
@@ -68,6 +89,23 @@ async function syncCompletion(draft) {
   await removeCompletion(draft.clientVisitId);
 }
 
+async function processQueuedCompletion(draft) {
+  if (syncingCompletionIds.has(draft.clientVisitId)) return { outcome: 'in_flight' };
+  syncingCompletionIds.add(draft.clientVisitId);
+  try {
+    await syncCompletion(draft);
+    return { outcome: 'synced' };
+  } catch (error) {
+    if (isPermanentCompletionError(error)) {
+      await removeCompletion(draft.clientVisitId);
+      return { outcome: 'discarded', error };
+    }
+    throw error;
+  } finally {
+    syncingCompletionIds.delete(draft.clientVisitId);
+  }
+}
+
 export default function VisitFlow() {
   const visitId = useMemo(() => window.location.pathname.split('/').at(-1), []);
   const [form, setForm] = useState({ medicationTaken: 'yes', mood: '3', note: '' });
@@ -83,11 +121,14 @@ export default function VisitFlow() {
     const retry = async () => {
       const drafts = await queuedCompletions();
       try {
-        await Promise.all(drafts.map(syncCompletion));
+        const outcomes = await Promise.all(drafts.map(processQueuedCompletion));
+        const discarded = outcomes.find((item) => item.outcome === 'discarded');
         setState((current) => ({
           ...current,
           sync: 'synced',
-          message: 'Connection restored. Saved work has synced.',
+          message: discarded
+            ? 'An outdated saved attempt could not be sent and was removed.'
+            : 'Connection restored. Saved work has synced.',
         }));
       } catch {
         setState((current) => ({
@@ -100,6 +141,17 @@ export default function VisitFlow() {
     window.addEventListener('online', retry);
     if (navigator.onLine) void retry();
     return () => window.removeEventListener('online', retry);
+  }, []);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return undefined;
+    window.__rozvisitOfflineQueue = {
+      clear: clearQueuedCompletions,
+      list: queuedCompletions,
+    };
+    return () => {
+      delete window.__rozvisitOfflineQueue;
+    };
   }, []);
 
   function addCapture(capture) {
@@ -147,7 +199,15 @@ export default function VisitFlow() {
     }
     setState((current) => ({ ...current, saving: true }));
     try {
-      await syncCompletion(draft);
+      const result = await processQueuedCompletion(draft);
+      if (result.outcome === 'discarded') {
+        setState({
+          saving: false,
+          sync: 'synced',
+          message: 'This saved attempt could not be sent and was removed.',
+        });
+        return;
+      }
       setState({
         saving: false,
         sync: 'synced',
