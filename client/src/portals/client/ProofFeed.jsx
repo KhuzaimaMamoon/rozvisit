@@ -58,6 +58,20 @@ export default function ProofFeed({ parentId: parentIdProp = null }) {
                   Mood: {visit.checklistSummary.mood}/5
                 </p>
               ) : null}
+              {visit.status === 'missed' ? (
+                <div className="mt-3 text-sm text-muted">
+                  <p>
+                    <span className="font-medium text-text">Reason: </span>
+                    {visit.missedReason || 'No reason was recorded.'}
+                  </p>
+                  {visit.makeUpPlan ? (
+                    <p className="mt-1">
+                      <span className="font-medium text-text">Make-up plan: </span>
+                      {visit.makeUpPlan}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               {visit.media?.length ? (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {visit.media.map((media) => (

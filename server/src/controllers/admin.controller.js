@@ -59,3 +59,6 @@ export const getVisitEvidence = run(async (req, res) =>
 export const resolveFlag = run(async (req, res) =>
   respond.ok(res, await adminService.resolveFlag(req.auth.sub, req.params.id, req.validatedBody)),
 );
+export const markMissed = run(async (req, res) =>
+  respond.ok(res, await adminService.markMissed(req.auth.sub, req.params.id, req.validatedBody)),
+);

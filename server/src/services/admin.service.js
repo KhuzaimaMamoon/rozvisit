@@ -139,6 +139,7 @@ function serializeOversightVisit(visit) {
       ? { id: visit.parentId._id.toString(), name: visit.parentId.name }
       : null,
     scheduledAt: visit.scheduledAt,
+    makeUpPlan: visit.makeUpPlan,
     status: visit.status,
   };
 }
@@ -165,6 +166,7 @@ function serializeVisitEvidence(visit) {
       sourceFlag: media.sourceFlag,
       uploadedAt: media.uploadedAt,
     })),
+    makeUpPlan: visit.makeUpPlan,
     statusBeforeFlag: visit.statusBeforeFlag,
     statusHistory: visit.statusHistory.map((entry) => ({
       at: entry.at,
@@ -414,5 +416,36 @@ export const adminService = Object.freeze({
     });
     await audit(actorId, 'visit.flag_resolved', visit._id, {});
     return serializeVisitEvidence(await visitRepository.findByIdForAdmin(updated._id));
+  },
+
+  async markMissed(actorId, visitId, { makeUpPlan, reason }) {
+    const visit = await visitRepository.findByIdForAdmin(visitId);
+    if (!visit) throw new NotFoundError();
+    if (visit.status !== VISIT_STATUS.SCHEDULED) {
+      throw new ConflictError('STATE_INVALID', 'Only a scheduled visit can be marked missed.');
+    }
+    const parent = visit.parentId;
+    if (!parent) throw new NotFoundError();
+    const now = new Date();
+    const updated = await visitRepository.update(visit._id, {
+      $set: { makeUpPlan, status: VISIT_STATUS.MISSED },
+      $push: {
+        statusHistory: {
+          at: now,
+          byUserId: actorId,
+          reason,
+          status: VISIT_STATUS.MISSED,
+        },
+      },
+    });
+    await audit(actorId, 'visit.marked_missed', visit._id, { makeUpPlan, reason });
+    await notifyRecipient({
+      recipientId: parent.clientId,
+      targetId: updated._id,
+      type: 'visit_missed',
+      values: { makeUpPlan, parentName: parent.name, reason },
+    });
+    const result = await visitRepository.findByIdForAdmin(updated._id);
+    return serializeVisitEvidence(result);
   },
 });

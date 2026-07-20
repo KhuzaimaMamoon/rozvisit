@@ -180,3 +180,30 @@ export const resolveFlagSchema = {
     return Object.keys(fields).length ? failure(fields) : { success: true, data: { note } };
   },
 };
+
+export const markMissedSchema = {
+  safeParse(value) {
+    const invalid = object(value, 'Please provide the missed-visit details.');
+    if (invalid) return invalid;
+    const fields = {};
+    if (typeof value.reason !== 'string' || !value.reason.trim()) {
+      fields.reason = ['Explain why this visit was missed.'];
+    }
+    if (
+      value.makeUpPlan !== undefined &&
+      value.makeUpPlan !== null &&
+      typeof value.makeUpPlan !== 'string'
+    ) {
+      fields.makeUpPlan = ['Enter a make-up plan or leave this field blank.'];
+    }
+    return Object.keys(fields).length
+      ? failure(fields)
+      : {
+          success: true,
+          data: {
+            makeUpPlan: value.makeUpPlan?.trim() || null,
+            reason: value.reason.trim(),
+          },
+        };
+  },
+};

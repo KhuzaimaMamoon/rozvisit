@@ -48,6 +48,7 @@ function serializeVisit(visit) {
     subscriptionId: visit.subscriptionId.toString(),
     scheduledAt: visit.scheduledAt,
     standingNote: visit.standingNote,
+    makeUpPlan: visit.makeUpPlan,
     status: visit.status,
     statusBeforeFlag: visit.statusBeforeFlag,
     statusHistory: visit.statusHistory,
@@ -463,6 +464,7 @@ export const visitService = Object.freeze({
           visit.status === VISIT_STATUS.MISSED
             ? (visit.statusHistory.at(-1)?.reason ?? null)
             : null,
+        makeUpPlan: visit.status === VISIT_STATUS.MISSED ? visit.makeUpPlan : null,
       })),
       nextCursor: null,
     };

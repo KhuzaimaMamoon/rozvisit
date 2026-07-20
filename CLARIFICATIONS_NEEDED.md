@@ -8,11 +8,10 @@
 - **Searched:** Doc 19 §8 canonical map; Doc 12 Visits endpoints; Doc 14 Module 4; Doc 07
   visit functional requirements; `visit.service.js`, `visits.routes.js`, and their validators and
   controllers.
-- **Resolution:** These two notification types are N/A for `feat/notifications-triggers` because
-  their documented event occasions do not yet exist in code. No rescheduling or missed-visit
-  mechanism was invented merely to emit a notification. Every other existing event occasion is
-  wired and integration-tested in this PR; a future implementation of either transition must add
-  its canonical notification at the actual state-change point.
+- **Resolution:** The founder approved `POST /admin/visits/:id/mark-missed` for the documented
+  `scheduled` → `missed` transition. It records the required reason, optional make-up plan,
+  append-only history, audit event, and `visit_missed` notification. `visit_changed` remains N/A
+  because no documented visit-change operation exists.
 
 ## Notification event map, persistence, and failed-delivery contract — Resolved
 

@@ -165,6 +165,7 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | subscriptionId | ObjectId → subscriptions | R | Allowance accounting (FR-030) |
 | scheduledAt | Date | R | |
 | standingNote | String | O | The client's recurring note (FR-031) |
+| makeUpPlan | String | O | Optional admin-recorded plan after the `scheduled` → `missed` transition; shown with the missed-visit reason in the client feed (FR-052) |
 | status | String enum | R | `scheduled` \| `in_progress` \| `completed` \| `missed` \| `parent_declined` \| `flagged` (FR-035) |
 | statusHistory | [{ status, at, byUserId, reason }] | R | Append-only (DATA-006) |
 | statusBeforeFlag | String visit-status enum | O | Captured when a visit moves to `flagged`; flag resolution restores this prior operational status and then leaves the value as evidence of the resolved flag path |
