@@ -15,7 +15,7 @@ const REQUIRED = [
   'APP_BASE_URL',
 ];
 
-const OPTIONAL = ['PORT', 'LOG_LEVEL', 'SENTRY_DSN'];
+const OPTIONAL = ['PORT', 'LOG_LEVEL', 'SENTRY_DSN', 'DEV_LOG_AUTH_LINKS'];
 const VALID_NODE_ENVS = new Set(['development', 'test', 'production']);
 const VALID_LOG_LEVELS = new Set(['error', 'warn', 'info', 'debug']);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -75,6 +75,21 @@ try {
   fail('APP_BASE_URL must be a valid URL');
 }
 
+if (
+  process.env.DEV_LOG_AUTH_LINKS !== undefined &&
+  !['true', 'false'].includes(process.env.DEV_LOG_AUTH_LINKS)
+) {
+  fail('DEV_LOG_AUTH_LINKS must be true or false when set');
+}
+const devLogAuthLinks = process.env.DEV_LOG_AUTH_LINKS === 'true';
+const appHost = new URL(process.env.APP_BASE_URL).hostname;
+if (
+  devLogAuthLinks &&
+  (process.env.NODE_ENV !== 'development' || !['localhost', '127.0.0.1', '::1'].includes(appHost))
+) {
+  fail('DEV_LOG_AUTH_LINKS may only be enabled in development with a localhost APP_BASE_URL');
+}
+
 const port = Number(process.env.PORT ?? 5000);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) {
   fail('PORT must be an integer between 1024 and 65535');
@@ -116,6 +131,7 @@ export const env = Object.freeze({
     fromAddress: process.env.EMAIL_FROM_ADDRESS,
   }),
   appBaseUrl: process.env.APP_BASE_URL,
+  devLogAuthLinks,
   sentryDsn: process.env.SENTRY_DSN ?? null,
   logLevel,
 });

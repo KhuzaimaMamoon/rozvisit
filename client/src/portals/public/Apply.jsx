@@ -4,49 +4,60 @@ import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
 import PublicAuthLayout from './PublicAuthLayout.jsx';
 
-const initialForm = Object.freeze({
-  countryCode: '',
+const initial = {
+  cnicNumber: '',
   email: '',
+  lat: '',
+  lng: '',
   name: '',
   password: '',
   phone: '',
-});
+  radiusKm: '10',
+};
 
-export default function Register() {
-  const [form, setForm] = useState(initialForm);
+export default function Apply() {
+  const [form, setForm] = useState(initial);
   const [error, setError] = useState('');
-  const [fields, setFields] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
-  function update(key) {
-    return (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
-  }
-
+  const update = (key) => (event) =>
+    setForm((current) => ({ ...current, [key]: event.target.value }));
   async function submit(event) {
     event.preventDefault();
     setError('');
-    setFields({});
     setLoading(true);
     try {
-      await api('/auth/register', { body: JSON.stringify(form), method: 'POST', retry: false });
+      await api('/auth/apply', {
+        body: JSON.stringify({
+          ...form,
+          serviceArea: {
+            lat: Number(form.lat),
+            lng: Number(form.lng),
+            radiusKm: Number(form.radiusKm),
+          },
+        }),
+        method: 'POST',
+        retry: false,
+      });
       setSubmitted(true);
     } catch (requestError) {
       setError(requestError.message);
-      setFields(requestError.fields ?? {});
     } finally {
       setLoading(false);
     }
   }
-
   return (
-    <PublicAuthLayout subtitle="It takes about a minute." title="Create your account">
+    <PublicAuthLayout
+      subtitle="Apply to provide verified local care."
+      title="Caregiver application"
+    >
       {submitted ? (
         <div
-          className="mt-6 border-l-[3px] border-success bg-success-soft px-4 py-3 text-sm text-success"
+          className="mt-7 border-l-[3px] border-success bg-success-soft px-4 py-3 text-sm leading-6 text-success"
           role="status"
         >
-          Check your email to verify your account, then return here to sign in.
+          Your application has been received. Please verify your email, then sign in to see its
+          status.
           <a className="mt-2 block font-medium underline" href="/verify-email">
             Request another verification link
           </a>
@@ -62,7 +73,6 @@ export default function Register() {
             </p>
           ) : null}
           <FormInput
-            error={fields.name?.[0]}
             id="name"
             label="Full name"
             onChange={update('name')}
@@ -70,8 +80,6 @@ export default function Register() {
             value={form.name}
           />
           <FormInput
-            autoComplete="email"
-            error={fields.email?.[0]}
             id="email"
             label="Email"
             onChange={update('email')}
@@ -79,31 +87,24 @@ export default function Register() {
             type="email"
             value={form.email}
           />
-          <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_112px]">
-            <FormInput
-              error={fields.phone?.[0]}
-              helperText="Include your country code, for example +971501234567."
-              id="phone"
-              label="Phone"
-              onChange={update('phone')}
-              required
-              type="tel"
-              value={form.phone}
-            />
-            <FormInput
-              error={fields.countryCode?.[0]}
-              helperText="For example AE."
-              id="countryCode"
-              label="Country"
-              maxLength="2"
-              onChange={update('countryCode')}
-              required
-              value={form.countryCode}
-            />
-          </div>
           <FormInput
-            autoComplete="new-password"
-            error={fields.password?.[0]}
+            helperText="Include your country code, for example +923001234567."
+            id="phone"
+            label="Phone"
+            onChange={update('phone')}
+            required
+            type="tel"
+            value={form.phone}
+          />
+          <FormInput
+            helperText="13 digits, without dashes."
+            id="cnic"
+            label="CNIC number"
+            onChange={update('cnicNumber')}
+            required
+            value={form.cnicNumber}
+          />
+          <FormInput
             helperText="At least 8 characters, with letters and numbers."
             id="password"
             label="Password"
@@ -112,8 +113,35 @@ export default function Register() {
             type="password"
             value={form.password}
           />
+          <div className="grid gap-5 sm:grid-cols-3">
+            <FormInput
+              id="lat"
+              label="Service latitude"
+              onChange={update('lat')}
+              required
+              type="number"
+              value={form.lat}
+            />
+            <FormInput
+              id="lng"
+              label="Service longitude"
+              onChange={update('lng')}
+              required
+              type="number"
+              value={form.lng}
+            />
+            <FormInput
+              id="radius"
+              label="Radius (km)"
+              min="1"
+              onChange={update('radiusKm')}
+              required
+              type="number"
+              value={form.radiusKm}
+            />
+          </div>
           <Button className="w-full" loading={loading} type="submit">
-            Create account
+            Submit application
           </Button>
         </form>
       )}
@@ -121,12 +149,6 @@ export default function Register() {
         Already have an account?{' '}
         <a className="font-medium text-primary hover:underline" href="/login">
           Log in
-        </a>
-      </p>
-      <p className="mt-3 text-center text-sm text-muted">
-        Applying as a caregiver?{' '}
-        <a className="font-medium text-primary hover:underline" href="/apply">
-          Start your application
         </a>
       </p>
     </PublicAuthLayout>

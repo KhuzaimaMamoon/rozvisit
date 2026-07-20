@@ -49,12 +49,17 @@ export function AuthProvider({ children }) {
           retry: false,
         });
         setAccessToken(data.accessToken);
-        setSession({ loading: false, user: data.user });
-        return data.user;
+        const user = { ...data.user, email };
+        setSession({ loading: false, user });
+        return user;
       },
-      logout() {
-        clearAccessToken();
-        setSession({ loading: false, user: null });
+      async logout() {
+        try {
+          await api('/auth/logout', { method: 'POST', retry: false });
+        } finally {
+          clearAccessToken();
+          setSession({ loading: false, user: null });
+        }
       },
     }),
     [session],

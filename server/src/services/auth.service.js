@@ -112,10 +112,7 @@ async function issueEmailToken(user, type) {
     expiresAt,
   });
 
-  const path =
-    type === AUTH_TOKEN_TYPES.EMAIL_VERIFICATION
-      ? '/verify-email?token='
-      : '/reset-password?token=';
+  const path = type === AUTH_TOKEN_TYPES.EMAIL_VERIFICATION ? '/verify?token=' : '/reset?token=';
   await emailChannel.send({ type, to: user.email, link: `${env.appBaseUrl}${path}${rawToken}` });
 }
 
