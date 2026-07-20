@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { ApiError, api } from '../../api.js';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 import { navigateFromLink } from '../../navigation.js';
 import { queuedCompletions } from '../../offline/visitQueue.js';
@@ -78,33 +77,43 @@ export default function Today() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-4xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
-          <p className="mt-5 text-sm font-medium text-primary">Caregiver portal</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">{todayLabel()}</h1>
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <p className="text-sm font-medium uppercase tracking-wide text-primary">
+            Caregiver portal
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+            {todayLabel()}
+          </h1>
           <p className="mt-2 text-sm leading-6 text-muted">Today&apos;s assigned visits.</p>
         </header>
-        <section className="mt-6 rounded-lg border border-border bg-surface p-6 shadow-sm">
+        <section className="mt-6 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
           {state.loading ? (
-            <p className="text-sm text-muted">Loading today&apos;s visits…</p>
+            <p className="p-5 text-sm text-muted sm:p-6">Loading today&apos;s visits…</p>
           ) : null}
-          {state.error ? <p className="text-sm text-emergency">{state.error}</p> : null}
+          {state.error ? <p className="p-5 text-sm text-emergency sm:p-6">{state.error}</p> : null}
           {!state.loading && !state.error && state.items.length === 0 ? (
             <>
-              <p className="text-lg font-semibold text-text">No visits today</p>
-              <p className="mt-2 text-sm leading-6 text-muted">No visits today. Enjoy the break.</p>
+              <div className="p-5 sm:p-6">
+                <p className="text-lg font-semibold text-text">No visits today</p>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  No visits today. Enjoy the break.
+                </p>
+              </div>
             </>
           ) : null}
           {state.items.map((visit) => (
-            <article className="border-b border-border py-4 last:border-0" key={visit.id}>
+            <article
+              className="border-b border-border px-5 py-4 transition-colors hover:bg-primary-soft last:border-0 sm:px-6"
+              key={visit.id}
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <a
                   className="min-w-0 flex-1"
                   href={`/care/visits/${visit.id}`}
                   onClick={(event) => navigateFromLink(event, `/care/visits/${visit.id}`)}
                 >
-                  <p className="font-semibold text-text">
+                  <p className="text-lg font-semibold text-text">
                     {new Date(visit.scheduledAt).toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit',
@@ -138,7 +147,7 @@ export default function Today() {
           ))}
         </section>
         <a
-          className="sticky bottom-0 mt-6 block border border-border bg-surface px-4 py-3 text-sm font-medium text-primary"
+          className="sticky bottom-3 mt-6 block rounded-lg border border-border bg-surface px-4 py-3 text-sm font-medium text-primary shadow-sm"
           href="/care/earnings"
         >
           Earnings

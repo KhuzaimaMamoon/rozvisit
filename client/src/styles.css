@@ -7,6 +7,7 @@ body {
   background: theme('colors.background');
   color: theme('colors.text');
   font-family: Inter, sans-serif;
+  overflow-x: hidden;
 }
 
 .portal-placeholder {

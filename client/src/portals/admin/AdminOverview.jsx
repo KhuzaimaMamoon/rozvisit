@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api.js';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import { navigateFromLink } from '../../navigation.js';
 
 const todayRange = () => {
@@ -50,18 +49,27 @@ export default function AdminOverview() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-6xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
-          <p className="mt-5 text-sm font-medium text-primary">Admin operations</p>
-          <h1 className="mt-1 text-3xl font-semibold text-text">Today&apos;s overview</h1>
-          <p className="mt-2 text-sm text-muted">A simple view of the work that needs attention.</p>
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <p className="text-sm font-medium uppercase tracking-wide text-primary">
+            Admin operations
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+            Today&apos;s overview
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            A simple view of the work that needs attention.
+          </p>
         </header>
-        {error ? <p className="mt-5 text-sm text-emergency">{error}</p> : null}
+        {error ? (
+          <p className="mt-5 rounded-r-md border-l-[3px] border-emergency bg-emergency-soft p-4 text-sm text-emergency">
+            {error}
+          </p>
+        ) : null}
         <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map((card) => (
             <a
-              className="rounded-lg border border-border bg-surface p-5 shadow-sm"
+              className="rounded-lg border border-border bg-surface p-5 shadow-sm transition-colors hover:bg-primary-soft"
               href={card.path}
               key={card.label}
               onClick={(event) => navigateFromLink(event, card.path)}

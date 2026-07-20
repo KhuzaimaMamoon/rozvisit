@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import Button from '../../design-system/Button.jsx';
 
 const plans = [
@@ -36,21 +35,19 @@ export default function PlanSelection() {
   const [selectedPlan, setSelectedPlan] = useState(null);
 
   return (
-    <main className="min-h-screen bg-background px-4 py-3 sm:px-6 sm:py-4 lg:h-screen lg:overflow-hidden">
+    <main className="min-h-screen bg-background px-4 py-4 sm:px-6 sm:py-6">
       <div className="mx-auto max-w-7xl">
-        <header className="flex items-center border-b border-border pb-4">
-          <BrandMark />
-        </header>
-
-        <section className="mt-4">
-          <p className="text-sm font-medium text-primary">Care for Amina Bibi</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-text">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <p className="text-sm font-medium uppercase tracking-wide text-primary">
+            Care for Amina Bibi
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
             Choose a care plan
           </h1>
-          <p className="mt-1 text-sm leading-5 text-muted">
+          <p className="mt-2 text-sm leading-6 text-muted">
             Review the support, pricing, and payment steps in one place.
           </p>
-        </section>
+        </header>
 
         <section
           aria-label="Available care plans"
@@ -99,7 +96,7 @@ export default function PlanSelection() {
         {selectedPlan ? (
           <section
             aria-live="polite"
-            className="fixed inset-x-4 top-4 z-10 max-w-md border-l-[3px] border-primary bg-primary-soft p-4 text-sm text-text shadow-md sm:left-auto sm:w-full"
+            className="fixed inset-x-4 top-20 z-30 max-w-md border-l-[3px] border-primary bg-primary-soft p-4 text-sm text-text shadow-md sm:left-auto sm:right-6 sm:w-full"
           >
             <div className="flex items-start justify-between gap-4">
               <div>

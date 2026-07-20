@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
@@ -45,20 +44,21 @@ export default function SubscriptionWorkbench() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-6xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
-          <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-primary">Administration</p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
+              <p className="text-sm font-medium uppercase tracking-wide text-primary">
+                Administration
+              </p>
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
                 Subscriptions
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
                 Review a subscription and record its agreed payment when it is activated.
               </p>
             </div>
-            <p className="rounded-full border border-border bg-primary-soft px-3 py-2 text-xs font-medium text-primary">
+            <p className="w-full rounded-full border border-border bg-surface px-3 py-2 text-center text-xs font-medium text-primary sm:w-auto">
               Manual payment tracking
             </p>
           </div>
@@ -124,7 +124,7 @@ export default function SubscriptionWorkbench() {
         {message ? (
           <p
             aria-live="polite"
-            className="fixed bottom-4 right-4 z-10 max-w-md border-l-[3px] border-success bg-success-soft p-4 text-sm text-success shadow-md"
+            className="fixed inset-x-4 bottom-4 z-30 max-w-md border-l-[3px] border-success bg-success-soft p-4 text-sm text-success shadow-md sm:left-auto sm:right-6 sm:w-full"
           >
             {message}
           </p>
@@ -138,15 +138,17 @@ export default function SubscriptionWorkbench() {
               className="w-full max-w-lg rounded-lg border border-border bg-surface shadow-lg"
               role="dialog"
             >
-              <div className="border-b border-border p-6">
-                <p className="text-sm font-medium text-primary">Payment confirmation</p>
+              <div className="border-b border-border p-5 sm:p-6">
+                <p className="text-sm font-medium uppercase tracking-wide text-primary">
+                  Payment confirmation
+                </p>
                 <h2 className="mt-1 text-xl font-semibold text-text">Activate subscription</h2>
                 <p className="mt-2 text-sm leading-6 text-muted">
                   Record the actual amount agreed with the client. This price is locked to the
                   subscription.
                 </p>
               </div>
-              <form className="space-y-5 p-6" onSubmit={activate}>
+              <form className="space-y-5 p-5 sm:p-6" onSubmit={activate}>
                 <FormInput
                   id="payment-reference"
                   label="Payoneer reference"
@@ -176,11 +178,17 @@ export default function SubscriptionWorkbench() {
                   <option>AED</option>
                   <option>SAR</option>
                 </select>
-                <div className="flex justify-between gap-3 border-t border-border pt-5">
-                  <Button onClick={() => setActivationOpen(false)} variant="ghost">
+                <div className="grid gap-3 border-t border-border pt-5 sm:flex sm:justify-between">
+                  <Button
+                    className="w-full sm:w-auto"
+                    onClick={() => setActivationOpen(false)}
+                    variant="ghost"
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit">Activate subscription</Button>
+                  <Button className="w-full sm:w-auto" type="submit">
+                    Activate subscription
+                  </Button>
                 </div>
               </form>
             </section>

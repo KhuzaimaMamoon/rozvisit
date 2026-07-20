@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
@@ -9,7 +8,7 @@ function GateCard({ children, title }) {
   return (
     <section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
       <h2 className="text-lg font-semibold text-text">{title}</h2>
-      <div className="mt-4">{children}</div>
+      <div className="mt-5 space-y-5">{children}</div>
     </section>
   );
 }
@@ -85,22 +84,35 @@ export default function ApplicationDetail() {
   }
 
   if (!application && !error) {
-    return <main className="portal-placeholder text-sm text-muted">Loading application…</main>;
+    return (
+      <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
+        <section className="mx-auto max-w-7xl rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6">
+          <p className="text-sm text-muted">Loading application…</p>
+        </section>
+      </main>
+    );
   }
   if (!application)
-    return <main className="portal-placeholder text-sm text-emergency">{error}</main>;
+    return (
+      <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
+        <section className="mx-auto max-w-7xl rounded-lg border border-emergency bg-emergency-soft p-5 shadow-sm sm:p-6">
+          <p className="text-sm text-emergency">{error}</p>
+        </section>
+      </main>
+    );
 
   const allGatesComplete = Object.values(application.gates).every(Boolean);
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-5xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-primary">Admin operations</p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium uppercase tracking-wide text-primary">
+                Admin operations
+              </p>
+              <h1 className="mt-2 break-words text-2xl font-semibold tracking-tight text-text sm:text-3xl">
                 {application.applicant.name}
               </h1>
               <p className="mt-2 text-sm text-muted">
@@ -118,7 +130,14 @@ export default function ApplicationDetail() {
           <div className="space-y-5">
             <GateCard title="CNIC check">
               <p className="text-sm text-muted">Viewing this record is logged.</p>
-              <p className="mt-3 text-sm text-text">CNIC: {application.verification.cnicNumber}</p>
+              <dl className="rounded-md bg-primary-soft p-4 text-sm">
+                <dt className="text-xs font-medium uppercase tracking-wide text-muted">
+                  CNIC number
+                </dt>
+                <dd className="mt-1 font-medium text-text">
+                  {application.verification.cnicNumber}
+                </dd>
+              </dl>
               <FormInput
                 label="CNIC document reference"
                 onChange={(event) => setCnic({ ...cnic, cnicDocRef: event.target.value })}
@@ -137,7 +156,11 @@ export default function ApplicationDetail() {
                 onChange={(event) => setCnic({ ...cnic, note: event.target.value })}
                 value={cnic.note}
               />
-              <Button onClick={() => saveGate('cnic-gate', cnic)} type="button">
+              <Button
+                className="w-full sm:w-auto"
+                onClick={() => saveGate('cnic-gate', cnic)}
+                type="button"
+              >
                 Record CNIC check
               </Button>
             </GateCard>
@@ -162,7 +185,11 @@ export default function ApplicationDetail() {
                 onChange={(event) => setInterview({ ...interview, note: event.target.value })}
                 value={interview.note}
               />
-              <Button onClick={() => saveGate('interview-gate', interview)} type="button">
+              <Button
+                className="w-full sm:w-auto"
+                onClick={() => saveGate('interview-gate', interview)}
+                type="button"
+              >
                 Record interview
               </Button>
             </GateCard>
@@ -186,7 +213,11 @@ export default function ApplicationDetail() {
                 onChange={(event) => setReference({ ...reference, note: event.target.value })}
                 value={reference.note}
               />
-              <Button onClick={() => saveGate('reference-gate', reference)} type="button">
+              <Button
+                className="w-full sm:w-auto"
+                onClick={() => saveGate('reference-gate', reference)}
+                type="button"
+              >
                 Record reference
               </Button>
             </GateCard>
@@ -196,21 +227,38 @@ export default function ApplicationDetail() {
             <p className="mt-2 text-sm text-muted">
               Approve becomes available when all three verification gates are complete.
             </p>
-            <FormInput
-              label="Decision note (optional)"
-              onChange={(event) => setDecisionNote(event.target.value)}
-              value={decisionNote}
-            />
-            <div className="mt-4 space-y-3">
-              <Button disabled={!allGatesComplete} onClick={() => decide('approve')} type="button">
-                Approve
-              </Button>
-              <Button onClick={() => decide('request_info')} type="button" variant="secondary">
-                Request information
-              </Button>
-              <Button onClick={() => decide('reject')} type="button" variant="secondary">
-                Reject
-              </Button>
+            <div className="mt-5 space-y-5">
+              <FormInput
+                label="Decision note (optional)"
+                onChange={(event) => setDecisionNote(event.target.value)}
+                value={decisionNote}
+              />
+              <div className="grid gap-3">
+                <Button
+                  className="w-full"
+                  disabled={!allGatesComplete}
+                  onClick={() => decide('approve')}
+                  type="button"
+                >
+                  Approve
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => decide('request_info')}
+                  type="button"
+                  variant="secondary"
+                >
+                  Request information
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => decide('reject')}
+                  type="button"
+                  variant="secondary"
+                >
+                  Reject
+                </Button>
+              </div>
             </div>
           </aside>
         </div>

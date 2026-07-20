@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import Button from '../../design-system/Button.jsx';
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -9,11 +8,10 @@ export default function VisitScheduling() {
   const [message, setMessage] = useState('');
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-4xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
-          <p className="mt-5 text-sm font-medium text-primary">Care schedule</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <p className="text-sm font-medium uppercase tracking-wide text-primary">Care schedule</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
             Choose weekly visit times
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted">
@@ -22,6 +20,9 @@ export default function VisitScheduling() {
         </header>
         <section className="mt-6 rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6">
           <h2 className="text-lg font-semibold text-text">Weekly slots</h2>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Add up to three weekly times included in your current plan.
+          </p>
           <div className="mt-5 space-y-3">
             {slots.map((slot, index) => (
               <div
@@ -80,11 +81,12 @@ export default function VisitScheduling() {
           >
             Add weekly slot
           </Button>
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-5">
+          <div className="mt-6 flex flex-col gap-4 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted">
               A caregiver will be assigned after your schedule is confirmed.
             </p>
             <Button
+              className="w-full sm:w-auto"
               onClick={() =>
                 setMessage('Your visit is scheduled and a caregiver will be assigned shortly.')
               }
@@ -96,7 +98,7 @@ export default function VisitScheduling() {
         {message ? (
           <p
             aria-live="polite"
-            className="mt-5 border-l-[3px] border-success bg-success-soft p-4 text-sm text-success"
+            className="mt-5 rounded-r-md border-l-[3px] border-success bg-success-soft p-4 text-sm leading-6 text-success"
           >
             {message}
           </p>

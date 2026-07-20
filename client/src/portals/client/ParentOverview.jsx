@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 import { navigateFromLink } from '../../navigation.js';
 export default function ParentOverview() {
@@ -11,8 +10,22 @@ export default function ParentOverview() {
       .then((item) => setState({ item, error: '' }))
       .catch((error) => setState({ item: null, error: error.message }));
   }, [id]);
-  if (state.error) return <main className="portal-placeholder text-emergency">{state.error}</main>;
-  if (!state.item) return <main className="portal-placeholder text-muted">Loading parent…</main>;
+  if (state.error)
+    return (
+      <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
+        <section className="mx-auto max-w-7xl rounded-lg border border-emergency bg-emergency-soft p-6 shadow-sm">
+          <p className="text-sm text-emergency">{state.error}</p>
+        </section>
+      </main>
+    );
+  if (!state.item)
+    return (
+      <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
+        <section className="mx-auto max-w-7xl rounded-lg border border-border bg-surface p-6 shadow-sm">
+          <p className="text-sm text-muted">Loading parent…</p>
+        </section>
+      </main>
+    );
   const p = state.item;
   const links = [
     ['Visit proof', `/app/parents/${id}/feed`],
@@ -21,23 +34,44 @@ export default function ParentOverview() {
   ];
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-4xl">
-        <BrandMark />
-        <section className="mt-6 rounded-lg border border-border bg-surface p-6 shadow-sm">
-          <div className="flex justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-primary">Parent profile</p>
-              <h1 className="mt-1 text-3xl font-semibold text-text">{p.name}</h1>
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium uppercase tracking-wide text-primary">
+                Parent profile
+              </p>
+              <h1 className="mt-2 break-words text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+                {p.name}
+              </h1>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                Care information and visit options.
+              </p>
             </div>
             <StatusBadge variant={p.status === 'active' ? 'success' : 'pending'}>
               {p.status.replace('_', ' ')}
             </StatusBadge>
           </div>
-          <p className="mt-5 text-sm leading-6 text-muted">{p.addressText}</p>
+        </header>
+        <section className="mt-6 rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6">
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-md bg-primary-soft p-4">
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted">Address</dt>
+              <dd className="mt-2 text-sm leading-6 text-text">{p.addressText}</dd>
+            </div>
+            <div className="rounded-md bg-primary-soft p-4">
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted">
+                Care status
+              </dt>
+              <dd className="mt-2 text-sm font-medium capitalize text-text">
+                {p.status.replace('_', ' ')}
+              </dd>
+            </div>
+          </dl>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {links.map(([label, href]) => (
               <a
-                className="rounded-md border border-border px-4 py-3 text-sm font-medium text-primary hover:bg-primary-soft"
+                className="rounded-md border border-border bg-surface px-4 py-4 text-center text-sm font-medium text-primary transition-colors hover:bg-primary-soft"
                 href={href}
                 key={href}
                 onClick={(event) => navigateFromLink(event, href)}

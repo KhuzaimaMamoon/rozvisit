@@ -15,5 +15,23 @@ export default function CaregiverPortal() {
   if (window.location.pathname === '/care/account') return <Account />;
   if (window.location.pathname === '/care/today') return <Today />;
   if (/^\/care\/visits\/[^/]+$/.test(window.location.pathname)) return <VisitFlow />;
-  return <main className="portal-placeholder">Caregiver portal</main>;
+  return (
+    <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
+      <section className="mx-auto max-w-7xl rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6">
+        <p className="text-sm font-medium uppercase tracking-wide text-primary">Caregiver portal</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+          Page not found
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          This page is not available. Use the portal navigation to return to today&apos;s visits.
+        </p>
+        <a
+          className="mt-6 inline-flex text-sm font-medium text-primary hover:underline"
+          href="/care/today"
+        >
+          Go to today&apos;s visits
+        </a>
+      </section>
+    </main>
+  );
 }

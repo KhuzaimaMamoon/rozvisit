@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import Button from '../../design-system/Button.jsx';
 import Card from '../../design-system/Card.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
@@ -74,20 +73,21 @@ export default function ParentProfileForm() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-5xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
-          <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-primary">Parent profile</p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
+              <p className="text-sm font-medium uppercase tracking-wide text-primary">
+                Parent profile
+              </p>
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
                 Add your parent
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
                 Share the details that help us provide respectful, familiar support.
               </p>
             </div>
-            <p className="rounded-full border border-border bg-primary-soft px-3 py-2 text-xs font-medium text-primary">
+            <p className="w-full rounded-full border border-border bg-primary-soft px-3 py-2 text-center text-xs font-medium text-primary sm:w-auto">
               Drafts are saved on this device
             </p>
           </div>
@@ -247,7 +247,7 @@ export default function ParentProfileForm() {
                 </section>
               ))}
             </div>
-            <Button className="mt-5" onClick={addContact} variant="secondary">
+            <Button className="mt-5 w-full sm:w-auto" onClick={addContact} variant="secondary">
               Add another contact
             </Button>
           </Card>
@@ -262,7 +262,7 @@ export default function ParentProfileForm() {
           {message ? (
             <section
               aria-live="polite"
-              className="fixed inset-x-4 top-4 z-10 max-w-md border-l-[3px] border-success bg-success-soft p-4 text-sm text-success shadow-md sm:left-auto sm:w-full"
+              className="fixed inset-x-4 top-20 z-30 max-w-md border-l-[3px] border-success bg-success-soft p-4 text-sm text-success shadow-md sm:left-auto sm:right-6 sm:w-full"
             >
               <div className="flex items-start justify-between gap-4">
                 <p>{message}</p>
@@ -272,9 +272,11 @@ export default function ParentProfileForm() {
               </div>
             </section>
           ) : null}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-5">
+          <div className="flex flex-col gap-4 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted">You can continue editing after saving this draft.</p>
-            <Button type="submit">Save parent details</Button>
+            <Button className="w-full sm:w-auto" type="submit">
+              Save parent details
+            </Button>
           </div>
         </form>
       </div>

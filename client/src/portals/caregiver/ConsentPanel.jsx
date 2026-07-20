@@ -99,8 +99,10 @@ export default function ConsentPanel({ parentId, visitId, onResolved }) {
   }
 
   return (
-    <section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
-      <p className="text-sm font-medium text-primary">First visit consent</p>
+    <section className="rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6">
+      <p className="text-sm font-medium uppercase tracking-wide text-primary">
+        First visit consent
+      </p>
       <h2 className="mt-1 text-lg font-semibold text-text">Record the parent’s own words</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
         Explain the visit and the photo boundaries. Audio is enough when the parent prefers not to
@@ -146,20 +148,29 @@ export default function ConsentPanel({ parentId, visitId, onResolved }) {
         optional
         value={choices.other}
       />
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="mt-4 grid gap-3 sm:flex sm:flex-wrap">
         {state.recording ? (
-          <Button onClick={stopRecording} variant="secondary">
+          <Button className="w-full sm:w-auto" onClick={stopRecording} variant="secondary">
             Stop recording
           </Button>
         ) : (
-          <Button onClick={startRecording} variant="secondary">
+          <Button className="w-full sm:w-auto" onClick={startRecording} variant="secondary">
             {state.blob ? 'Record again' : 'Record agreement'}
           </Button>
         )}
-        <Button disabled={!state.blob || state.saving} onClick={() => recordConsent('given')}>
+        <Button
+          className="w-full sm:w-auto"
+          disabled={!state.blob || state.saving}
+          onClick={() => recordConsent('given')}
+        >
           Save agreement
         </Button>
-        <Button disabled={state.saving} onClick={() => recordConsent('declined')} variant="ghost">
+        <Button
+          className="w-full sm:w-auto"
+          disabled={state.saving}
+          onClick={() => recordConsent('declined')}
+          variant="ghost"
+        >
           Record decline
         </Button>
       </div>

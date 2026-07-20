@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
-import BrandMark from '../../design-system/BrandMark.jsx';
 import Button from '../../design-system/Button.jsx';
 import { navigate } from '../../navigation.js';
 
@@ -30,12 +29,15 @@ export default function AssignVisit() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-3xl">
-        <header className="border-b border-border pb-6">
-          <BrandMark />
-          <p className="mt-5 text-sm font-medium text-primary">Admin operations</p>
-          <h1 className="mt-1 text-3xl font-semibold text-text">Assign caregiver</h1>
-          <p className="mt-2 text-sm text-muted">
+      <div className="mx-auto max-w-7xl">
+        <header className="rounded-lg border border-border bg-primary-soft p-5 shadow-sm sm:p-6">
+          <p className="text-sm font-medium uppercase tracking-wide text-primary">
+            Admin operations
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+            Assign caregiver
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-muted">
             Continuity comes first; remaining in-area caregivers are ordered by today&apos;s
             scheduled load.
           </p>
@@ -44,7 +46,7 @@ export default function AssignVisit() {
         <section className="mt-6 space-y-3">
           {suggestions.map((suggestion) => (
             <article
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4"
+              className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between"
               key={suggestion.caregiverId}
             >
               <div>
@@ -61,6 +63,7 @@ export default function AssignVisit() {
                 ) : null}
               </div>
               <Button
+                className="w-full sm:w-auto"
                 disabled={!suggestion.assignable}
                 onClick={() => assign(suggestion.caregiverId)}
                 type="button"
