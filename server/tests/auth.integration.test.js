@@ -189,6 +189,21 @@ describe('Auth API', () => {
     expect(reused.status).toBe(401);
   });
 
+  it('sets a local-development refresh cookie that restores a full-page session', async () => {
+    const user = await createVerifiedUser({ email: 'reload@example.com' });
+    const login = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: user.email, password: PASSWORD });
+    const refresh = await request(app)
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', refreshCookie(login));
+
+    expect(login.headers['set-cookie'][0]).toContain('HttpOnly');
+    expect(login.headers['set-cookie'][0]).not.toContain('Secure');
+    expect(refresh.status).toBe(200);
+    expect(refresh.body.data.accessToken).toEqual(expect.any(String));
+  });
+
   it('returns the caregiver verification status at login for role-based portal routing', async () => {
     const caregiver = await createVerifiedUser({
       role: 'caregiver',

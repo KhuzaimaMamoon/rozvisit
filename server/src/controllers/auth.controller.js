@@ -1,10 +1,11 @@
 import { authService } from '../services/auth.service.js';
+import { env } from '../config/env.js';
 import { respond } from '../utils/respond.js';
 
 const REFRESH_COOKIE = 'refreshToken';
 const cookieOptions = Object.freeze({
   httpOnly: true,
-  secure: true,
+  secure: env.nodeEnv === 'production',
   sameSite: 'strict',
   path: '/api/v1/auth',
 });

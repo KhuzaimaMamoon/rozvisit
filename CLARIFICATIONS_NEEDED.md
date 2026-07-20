@@ -1,5 +1,30 @@
 # Clarifications Needed
 
+## Cloudinary signed-upload permit contract — Resolved
+
+- **Resolution:** Approved for the Visit offline-media task: 10-minute TTL, 50 MB maximum,
+  image/video-only formats, visit-folder scope, and `clientMediaId`-scoped direct-upload permits.
+  Recorded in Doc 12 and AD-30.
+- **Searched:** Doc 12 §§14–15 and the `POST /visits/:id/media-permit` contract; Doc 18 §25;
+  Doc 29 AD-7; Doc 08 §15; Doc 09 §§17 and 19; Doc 07 FR-042–045, SEC-012, DATA-005 and
+  INT-002; Doc 20 Cloudinary outage handling; Doc 21 §10 (15-minute **view-link** expiry only).
+- **What is needed:** The permit TTL (for example, an approved number of minutes), plus the
+  approved Cloudinary parameters that enforce the permitted resource types, 50 MB limit, and
+  folder/public-ID behavior. This determines the MediaStorage contract, backend response,
+  client upload request, retry behavior, and the security tests.
+
+## Media-permit capture-time input — Resolved
+
+- **Resolution:** `items` contains one to five `{ clientMediaId, capturedAt, mediaType }` records.
+  The public ID is `<visitId>*<clientMediaId>*<compact capturedAt>`; the device-generated media
+  ID and device capture time are preserved through retries. Recorded in Doc 12 and AD-30.
+- **Searched:** Doc 12 §Visits (`media-permit` body and completion body); the approved
+  signed-upload-permit resolution; Doc 08 §15 (capture time is recorded at capture); Doc 07
+  FR-043/044; Doc 11 `visits.media`; and Doc 29 AD-7.
+- **What is needed:** The approved request shape for one to five captured files. The server must
+  use the device time in the folder-scoped public ID; substituting server time would violate
+  FR-044 and weaken offline-record integrity.
+
 ## Visit caregiver-assignment dependency — Resolved
 
 - **Question:** How should T-B21..T-B32 create scheduled visits and verify the caregiver for
@@ -129,3 +154,51 @@
   pending Phase 0 evidence: Basic USD 25–35 / GBP 20–28 / AED 90–130 / SAR 95–135; Standard USD
   45–60 / GBP 35–48 / AED 165–220 / SAR 170–230; Premium USD 75–95 / GBP 60–75 / AED 275–350 /
   SAR 285–360. Docs 03, 11, and 12 were updated with the lifecycle contract.
+
+## Development seed personas needed for live end-to-end verification — Resolved
+
+- **Question:** What approved development-only credentials and creation flow should be used for
+  the documented Ayesha client and Nasreen admin personas when a live browser end-to-end test
+  needs scheduling and assignment?
+- **Searched:** Doc 11 §23 (idempotent seed requires one admin, one verified caregiver, one
+  client, a consented Rawalpindi parent, active subscription, and mixed-state visits), Doc 25
+  §§1–2 (fresh checkout reaches a working feed through the seed), README Local Setup (states
+  seeded credentials are printed), `scripts/seed.js` (currently seeds care plans only), and Doc
+  04 personas.
+- **Resolution:** Founder approved idempotent development-only fixtures in `scripts/seed.js`:
+  Nasreen Shah (`nasreen-admin@example.com` / `adminPass123`), Ayesha Khan
+  (`ayesha-client@example.com` / `safePass123`), and verified Bilal Ahmed
+  (`bilal-caregiver@example.com` / `caregiverPass123`), plus consented Amina Bibi in Rawalpindi,
+  an active Standard subscription at AED 195, and scheduled/completed/missed visits. The script
+  refuses production and README now records the values printed by the seed command.
+
+## S-24 consent recording upload contract — Resolved
+
+- **Question:** What approved upload/storage path produces the required encrypted
+  `consent.recordingRef` when a caregiver records the parent’s agreement with the in-app
+  microphone/camera?
+- **Searched:** Doc 16 S-24 (record button uses in-app mic/camera), Doc 14 Modules 2 and 4
+  (caregiver consent step), Doc 12 `POST /parents/:id/consent` (a `given` state requires
+  `recordingRef`) and `POST /visits/:id/media-permit` (visit-photo-only permit), Doc 11
+  `parentProfiles.consent.recordingRef`, and Doc 18 §22 (consent recordings are sensitive).
+- **Resolution:** Founder approved `POST /parents/:id/consent-permit`: a 10-minute, parent-folder-scoped permit for audio or video consent recordings. The caregiver uploads directly, then sends the returned reference through the existing consent endpoint. Doc 12 and AD-31 record the decision.
+
+## S-24 consent-state read field — Resolved
+
+- **Question:** May the caregiver’s visit-detail/today response expose the parent’s embedded
+  consent state as a derived field (for example, `consentState`) so S-24 can truthfully decide
+  whether to render its first-visit consent panel?
+- **Searched:** Doc 16 S-24 (panel is conditional when consent is pending), Doc 12
+  `GET /visits/today` (lists `consentChoices` but not consent state) and `GET /parents/:id`
+  (client/admin only), Doc 11 parentProfiles consent schema, and Doc 14 Module 4.
+- **Resolution:** Founder approved `consentState` on caregiver visit context responses, using the existing `pending | given | declined | withdrawn` parent-consent enum. S-24 renders its consent panel only for `pending`; Doc 12 records the response contract.
+
+## S-24 checklist concern-chip enum — Resolved
+
+- **Question:** Which exact string values and user-facing labels are allowed for the documented
+  checklist `concerns` chip set?
+- **Searched:** Doc 07 FR-041 ("concern options"), Doc 11 visits.checklist (`concerns:
+[String]`), Doc 12 checklist body (`concerns: [enum strings]`), Doc 15 ChecklistForm,
+  Doc 16 S-24, Doc 17 Visit Flow brief, Doc 27 analytics (pre-defined chip ids), and
+  `server/src/config/constants.js`.
+- **Resolution:** Founder approved the non-diagnostic enum `appetite`, `mobility`, `medication`, `mood_change`, `home_condition`, and `other`, with the labels supplied in the resolution. Doc 07, Doc 11, and `config/constants.js` record it.

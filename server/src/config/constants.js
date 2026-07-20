@@ -37,6 +37,15 @@ export const VISIT_STATUS = Object.freeze({
   FLAGGED: 'flagged',
 });
 
+export const VISIT_CONCERN_CHIPS = Object.freeze({
+  APPETITE: 'appetite',
+  MOBILITY: 'mobility',
+  MEDICATION: 'medication',
+  MOOD_CHANGE: 'mood_change',
+  HOME_CONDITION: 'home_condition',
+  OTHER: 'other',
+});
+
 export const SUBSCRIPTION_STATE = Object.freeze({
   SELECTED: 'selected',
   LINK_SENT: 'link_sent',

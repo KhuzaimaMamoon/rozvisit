@@ -150,4 +150,55 @@ describe('visitService', () => {
     expect(stored.status).toBe('paused');
     expect(stored.consent.state).toBe('declined');
   });
+
+  it('creates per-camera permits and preserves an offline completion exactly once', async () => {
+    await ParentProfile.updateOne(
+      { _id: parent._id },
+      { $set: { 'consent.state': 'given', status: 'active' } },
+    );
+    const visit = await Visit.create({
+      clientVisitId: 'visit-offline-once',
+      parentId: parent._id,
+      caregiverId: caregiver._id,
+      subscriptionId: subscription._id,
+      scheduledAt: new Date(),
+      status: 'scheduled',
+      statusHistory: [{ status: 'scheduled', at: new Date() }],
+      checklist: { medicationTaken: true, mood: 5, concerns: [], capturedAt: new Date() },
+    });
+    const capturedAt = new Date('2026-07-20T12:00:00Z');
+    const permit = await visitService.createMediaPermit(
+      caregiver._id.toString(),
+      visit._id.toString(),
+      {
+        items: [{ clientMediaId: 'camera-1', capturedAt, mediaType: 'photo' }],
+      },
+    );
+    expect(permit.permits[0].publicId).toContain('camera-1');
+    const payload = {
+      clientVisitId: visit.clientVisitId,
+      completedAt: new Date(),
+      media: [
+        {
+          clientMediaId: 'camera-1',
+          ref: 'proof',
+          capturedAt,
+          uploadedAt: new Date(),
+          sourceFlag: 'in_app_camera',
+        },
+      ],
+    };
+    const first = await visitService.complete(
+      caregiver._id.toString(),
+      visit._id.toString(),
+      payload,
+    );
+    const replay = await visitService.complete(
+      caregiver._id.toString(),
+      visit._id.toString(),
+      payload,
+    );
+    expect(first.status).toBe('completed');
+    expect(replay.statusHistory.filter((event) => event.status === 'completed')).toHaveLength(1);
+  });
 });

@@ -1190,6 +1190,28 @@ The following decisions were made across Documents 09–21 but never captured as
 
 ---
 
+### AD-30 — Cloudinary signed-upload permit: 10-minute TTL, 50MB/image-video-only constraint
+
+- **Status:** Confirmed
+- **Context:** AD-7 established that media never touches the backend -- only signed permits do. The exact TTL and constraint parameters were undocumented.
+- **Decision:** 10-minute permit TTL; 50MB max file size; image/video formats only; folder-scoped and public-ID-scoped to the specific visit and client-generated ID for idempotency.
+- **Alternatives considered:** Longer TTL (30+ min) -- rejected as unnecessary exposure window for a task that takes at most a few minutes in practice. Shorter TTL (2-3 min) -- rejected as too tight for genuinely slow connections in the field.
+- **Consequences:** Expired-permit retry becomes a normal, expected flow in the offline queue -- not an error path.
+- **Review trigger:** Real-world data from Phase 1 showing caregivers frequently hit the TTL limit before completing upload.
+
+---
+
+### AD-31 — Consent recordings use a separate signed-upload permit from visit media
+
+- **Status:** Confirmed
+- **Context:** AD-30 established the visit-media permit contract. Consent recordings are a distinct, more sensitive category (Doc 18 §22) with their own folder and lifecycle needs.
+- **Decision:** A dedicated `POST /parents/:id/consent-permit` endpoint, separate folder scope, audio allowed as a first-class option (not just video).
+- **Alternatives considered:** Reusing the visit-media permit with a different folder parameter — rejected, since it would blur the authorization boundary (visit-media permits check visit assignment; consent permits check parent-level first-visit caregiver assignment — these are related but distinct checks worth keeping in separate code paths).
+- **Consequences:** A second permit-issuing endpoint to maintain, but clean separation of concerns.
+- **Review trigger:** None anticipated.
+
+---
+
 ## ADR Maintenance
 
 - **New ADRs are added** when a significant technical decision is made, in the same PR as the code that implements it.

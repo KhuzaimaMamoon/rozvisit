@@ -27,6 +27,7 @@ const checklistSchema = new Schema(
 
 const mediaSchema = new Schema(
   {
+    clientMediaId: { type: String, required: true },
     ref: { type: String, required: true },
     capturedAt: { type: Date, required: true },
     uploadedAt: { type: Date, required: true },

@@ -185,7 +185,7 @@ Special validation rules:
 
 ## 13. CSRF Considerations
 
-- The only cookie is the refresh cookie: `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`. `SameSite=Strict` blocks cross-site sending; `Path` scoping limits it further (Document 13 §5).
+- The only cookie is the refresh cookie: production uses `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`. Local HTTP development omits only `Secure` so refresh-based session restoration can be tested; deployed environments always retain it. `SameSite=Strict` blocks cross-site sending; `Path` scoping limits it further (Document 13 §5).
 - All state-changing endpoints require the `Authorization: Bearer` header, which cross-site forms cannot set — the practical CSRF answer for a token-header SPA (Document 13 §27).
 - No traditional session cookies used for state changes → no need for CSRF tokens at MVP.
 

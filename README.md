@@ -284,12 +284,17 @@ npm run dev
 
 **What `npm run dev` starts:**
 - **Server**: `nodemon server/server.js` on port `5000`.
-- **Client**: Vite dev server on port `5173` with an API proxy to `http://localhost:5000/api`.
+- **Client**: Vite dev server on port `5173` with an API proxy to the `PORT` configured in `server/.env` (default `5000`).
 
-Open `http://localhost:5173`. Seeded credentials are printed by `npm run seed`.
+Open `http://localhost:5173`. `npm run seed` prints these development-only credentials:
+
+- Admin: `nasreen-admin@example.com` / `adminPass123`
+- Client: `ayesha-client@example.com` / `safePass123`
+- Caregiver: `bilal-caregiver@example.com` / `caregiverPass123`
 
 **macOS port 5000 note:** AirPlay Receiver can reserve port `5000`. Either disable AirPlay
 Receiver in macOS settings or set `PORT=5001` in `server/.env` before starting the server.
+The Vite proxy reads that same `server/.env` port automatically, so no separate client setting is needed.
 
 ### Environment Variables
 

@@ -10,6 +10,7 @@ import { caregiverRepository } from '../repositories/caregiver.repo.js';
 import { parentRepository } from '../repositories/parent.repo.js';
 import { subscriptionRepository } from '../repositories/subscription.repo.js';
 import { visitRepository } from '../repositories/visit.repo.js';
+import { cloudinaryMediaStorage } from '../interfaces/media.cloudinary.js';
 import {
   ConflictError,
   ForbiddenError,
@@ -17,6 +18,7 @@ import {
   ValidationError,
 } from '../utils/AppError.js';
 import { encrypt } from '../utils/crypto.js';
+import { decrypt } from '../utils/crypto.js';
 
 function startOfWeek(date) {
   const value = new Date(date);
@@ -53,6 +55,51 @@ function serializeVisit(visit) {
           capturedAt: visit.checklist.capturedAt,
         }
       : null,
+    media: visit.media.map((item) => ({
+      clientMediaId: item.clientMediaId,
+      ref: item.ref,
+      capturedAt: item.capturedAt,
+      uploadedAt: item.uploadedAt,
+      sourceFlag: item.sourceFlag,
+    })),
+  };
+}
+
+function decryptOptional(value) {
+  return value ? decrypt(value) : null;
+}
+
+function serializeConsentChoices(parent) {
+  const choices = parent.consent?.choices;
+  if (!choices) return null;
+  return {
+    preferredTimes: choices.preferredTimes ?? [],
+    photoBoundaries: decryptOptional(choices.photoBoundaries),
+    other: decryptOptional(choices.other),
+  };
+}
+
+function serializeCaregiverVisitBase(visit, parent) {
+  return {
+    id: visit._id.toString(),
+    parentName: parent.name,
+    addressText: decrypt(parent.addressText),
+    location: { lng: parent.location.coordinates[0], lat: parent.location.coordinates[1] },
+    scheduledAt: visit.scheduledAt,
+    standingNote: visit.standingNote,
+    consentChoices: serializeConsentChoices(parent),
+    consentState: parent.consent.state,
+    status: visit.status,
+  };
+}
+
+function serializeCaregiverVisitContext(visit, parent) {
+  return {
+    ...serializeCaregiverVisitBase(visit, parent),
+    clientVisitId: visit.clientVisitId,
+    parentId: visit.parentId.toString(),
+    checklist: serializeVisit(visit).checklist,
+    media: serializeVisit(visit).media,
   };
 }
 
@@ -147,7 +194,35 @@ export const visitService = Object.freeze({
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
     const visits = await visitRepository.findTodayByCaregiver(caregiverId, start, end);
-    return { items: visits.map(serializeVisit) };
+    const parents = await Promise.all(
+      visits.map((visit) => parentRepository.findById(visit.parentId)),
+    );
+    return {
+      items: visits.map((visit, index) => serializeCaregiverVisitBase(visit, parents[index])),
+    };
+  },
+
+  async getCaregiverVisit(caregiverId, visitId) {
+    const visit = await getAssignedVisit(caregiverId, visitId);
+    const parent = await parentRepository.findById(visit.parentId);
+    if (!parent) throw new NotFoundError();
+    return serializeCaregiverVisitContext(visit, parent);
+  },
+
+  async createConsentPermit(caregiverId, parentId, _body) {
+    const [parent, firstVisit] = await Promise.all([
+      parentRepository.findById(parentId),
+      visitRepository.findFirstByParent(parentId),
+    ]);
+    if (!parent || !firstVisit) throw new NotFoundError();
+    if (
+      parent.consent.state !== CONSENT_STATE.PENDING ||
+      !firstVisit.caregiverId ||
+      firstVisit.caregiverId.toString() !== caregiverId
+    ) {
+      throw new ForbiddenError();
+    }
+    return cloudinaryMediaStorage.createConsentUploadPermit({ parentId });
   },
 
   async captureConsent(caregiverId, parentId, { state, recordingRef, choices, byVisitId }) {
@@ -201,6 +276,13 @@ export const visitService = Object.freeze({
 
   async saveChecklist(caregiverId, visitId, data) {
     const visit = await getAssignedVisit(caregiverId, visitId);
+    if (
+      [VISIT_STATUS.COMPLETED, VISIT_STATUS.MISSED, VISIT_STATUS.PARENT_DECLINED].includes(
+        visit.status,
+      )
+    ) {
+      throw new ConflictError('STATE_INVALID', 'A checklist cannot be saved for a closed visit.');
+    }
     const parent = await parentRepository.findById(visit.parentId);
     if (!parent || parent.consent.state !== CONSENT_STATE.GIVEN) {
       throw new ConflictError(
@@ -233,6 +315,59 @@ export const visitService = Object.freeze({
     return serializeVisit(updated);
   },
 
+  async createMediaPermit(caregiverId, visitId, { items }) {
+    const visit = await getAssignedVisit(caregiverId, visitId);
+    if (
+      [VISIT_STATUS.COMPLETED, VISIT_STATUS.MISSED, VISIT_STATUS.PARENT_DECLINED].includes(
+        visit.status,
+      )
+    ) {
+      throw new ConflictError(
+        'STATE_INVALID',
+        'A media permit cannot be issued for a closed visit.',
+      );
+    }
+    return {
+      permits: items.map((item) =>
+        cloudinaryMediaStorage.createUploadPermit({ visitId: visit._id.toString(), ...item }),
+      ),
+    };
+  },
+
+  async complete(caregiverId, visitId, { clientVisitId, media, completedAt }) {
+    const visit = await getAssignedVisit(caregiverId, visitId);
+    if (visit.clientVisitId !== clientVisitId) {
+      throw new ConflictError('STATE_INVALID', 'The visit sync ID does not match this visit.');
+    }
+    if (visit.status === VISIT_STATUS.COMPLETED) return serializeVisit(visit);
+    if (!visit.checklist || !media.length) {
+      throw new ValidationError(
+        'Checklist and at least one photo are required to complete a visit',
+        {
+          form: ['Save the checklist and capture at least one photo before completing the visit.'],
+        },
+      );
+    }
+    const parent = await parentRepository.findById(visit.parentId);
+    if (!parent || parent.consent.state !== CONSENT_STATE.GIVEN) {
+      throw new ConflictError(
+        'CONSENT_REQUIRED',
+        'Consent is required before a visit can be completed.',
+      );
+    }
+    const updated = await visitRepository.update(visit._id, {
+      $set: { status: VISIT_STATUS.COMPLETED, media },
+      $push: {
+        statusHistory: {
+          status: VISIT_STATUS.COMPLETED,
+          at: completedAt,
+          byUserId: caregiverId,
+        },
+      },
+    });
+    return serializeVisit(updated);
+  },
+
   async feed(clientId, parentId, limit = 20) {
     const parent = await parentRepository.findById(parentId);
     if (!parent) throw new NotFoundError();
@@ -250,7 +385,12 @@ export const visitService = Object.freeze({
               concerns: visit.checklist.concerns,
             }
           : null,
-        media: [],
+        media: visit.media.map((media) => ({
+          ref: media.ref,
+          capturedAt: media.capturedAt,
+          uploadedAt: media.uploadedAt,
+          sourceFlag: media.sourceFlag,
+        })),
         missedReason:
           visit.status === VISIT_STATUS.MISSED
             ? (visit.statusHistory.at(-1)?.reason ?? null)

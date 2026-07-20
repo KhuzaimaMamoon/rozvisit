@@ -525,7 +525,7 @@ Owned by Doc 26. Codex creates `env.js` that:
 
 Owned by Doc 13.
 - Two separate JWT secrets (`JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`), ≥32 characters each, different values. `env.js` refuses to boot if they are equal or too short.
-- Access token in memory only on the client. Refresh cookie: `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`.
+- Access token in memory only on the client. Refresh cookie: `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth` in deployed environments; local HTTP development omits only `Secure` so a full reload can restore the access token.
 - Uniform login response for wrong-email vs wrong-password vs unverified (same message, same shape, same timing).
 - No account lockout — rate limits + progressive delay + reset-revokes-everything are the answer.
 - bcrypt cost ≥10.

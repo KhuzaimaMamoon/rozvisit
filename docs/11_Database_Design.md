@@ -165,8 +165,8 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | standingNote | String | O | The client's recurring note (FR-031) |
 | status | String enum | R | `scheduled` \| `in_progress` \| `completed` \| `missed` \| `parent_declined` \| `flagged` (FR-035) |
 | statusHistory | [{ status, at, byUserId, reason }] | R | Append-only (DATA-006) |
-| checklist | { medicationTaken: Boolean, mood: Number 1–5, concerns: [String], note: String **(E)**, completedAt: Date, capturedAt: Date } | O until completion | Required for `completed` (FR-045) |
-| media | [{ ref: String, capturedAt: Date, uploadedAt: Date, sourceFlag: String }] | O until completion | Min 1 for `completed` (FR-045); both times (FR-044); capture-source (SEC-012) |
+| checklist | { medicationTaken: Boolean, mood: Number 1–5, concerns: [String], note: String **(E)**, completedAt: Date, capturedAt: Date } | O until completion | Required for `completed` (FR-045). `concerns` accepts only the approved observational enum: `appetite`, `mobility`, `medication`, `mood_change`, `home_condition`, `other`. |
+| media | [{ clientMediaId: String, ref: String, capturedAt: Date, uploadedAt: Date, sourceFlag: String }] | O until completion | `clientMediaId` is generated on-device at capture time for retry-safe direct upload; `capturedAt` is device time and `uploadedAt` is the successful upload time, kept distinct to show an honest offline gap (FR-044); min 1 for `completed` (FR-045); capture-source (SEC-012) |
 | gps | { checkIn: { point, at }, checkOut: { point, at } } | O **(P2)** | Reserved now, used at Phase 2 (FR-049) |
 | earning | { amount: Number, currency: "PKR", verifiedAt: Date } | O | Visible to the caregiver (FR-048) |
 | flag | { reason: String, raisedAt: Date, resolvedBy, resolvedAt, note } | O | Flag-for-review, never auto-punish (FR-046, SEC-011) |
@@ -467,6 +467,7 @@ Per BCK-001–004: Atlas automated backups at the cluster level (M0 limits accep
   },
   "media": [
     {
+      "clientMediaId": "media-8f3e2a91-...",
       "ref": "rozvisit/visits/665f1a/1.jpg",
       "capturedAt": "2026-07-21T05:26:02Z",
       "uploadedAt": "2026-07-21T07:44:19Z",

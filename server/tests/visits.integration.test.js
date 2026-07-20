@@ -10,6 +10,7 @@ import { ParentProfile } from '../src/models/ParentProfile.js';
 import { Subscription } from '../src/models/Subscription.js';
 import { User } from '../src/models/User.js';
 import { Visit } from '../src/models/Visit.js';
+import { encrypt } from '../src/utils/crypto.js';
 
 describe('Visit API lifecycle', () => {
   let mongo;
@@ -158,5 +159,191 @@ describe('Visit API lifecycle', () => {
 
     expect(today.status).toBe(200);
     expect(blocked.status).toBe(403);
+  });
+
+  it('returns caregiver-scoped S-24 context and a separate consent permit', async () => {
+    await ParentProfile.updateOne(
+      { _id: parent._id },
+      {
+        $set: {
+          addressText: encrypt('Rawalpindi, Punjab'),
+          'consent.choices.preferredTimes': ['Morning'],
+          'consent.choices.photoBoundaries': encrypt('Living room only'),
+        },
+      },
+    );
+    const visit = await Visit.create({
+      clientVisitId: 'context-visit',
+      parentId: parent._id,
+      caregiverId: caregiver._id,
+      subscriptionId: (await Subscription.findOne())._id,
+      scheduledAt: new Date(),
+      standingNote: 'Please knock first.',
+      status: 'scheduled',
+      statusHistory: [{ status: 'scheduled', at: new Date(), byUserId: client._id }],
+    });
+
+    const today = await request(app).get('/api/v1/visits/today').set(auth(caregiver));
+    expect(today.status).toBe(200);
+    expect(today.body.data.items[0]).toMatchObject({
+      id: visit._id.toString(),
+      parentName: 'Amina Bibi',
+      addressText: 'Rawalpindi, Punjab',
+      location: { lng: 73, lat: 33 },
+      consentState: 'pending',
+      standingNote: 'Please knock first.',
+    });
+    expect(today.body.data.items[0].consentChoices).toEqual({
+      preferredTimes: ['Morning'],
+      photoBoundaries: 'Living room only',
+      other: null,
+    });
+
+    const detail = await request(app).get(`/api/v1/visits/${visit._id}`).set(auth(caregiver));
+    expect(detail.status).toBe(200);
+    expect(detail.body.data.clientVisitId).toBe('context-visit');
+
+    const permit = await request(app)
+      .post(`/api/v1/parents/${parent._id}/consent-permit`)
+      .set(auth(caregiver))
+      .send({ mediaType: 'audio' });
+    expect(permit.status).toBe(200);
+    expect(permit.body.data).toMatchObject({
+      folder: `rozvisit/consent/${parent._id}/`,
+      maxFileSize: 52428800,
+      resourceType: 'auto',
+      allowedFormats: ['mp3', 'm4a', 'wav', 'mp4', 'mov'],
+    });
+  });
+
+  it('mints camera-only permits and completes an offline retry exactly once', async () => {
+    const visit = await Visit.create({
+      clientVisitId: 'offline-visit-1',
+      parentId: parent._id,
+      caregiverId: caregiver._id,
+      subscriptionId: (await Subscription.findOne())._id,
+      scheduledAt: new Date(),
+      status: 'scheduled',
+      statusHistory: [{ status: 'scheduled', at: new Date(), byUserId: client._id }],
+      checklist: { medicationTaken: true, mood: 4, concerns: [], capturedAt: new Date() },
+    });
+    await ParentProfile.updateOne(
+      { _id: parent._id },
+      { $set: { 'consent.state': 'given', status: 'active' } },
+    );
+    const capturedAt = '2026-07-20T12:00:00.000Z';
+    const permit = await request(app)
+      .post(`/api/v1/visits/${visit._id}/media-permit`)
+      .set(auth(caregiver))
+      .send({
+        items: [{ clientMediaId: 'device-photo-1', capturedAt, mediaType: 'photo' }],
+      });
+    expect(permit.status).toBe(200);
+    expect(permit.body.data.permits[0]).toMatchObject({
+      clientMediaId: 'device-photo-1',
+      folder: `rozvisit/visits/${visit._id}/`,
+      maxFileSize: 52428800,
+      resourceType: 'auto',
+    });
+    const completion = {
+      clientVisitId: 'offline-visit-1',
+      completedAt: new Date().toISOString(),
+      media: [
+        {
+          clientMediaId: 'device-photo-1',
+          ref: 'https://res.cloudinary.com/test/image/upload/proof.jpg',
+          capturedAt,
+          uploadedAt: new Date().toISOString(),
+          sourceFlag: 'in_app_camera',
+        },
+      ],
+    };
+    const first = await request(app)
+      .post(`/api/v1/visits/${visit._id}/complete`)
+      .set(auth(caregiver))
+      .send(completion);
+    const retry = await request(app)
+      .post(`/api/v1/visits/${visit._id}/complete`)
+      .set(auth(caregiver))
+      .send(completion);
+    expect(first.status).toBe(200);
+    expect(first.body.data.status).toBe('completed');
+    expect(retry.status).toBe(200);
+    expect(
+      retry.body.data.statusHistory.filter((item) => item.status === 'completed'),
+    ).toHaveLength(1);
+
+    const staleChecklistReplay = await request(app)
+      .post(`/api/v1/visits/${visit._id}/checklist`)
+      .set(auth(caregiver))
+      .send({
+        medicationTaken: false,
+        mood: 1,
+        concerns: [],
+        capturedAt: new Date().toISOString(),
+      });
+    expect(staleChecklistReplay.status).toBe(409);
+    expect(staleChecklistReplay.body.error.code).toBe('STATE_INVALID');
+  });
+
+  it('rejects gallery-origin proof when completing a visit', async () => {
+    const visit = await Visit.create({
+      clientVisitId: 'offline-visit-2',
+      parentId: parent._id,
+      caregiverId: caregiver._id,
+      subscriptionId: (await Subscription.findOne())._id,
+      scheduledAt: new Date(),
+      status: 'scheduled',
+      statusHistory: [{ status: 'scheduled', at: new Date(), byUserId: client._id }],
+      checklist: { medicationTaken: true, mood: 4, concerns: [], capturedAt: new Date() },
+    });
+    await ParentProfile.updateOne(
+      { _id: parent._id },
+      { $set: { 'consent.state': 'given', status: 'active' } },
+    );
+    const response = await request(app)
+      .post(`/api/v1/visits/${visit._id}/complete`)
+      .set(auth(caregiver))
+      .send({
+        clientVisitId: 'offline-visit-2',
+        completedAt: new Date().toISOString(),
+        media: [
+          {
+            clientMediaId: 'x',
+            ref: 'proof',
+            capturedAt: new Date(),
+            uploadedAt: new Date(),
+            sourceFlag: 'gallery',
+          },
+        ],
+      });
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe('VALIDATION_FAILED');
+  });
+
+  it('records the documented parent-declined no-fault path', async () => {
+    await ParentProfile.updateOne(
+      { _id: parent._id },
+      { $set: { 'consent.state': 'given', status: 'active' } },
+    );
+    const visit = await Visit.create({
+      clientVisitId: 'parent-declined-visit',
+      parentId: parent._id,
+      caregiverId: caregiver._id,
+      subscriptionId: (await Subscription.findOne())._id,
+      scheduledAt: new Date(),
+      status: 'scheduled',
+      statusHistory: [{ status: 'scheduled', at: new Date(), byUserId: client._id }],
+    });
+    const response = await request(app)
+      .post(`/api/v1/visits/${visit._id}/parent-declined`)
+      .set(auth(caregiver))
+      .send({ capturedAt: new Date().toISOString(), reason: 'Parent asked to reschedule' });
+    expect(response.status).toBe(200);
+    expect(response.body.data.status).toBe('parent_declined');
+    expect(response.body.data.statusHistory.at(-1)).toMatchObject({
+      reason: 'Parent asked to reschedule',
+      status: 'parent_declined',
+    });
   });
 });

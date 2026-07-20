@@ -36,3 +36,9 @@ export const captureConsent = run(async (req, res) =>
     await visitService.captureConsent(req.auth.sub, req.params.id, req.validatedBody),
   ),
 );
+export const createConsentPermit = run(async (req, res) =>
+  respond.ok(
+    res,
+    await visitService.createConsentPermit(req.auth.sub, req.params.id, req.validatedBody),
+  ),
+);

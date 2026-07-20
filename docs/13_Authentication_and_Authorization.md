@@ -94,7 +94,7 @@ Why memory-only: localStorage is readable by any script that ever runs in the pa
 ## 5. Refresh Token Strategy
 
 - **Format:** a JWT (7-day expiry) — but its statefulness is the point: a hash of it is stored in the `refreshTokens` collection (Document 11), making every session individually revocable (FR-006).
-- **Delivery:** `Set-Cookie: refreshToken=...; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`. The `Path` scoping means the cookie is only ever sent to auth endpoints — the rest of the API never sees it.
+- **Delivery:** Production: `Set-Cookie: refreshToken=...; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`. Local HTTP development omits only `Secure` so the browser can restore an intentionally memory-only access token after a full reload; all deployed environments retain `Secure`. The `Path` scoping means the cookie is only ever sent to auth endpoints — the rest of the API never sees it.
 - **On refresh:** verify signature → look up the hash → check not revoked, not expired → issue a new access token. *(Recommendation — refresh token rotation: each refresh also issues a new refresh token and revokes the old one, so a stolen refresh token dies on its first collision with the real user. Adopted as the target behavior; if it complicates the MVP build, plain non-rotating refresh is the documented fallback, revisited at Phase 2.)*
 - **TTL cleanup:** expired rows self-delete via the TTL index (Document 11).
 

@@ -23,6 +23,9 @@ export const assignCaregiver = run(async (req, res) =>
 export const today = run(async (req, res) =>
   respond.ok(res, await visitService.today(req.auth.sub)),
 );
+export const getCaregiverVisit = run(async (req, res) =>
+  respond.ok(res, await visitService.getCaregiverVisit(req.auth.sub, req.params.id)),
+);
 export const captureConsent = run(async (req, res) =>
   respond.ok(
     res,
@@ -37,6 +40,15 @@ export const parentDeclined = run(async (req, res) =>
     res,
     await visitService.parentDeclined(req.auth.sub, req.params.id, req.validatedBody),
   ),
+);
+export const createMediaPermit = run(async (req, res) =>
+  respond.ok(
+    res,
+    await visitService.createMediaPermit(req.auth.sub, req.params.id, req.validatedBody),
+  ),
+);
+export const completeVisit = run(async (req, res) =>
+  respond.ok(res, await visitService.complete(req.auth.sub, req.params.id, req.validatedBody)),
 );
 export const feed = run(async (req, res) =>
   respond.ok(res, await visitService.feed(req.auth.sub, req.query.parentId)),
