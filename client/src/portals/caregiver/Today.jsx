@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ApiError, api } from '../../api.js';
 import BrandMark from '../../design-system/BrandMark.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
+import { navigateFromLink } from '../../navigation.js';
 
 export default function Today() {
   const [state, setState] = useState({ error: '', items: [], loading: true });
@@ -53,6 +54,7 @@ export default function Today() {
               className="block border-b border-border py-4 last:border-0"
               href={`/care/visits/${visit.id}`}
               key={visit.id}
+              onClick={(event) => navigateFromLink(event, `/care/visits/${visit.id}`)}
             >
               <p className="font-semibold text-text">Scheduled visit</p>
               <p className="mt-1 text-sm text-muted">
