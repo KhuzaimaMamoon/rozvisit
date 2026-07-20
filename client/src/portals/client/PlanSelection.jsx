@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
+import { navigate } from '../../navigation.js';
 
 const planDetails = {
   Basic: {
@@ -24,6 +25,7 @@ export default function PlanSelection() {
   const parentId = useMemo(() => window.location.pathname.split('/')[3], []);
   const [plans, setPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [selectingPlan, setSelectingPlan] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -33,15 +35,19 @@ export default function PlanSelection() {
   }, []);
 
   async function selectPlan(planKey) {
+    if (selectingPlan) return;
     setError('');
+    setSelectingPlan(true);
     try {
       const subscription = await api('/subscriptions', {
         body: JSON.stringify({ parentId, planKey }),
         method: 'POST',
       });
       setSelectedPlan({ key: planKey, nextStep: subscription.nextStep });
+      window.setTimeout(() => navigate(`/app/parents/${parentId}`), 1200);
     } catch (requestError) {
       setError(requestError.message);
+      setSelectingPlan(false);
     }
   }
 
@@ -104,7 +110,12 @@ export default function PlanSelection() {
                         : `${plan.errandsPerWeek} errand${plan.errandsPerWeek === 1 ? '' : 's'} each week`}
                   </li>
                 </ul>
-                <Button className="mt-auto w-full" onClick={() => void selectPlan(plan.key)}>
+                <Button
+                  className="mt-auto w-full"
+                  disabled={selectingPlan}
+                  loading={selectingPlan}
+                  onClick={() => void selectPlan(plan.key)}
+                >
                   Select {plan.key}
                 </Button>
               </article>

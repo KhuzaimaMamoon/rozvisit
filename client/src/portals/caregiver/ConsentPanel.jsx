@@ -69,7 +69,7 @@ export default function ConsentPanel({ parentId, visitId, onResolved }) {
       } else {
         if (!state.blob) throw new Error('Record the parent’s agreement before continuing.');
         const permit = await api(`/parents/${parentId}/consent-permit`, {
-          body: JSON.stringify({ mediaType }),
+          body: JSON.stringify({ byVisitId: visitId, mediaType }),
           method: 'POST',
         });
         const uploaded = await uploadRecording(permit, state.blob, mediaType);

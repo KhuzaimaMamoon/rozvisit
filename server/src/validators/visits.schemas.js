@@ -103,9 +103,16 @@ export const parentDeclinedSchema = {
 
 export const consentPermitSchema = {
   safeParse(value) {
-    return ['audio', 'video'].includes(value?.mediaType)
-      ? { success: true, data: { mediaType: value.mediaType } }
-      : failure({ mediaType: ['Choose audio or video for the consent recording.'] });
+    const fields = {};
+    if (!['audio', 'video'].includes(value?.mediaType)) {
+      fields.mediaType = ['Choose audio or video for the consent recording.'];
+    }
+    if (typeof value?.byVisitId !== 'string' || !value.byVisitId) {
+      fields.byVisitId = ['The assigned first visit is required.'];
+    }
+    return Object.keys(fields).length
+      ? failure(fields)
+      : { success: true, data: { byVisitId: value.byVisitId, mediaType: value.mediaType } };
   },
 };
 

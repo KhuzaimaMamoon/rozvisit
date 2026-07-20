@@ -166,7 +166,10 @@ export const visitService = Object.freeze({
         const scheduledAt = dateForSlot(week, slot.dayOfWeek, slot.time);
         if (scheduledAt < now || scheduledAt >= periodEnd) continue;
         records.push({
-          clientVisitId: crypto.randomUUID(),
+          clientVisitId: crypto
+            .createHash('sha256')
+            .update(`${parentId}:${subscription._id.toString()}:${scheduledAt.toISOString()}`)
+            .digest('hex'),
           parentId,
           caregiverId: null,
           subscriptionId: subscription._id,
@@ -177,7 +180,7 @@ export const visitService = Object.freeze({
         });
       }
     }
-    const visits = records.length ? await visitRepository.createMany(records) : [];
+    const visits = records.length ? await visitRepository.upsertScheduled(records) : [];
     return {
       items: visits.map(serializeVisit),
       message: 'Your visit is scheduled and a caregiver will be assigned shortly.',
@@ -222,33 +225,25 @@ export const visitService = Object.freeze({
     return serializeCaregiverVisitContext(visit, parent);
   },
 
-  async createConsentPermit(caregiverId, parentId, _body) {
-    const [parent, firstVisit] = await Promise.all([
+  async createConsentPermit(caregiverId, parentId, { byVisitId }) {
+    const [parent, visit] = await Promise.all([
       parentRepository.findById(parentId),
-      visitRepository.findFirstByParent(parentId),
+      getAssignedVisit(caregiverId, byVisitId),
     ]);
-    if (!parent || !firstVisit) throw new NotFoundError();
-    if (
-      parent.consent.state !== CONSENT_STATE.PENDING ||
-      !firstVisit.caregiverId ||
-      firstVisit.caregiverId.toString() !== caregiverId
-    ) {
+    if (!parent) throw new NotFoundError();
+    if (parent.consent.state !== CONSENT_STATE.PENDING || visit.parentId.toString() !== parentId) {
       throw new ForbiddenError();
     }
     return cloudinaryMediaStorage.createConsentUploadPermit({ parentId });
   },
 
   async captureConsent(caregiverId, parentId, { state, recordingRef, choices, byVisitId }) {
-    const [parent, firstVisit] = await Promise.all([
+    const [parent, visit] = await Promise.all([
       parentRepository.findById(parentId),
-      visitRepository.findFirstByParent(parentId),
+      getAssignedVisit(caregiverId, byVisitId),
     ]);
-    if (!parent || !firstVisit) throw new NotFoundError();
-    if (
-      !firstVisit.caregiverId ||
-      firstVisit.caregiverId.toString() !== caregiverId ||
-      firstVisit._id.toString() !== byVisitId
-    ) {
+    if (!parent) throw new NotFoundError();
+    if (visit.parentId.toString() !== parentId) {
       throw new ForbiddenError();
     }
     if (parent.consent.state === CONSENT_STATE.GIVEN) {
@@ -272,7 +267,7 @@ export const visitService = Object.freeze({
     };
     await parentRepository.updateConsent(parentId, update);
     if (state === CONSENT_STATE.DECLINED) {
-      await visitRepository.update(firstVisit._id, {
+      await visitRepository.update(visit._id, {
         $set: { status: VISIT_STATUS.PARENT_DECLINED },
         $push: {
           statusHistory: {
