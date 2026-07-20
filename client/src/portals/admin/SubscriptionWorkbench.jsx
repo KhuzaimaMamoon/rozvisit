@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
@@ -28,18 +29,57 @@ function filterStyle(state, activeState) {
 }
 
 export default function SubscriptionWorkbench() {
-  const [state, setState] = useState('link_sent');
+  const [state, setState] = useState(null);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [activationOpen, setActivationOpen] = useState(false);
   const [paymentRef, setPaymentRef] = useState('');
   const [agreedPrice, setAgreedPrice] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [message, setMessage] = useState('');
 
-  function activate(event) {
+  useEffect(() => {
+    api(`/admin/subscriptions${state ? `?state=${state}` : ''}`)
+      .then(({ items }) => setSubscriptions(items))
+      .catch((error) => setMessage(error.message));
+  }, [state]);
+
+  async function activate(event) {
     event.preventDefault();
     if (!paymentRef || !agreedPrice) return;
-    setMessage(`Activation recorded for ${currency} ${agreedPrice}.`);
-    setActivationOpen(false);
+    try {
+      const updated = await api(`/admin/subscriptions/${selectedSubscription.id}/state`, {
+        body: JSON.stringify({
+          state: 'active',
+          paymentRef,
+          price: Number(agreedPrice),
+          currency,
+        }),
+        method: 'PATCH',
+      });
+      setSubscriptions((items) =>
+        items.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
+      );
+      setMessage(`Activation recorded for ${currency} ${agreedPrice}.`);
+      setActivationOpen(false);
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function sendPaymentLink(subscription) {
+    try {
+      const updated = await api(`/admin/subscriptions/${subscription.id}/state`, {
+        body: JSON.stringify({ state: 'link_sent' }),
+        method: 'PATCH',
+      });
+      setSubscriptions((items) =>
+        items.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
+      );
+      setMessage('Payment link marked as sent.');
+    } catch (error) {
+      setMessage(error.message);
+    }
   }
 
   return (
@@ -78,6 +118,14 @@ export default function SubscriptionWorkbench() {
               <p className="mt-1 text-sm text-muted">Filter records by their current state.</p>
             </div>
             <div className="flex flex-wrap gap-2" aria-label="Subscription state filters">
+              <button
+                aria-pressed={state === null}
+                className={`rounded-full border px-3 py-2 text-xs font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/25 ${state === null ? 'border-primary bg-primary-soft text-primary ring-2 ring-primary/25 ring-offset-2' : 'border-border bg-surface text-text'}`}
+                onClick={() => setState(null)}
+                type="button"
+              >
+                All
+              </button>
               {Object.entries(stateLabels).map(([key, label]) => (
                 <button
                   aria-pressed={state === key}
@@ -105,18 +153,51 @@ export default function SubscriptionWorkbench() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-t border-border transition-colors hover:bg-background">
-                  <td className="px-6 py-5 font-semibold text-text">Ayesha Khan</td>
-                  <td className="px-6 py-5 text-text">Amina Bibi</td>
-                  <td className="px-6 py-5 text-text">Standard</td>
-                  <td className="px-6 py-5">
-                    <StatusBadge variant={statusVariant(state)}>{stateLabels[state]}</StatusBadge>
-                  </td>
-                  <td className="px-6 py-5 text-muted">—</td>
-                  <td className="px-6 py-5 text-right">
-                    <Button onClick={() => setActivationOpen(true)}>Activate</Button>
-                  </td>
-                </tr>
+                {subscriptions.map((subscription) => (
+                  <tr
+                    className="border-t border-border transition-colors hover:bg-background"
+                    key={subscription.id}
+                  >
+                    <td className="px-6 py-5 font-semibold text-text">{subscription.clientName}</td>
+                    <td className="px-6 py-5 text-text">{subscription.parentName}</td>
+                    <td className="px-6 py-5 text-text">{subscription.planKey}</td>
+                    <td className="px-6 py-5">
+                      <StatusBadge variant={statusVariant(subscription.state)}>
+                        {stateLabels[subscription.state]}
+                      </StatusBadge>
+                    </td>
+                    <td className="px-6 py-5 text-muted">
+                      {subscription.currentPeriodEnd
+                        ? new Date(subscription.currentPeriodEnd).toLocaleDateString()
+                        : '—'}
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      {subscription.state === 'selected' ? (
+                        <Button onClick={() => void sendPaymentLink(subscription)}>
+                          Send link
+                        </Button>
+                      ) : subscription.state === 'link_sent' ? (
+                        <Button
+                          onClick={() => {
+                            setSelectedSubscription(subscription);
+                            setActivationOpen(true);
+                          }}
+                        >
+                          Activate
+                        </Button>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {!subscriptions.length ? (
+                  <tr>
+                    <td className="px-6 py-5 text-muted" colSpan="6">
+                      No subscriptions match this filter.
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>

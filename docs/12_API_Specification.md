@@ -275,7 +275,8 @@ POST /api/v1/auth/register
 
 - **Role:** client
 - **Body:** `{ parentId, planKey }`
-- **Validation:** planKey in enum; parent owned by caller; no existing active subscription for that parent (partial unique index, Doc 11)
+- **Validation:** planKey in enum; parent owned by caller; one plan selection per parent. Once selected,
+  the parent waits for operations to send and reconcile the payment link rather than changing plans.
 - **Success `201`:** subscription in `selected` state with the plan terms copied into its snapshot; the actual agreed price and currency are set only when operations activates the manual payment. Allowance enforcement begins (FR-021); operations is notified to send the payment link
 - **Errors:** `409 DUPLICATE` (active subscription exists); `403`; `422`
 
@@ -483,7 +484,9 @@ All endpoints: **Role admin**, all mutations audited automatically (FR-082).
 
 ### GET /admin/subscriptions — Payment operations list
 
-- **Query:** `state?` — the manual-payment workbench (link_sent queue, grace watch)
+- **Query:** `state?` — the manual-payment workbench (link_sent queue, grace watch).
+  **Success `200`:** `{ items: [{ id, clientId, clientName, parentId, parentName, planKey,
+  planSnapshot, state, stateHistory, currentPeriodEnd }] }`.
 
 ---
 

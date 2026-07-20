@@ -84,7 +84,7 @@ export const subscriptionService = Object.freeze({
     const [parent, plan, existing] = await Promise.all([
       parentRepository.findById(parentId),
       planRepository.findActiveByKey(planKey),
-      subscriptionRepository.findActiveByParent(parentId),
+      subscriptionRepository.findLatestByParent(parentId),
     ]);
     if (!parent) throw new NotFoundError();
     if (parent.clientId.toString() !== clientId) throw new ForbiddenError();
@@ -93,7 +93,7 @@ export const subscriptionService = Object.freeze({
         planKey: ['Please select one of the available plans.'],
       });
     if (existing) {
-      throw new ConflictError('DUPLICATE', 'This parent already has an active subscription.');
+      throw new ConflictError('DUPLICATE', 'This parent already has a selected care plan.');
     }
 
     const now = new Date();
@@ -218,7 +218,20 @@ export const subscriptionService = Object.freeze({
       });
     }
     const subscriptions = await subscriptionRepository.findByState(state);
-    return { items: subscriptions.map(serializeSubscription) };
+    const items = await Promise.all(
+      subscriptions.map(async (subscription) => {
+        const [client, parent] = await Promise.all([
+          userRepository.findById(subscription.clientId),
+          parentRepository.findById(subscription.parentId),
+        ]);
+        return {
+          ...serializeSubscription(subscription),
+          clientName: client?.name ?? 'Unknown client',
+          parentName: parent?.name ?? 'Unknown parent',
+        };
+      }),
+    );
+    return { items };
   },
 
   async applyGracePeriodTransitions(now = new Date()) {
