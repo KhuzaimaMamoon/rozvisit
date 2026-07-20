@@ -5,7 +5,7 @@ import { adminApplicationsRouter } from './admin.routes.js';
 import { parentsRouter } from './parents.routes.js';
 import { plansRouter } from './plans.routes.js';
 import { subscriptionsRouter } from './subscriptions.routes.js';
-import { adminVisitsRouter, feedRouter, visitsRouter } from './visits.routes.js';
+import { adminFlagsRouter, adminVisitsRouter, feedRouter, visitsRouter } from './visits.routes.js';
 
 export const apiRouter = Router();
 
@@ -18,3 +18,4 @@ apiRouter.use('/admin/applications', adminApplicationsRouter);
 apiRouter.use('/visits', visitsRouter);
 apiRouter.use('/feed', feedRouter);
 apiRouter.use('/admin/visits', adminVisitsRouter);
+apiRouter.use('/admin/flags', adminFlagsRouter);

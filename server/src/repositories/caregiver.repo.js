@@ -15,6 +15,14 @@ export const caregiverRepository = Object.freeze({
   findByUserId(userId) {
     return CaregiverProfile.findOne({ userId });
   },
+  findByUserIds(userIds) {
+    return CaregiverProfile.find({ userId: { $in: userIds } }).populate('userId', 'name');
+  },
+  findVerifiedForAssignment() {
+    return CaregiverProfile.find({ status: CAREGIVER_STATUS.VERIFIED })
+      .populate('userId', 'name')
+      .sort({ 'userId.name': 1 });
+  },
   findApplicationById(id) {
     if (!mongoose.isValidObjectId(id)) return null;
     return CaregiverProfile.findById(id)

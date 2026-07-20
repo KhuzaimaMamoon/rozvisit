@@ -447,13 +447,30 @@ All endpoints: **Role admin**, all mutations audited automatically (FR-082).
 - **Validation:** caregiver `verified` and area-matched (FR-034); previous caregiver suggested by `GET /admin/visits/:id/assignment-suggestions` (continuity)
 - **Success:** visits attached; caregiver notified; reassignment moves future visits and notifies all parties (BR-15 backup flow)
 
+### GET /admin/visits/:id/assignment-suggestions
+
+- **Success:** the previous caregiver first when present, followed by verified caregivers whose
+  service area covers the parent location. Each item includes `caregiverId`, `name`, `inArea`,
+  `assignable`, `todayScheduledCount`, and whether it is the continuity suggestion. In-area
+  candidates sort by the number of assigned `scheduled` visits on the current calendar day
+  (ascending), then caregiver name alphabetically.
+
 ### GET /admin/visits — Oversight list
 
 - **Query:** `status?`, `from?`, `to?`, `caregiverId?`, `page?`, `limit?` (FR-083)
 
+### GET /admin/visits/:id — Visit evidence
+
+- **Success:** the full visit evidence record for oversight: client-facing proof content plus
+  `statusHistory`, media upload times, `flag`, and `statusBeforeFlag`. This sensitive oversight
+  read writes an audit event with the acting admin and time.
+
 ### POST /admin/flags/:id/resolve
 
-- **Body:** `{ note }` — flag closed with the resolving admin recorded (FR-046 path)
+- **Body:** `{ note }` — resolves the embedded flag on visit `:id`; a note is required. The flag
+  record is retained with `resolvedBy`, `resolvedAt`, and `note`; the visit status restores to
+  `statusBeforeFlag`, and the append-only status history records that restored status with reason
+  `flag_resolved` (FR-046 path).
 
 ### GET /admin/subscriptions — Payment operations list
 

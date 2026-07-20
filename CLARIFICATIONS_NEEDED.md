@@ -1,5 +1,28 @@
 # Clarifications Needed
 
+## Admin oversight: assignment-load ordering and flag-resolution transition — Resolved
+
+- **Question 1:** For S-32's documented "verified caregivers in-area sorted by current load",
+  what exactly counts as a caregiver's current load: assigned visits on the same calendar day,
+  all future scheduled visits, in-progress visits only, or another documented measure? The choice
+  changes suggestion order and must be stable/testable.
+- **Question 2:** `visits.flag` is documented as `{ reason, raisedAt, resolvedBy, resolvedAt,
+note }`, and `POST /admin/flags/:id/resolve` must close a flag with a note. After resolution,
+  what visit status should be written? `VISIT_STATUS` has `flagged` but no `resolved`; Doc 09
+  says `completed → flagged → resolved by admin`, while no endpoint contract defines whether the
+  original status is restored, the record stays `flagged` with resolution metadata, or another
+  documented transition applies.
+- **Searched:** Doc 07 FR-034, FR-035, FR-046, FR-082–084; Doc 11 `visits.flag`, indexes and
+  status enum; Doc 12 Admin assignment, oversight, and flag endpoints; Doc 14 Module 7;
+  Doc 16 S-30–S-32; Doc 20 §11 (only `UPLOAD_DELAYED` is named); Doc 09 §9 visit state machine;
+  Doc 13 §§16–17; and Doc 18 §§7, 24, and 28.
+- **Resolution:** Founder approved current load as the count of a caregiver's assigned visits with
+  `scheduled` status on the current calendar day. In-area verified candidates sort by ascending
+  count, then caregiver name alphabetically for a stable tie-break. A flag preserves the prior
+  operational status in `statusBeforeFlag`; resolution restores that status, retains the complete
+  flag record with its resolving admin and note, and appends a `flag_resolved` status-history
+  entry. No `resolved` visit-status enum is added.
+
 ## Caregiver verification gate-recording contract — Resolved
 
 - **Question:** The caregiver profile defines three verification gates, but Doc 12 previously

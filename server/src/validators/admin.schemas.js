@@ -2,7 +2,9 @@ import {
   APPLICATION_DECISIONS,
   CAREGIVER_STATUS,
   REFERENCE_OUTCOMES,
+  VISIT_STATUS,
 } from '../config/constants.js';
+import mongoose from 'mongoose';
 
 function failure(fields) {
   return { success: false, error: { flatten: () => ({ fieldErrors: fields }) } };
@@ -121,5 +123,60 @@ export const applicationListQuerySchema = {
     return Object.keys(fields).length
       ? failure(fields)
       : { success: true, data: { limit, page, status } };
+  },
+};
+
+function validDate(value) {
+  return typeof value === 'string' && !Number.isNaN(new Date(value).getTime());
+}
+
+export const adminVisitsQuerySchema = {
+  safeParse(value) {
+    const fields = {};
+    const status = value.status || undefined;
+    const caregiverId = value.caregiverId || undefined;
+    const from = value.from || undefined;
+    const to = value.to || undefined;
+    const page = value.page === undefined ? 1 : Number(value.page);
+    const limit = value.limit === undefined ? 20 : Number(value.limit);
+    if (status && !Object.values(VISIT_STATUS).includes(status)) {
+      fields.status = ['Choose a supported visit status.'];
+    }
+    if (caregiverId && !mongoose.isValidObjectId(caregiverId)) {
+      fields.caregiverId = ['Choose a valid caregiver.'];
+    }
+    if (from && !validDate(from)) fields.from = ['Enter a valid start date.'];
+    if (to && !validDate(to)) fields.to = ['Enter a valid end date.'];
+    if (from && to && validDate(from) && validDate(to) && new Date(from) > new Date(to)) {
+      fields.to = ['The end date must be after the start date.'];
+    }
+    if (!Number.isInteger(page) || page < 1) fields.page = ['Enter a valid page number.'];
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      fields.limit = ['Choose a limit from 1 to 100.'];
+    }
+    return Object.keys(fields).length
+      ? failure(fields)
+      : {
+          success: true,
+          data: {
+            caregiverId,
+            from: from ? new Date(from) : undefined,
+            limit,
+            page,
+            status,
+            to: to ? new Date(to) : undefined,
+          },
+        };
+  },
+};
+
+export const resolveFlagSchema = {
+  safeParse(value) {
+    const invalid = object(value, 'Please provide a flag-resolution note.');
+    if (invalid) return invalid;
+    const fields = {};
+    const note = optionalNote(value.note, fields);
+    if (!note) fields.note ??= ['Explain how this flag was resolved.'];
+    return Object.keys(fields).length ? failure(fields) : { success: true, data: { note } };
   },
 };
