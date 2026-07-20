@@ -245,6 +245,14 @@ POST /api/v1/auth/register
 - **Success `200`:** profile status → `active` (given) or stays `pending_consent` with the declined event appended; the visit closes accordingly (no-fault path, FR-036)
 - **Errors:** `403` not the assigned caregiver; `409 STATE_INVALID` if consent already given
 
+### POST /parents/:id/consent-permit — Signed consent-recording upload permit
+
+- **Role:** caregiver assigned to the parent's pending-consent first visit
+- **Body:** `{ mediaType: "audio" | "video" }`
+- **Success `200`:** `{ cloudName, apiKey, timestamp, signature, folder: "rozvisit/consent/<parentId>/", publicId: "<parentId>_<compact ISO timestamp>", resourceType: "auto", maxFileSize: 52428800, allowedFormats: ["mp3", "m4a", "wav", "mp4", "mov"], expiresAt }`. The permit expires after 10 minutes (AD-31).
+- **Behavior:** audio is a first-class consent option. After direct upload, the caregiver sends the returned Cloudinary `secure_url` or `public_id` as `recordingRef` to `POST /parents/:id/consent`.
+- **Errors:** `403` unless the caregiver is assigned to that parent's pending-consent first visit; `422` invalid media type.
+
 ### POST /parents/:id/consent/withdraw
 
 - **Role:** client (owner), admin
@@ -325,9 +333,16 @@ Example response:
 ### GET /visits/today — Caregiver's day
 
 - **Role:** caregiver
-- **Success `200`:** `{ items: [{ id, scheduledAt, parentName, addressText, location, standingNote, consentChoices, status }] }` ordered by time (FR-040)
+- **Success `200`:** `{ items: [{ id, scheduledAt, parentName, addressText, location, standingNote, consentChoices, consentState, status }] }` ordered by time (FR-040). `consentState` is the parent's existing `pending | given | declined | withdrawn` value; S-24 displays its consent panel only when it is `pending`.
 - **Security:** assigned visits only; address visible within the confirmed window (PRV-004)
 - **Note:** the portal caches this response for offline display; the API sets no-store on nothing here — cacheable by design
+
+### GET /visits/:id — Caregiver visit context
+
+- **Role:** caregiver assigned to the visit
+- **Success `200`:** the S-24 visit context: `{ id, clientVisitId, parentId, parentName, addressText, location, scheduledAt, standingNote, consentChoices, consentState, status, checklist, media }`.
+- **Security:** the response is caregiver-scoped; it does not grant access to the general parent-profile endpoint. It exposes only the address, location, standing note, and consent context required to perform the assigned visit.
+- **Errors:** `403` unassigned caregiver; `409 STATE_INVALID` unassigned visit; `404` unknown id.
 
 ### POST /visits/:id/checklist — Save checklist (syncable)
 
@@ -520,6 +535,7 @@ paths:
   /parents: { get, post }
   /parents/{id}: { get, patch }
   /parents/{id}/consent: { post }
+  /parents/{id}/consent-permit: { post }
   /parents/{id}/consent/withdraw: { post }
   /plans: { get }
   /subscriptions: { post }
@@ -529,6 +545,7 @@ paths:
   /visits/{id}/reschedule: { patch }
   /visits/{id}/cancel: { post }
   /visits/today: { get }
+  /visits/{id}: { get }
   /visits/{id}/checklist: { post }
   /visits/{id}/media-permit: { post }
   /visits/{id}/complete: { post }

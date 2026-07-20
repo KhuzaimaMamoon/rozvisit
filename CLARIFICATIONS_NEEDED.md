@@ -171,3 +171,34 @@
   (`bilal-caregiver@example.com` / `caregiverPass123`), plus consented Amina Bibi in Rawalpindi,
   an active Standard subscription at AED 195, and scheduled/completed/missed visits. The script
   refuses production and README now records the values printed by the seed command.
+
+## S-24 consent recording upload contract — Resolved
+
+- **Question:** What approved upload/storage path produces the required encrypted
+  `consent.recordingRef` when a caregiver records the parent’s agreement with the in-app
+  microphone/camera?
+- **Searched:** Doc 16 S-24 (record button uses in-app mic/camera), Doc 14 Modules 2 and 4
+  (caregiver consent step), Doc 12 `POST /parents/:id/consent` (a `given` state requires
+  `recordingRef`) and `POST /visits/:id/media-permit` (visit-photo-only permit), Doc 11
+  `parentProfiles.consent.recordingRef`, and Doc 18 §22 (consent recordings are sensitive).
+- **Resolution:** Founder approved `POST /parents/:id/consent-permit`: a 10-minute, parent-folder-scoped permit for audio or video consent recordings. The caregiver uploads directly, then sends the returned reference through the existing consent endpoint. Doc 12 and AD-31 record the decision.
+
+## S-24 consent-state read field — Resolved
+
+- **Question:** May the caregiver’s visit-detail/today response expose the parent’s embedded
+  consent state as a derived field (for example, `consentState`) so S-24 can truthfully decide
+  whether to render its first-visit consent panel?
+- **Searched:** Doc 16 S-24 (panel is conditional when consent is pending), Doc 12
+  `GET /visits/today` (lists `consentChoices` but not consent state) and `GET /parents/:id`
+  (client/admin only), Doc 11 parentProfiles consent schema, and Doc 14 Module 4.
+- **Resolution:** Founder approved `consentState` on caregiver visit context responses, using the existing `pending | given | declined | withdrawn` parent-consent enum. S-24 renders its consent panel only for `pending`; Doc 12 records the response contract.
+
+## S-24 checklist concern-chip enum — Resolved
+
+- **Question:** Which exact string values and user-facing labels are allowed for the documented
+  checklist `concerns` chip set?
+- **Searched:** Doc 07 FR-041 ("concern options"), Doc 11 visits.checklist (`concerns:
+[String]`), Doc 12 checklist body (`concerns: [enum strings]`), Doc 15 ChecklistForm,
+  Doc 16 S-24, Doc 17 Visit Flow brief, Doc 27 analytics (pre-defined chip ids), and
+  `server/src/config/constants.js`.
+- **Resolution:** Founder approved the non-diagnostic enum `appetite`, `mobility`, `medication`, `mood_change`, `home_condition`, and `other`, with the labels supplied in the resolution. Doc 07, Doc 11, and `config/constants.js` record it.

@@ -199,6 +199,8 @@ lower numbers are contacted first.
 |---|---|---|---|
 | FR-040 | 1 | The system shall show a caregiver today's assigned visits — time, address, map link — loading from local cache when offline, marked with sync time. | US-VISIT-003 |
 | FR-041 | 1 | The system shall provide a tap-based checklist (medication yes/no, mood 1–5, concern options, optional short note) completable in under two minutes. | US-VISIT-004 |
+
+Approved concern options: `appetite` (Ate less than usual), `mobility` (Moved less than usual), `medication` (Medication question), `mood_change` (Seemed different than usual), `home_condition` (Home needs attention), and `other` (Something else — see note). These are observational, non-diagnostic categories; multiple values may be selected.
 | FR-042 | 1 | The system shall accept visit media only from the live in-app camera — never from the gallery or file picker. | US-VISIT-005, BR-011 |
 | FR-043 | 1 | The system shall work fully offline during a visit: checklist and photos save locally with device capture time, then sync automatically with visible states (saved / waiting to send / sent). | US-VISIT-004/005, Saima |
 | FR-044 | 1 | The system shall store both capture time and upload time on every media file. | US-VISIT-005 |

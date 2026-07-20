@@ -11,6 +11,17 @@ import {
   saveCompletion,
 } from '../../offline/visitQueue.js';
 import CameraCapture from './CameraCapture.jsx';
+import ConsentPanel from './ConsentPanel.jsx';
+import SyncStateBar from './SyncStateBar.jsx';
+
+const CONCERN_CHIPS = [
+  ['appetite', 'Ate less than usual'],
+  ['mobility', 'Moved less than usual'],
+  ['medication', 'Medication question'],
+  ['mood_change', 'Seemed different than usual'],
+  ['home_condition', 'Home needs attention'],
+  ['other', 'Something else (see note)'],
+];
 
 const syncingCompletionIds = new Set();
 
@@ -108,7 +119,7 @@ async function processQueuedCompletion(draft) {
 
 export default function VisitFlow() {
   const visitId = useMemo(() => window.location.pathname.split('/').at(-1), []);
-  const [form, setForm] = useState({ medicationTaken: 'yes', mood: '3', note: '' });
+  const [form, setForm] = useState({ concerns: [], medicationTaken: 'yes', mood: '3', note: '' });
   const [captures, setCaptures] = useState([]);
   const [selectedCaptureId, setSelectedCaptureId] = useState(null);
   const [state, setState] = useState({
@@ -116,6 +127,25 @@ export default function VisitFlow() {
     saving: false,
     sync: navigator.onLine ? 'synced' : 'pending',
   });
+  const [visit, setVisit] = useState(null);
+  const [visitError, setVisitError] = useState('');
+  const [checklistStarted, setChecklistStarted] = useState(false);
+
+  useEffect(() => {
+    api(`/visits/${visitId}`)
+      .then((data) => {
+        setVisit(data);
+        if (data.checklist) {
+          setForm({
+            concerns: data.checklist.concerns ?? [],
+            medicationTaken: data.checklist.medicationTaken ? 'yes' : 'no',
+            mood: String(data.checklist.mood),
+            note: '',
+          });
+        }
+      })
+      .catch((error) => setVisitError(error.message));
+  }, [visitId]);
 
   useEffect(() => {
     const retry = async () => {
@@ -160,6 +190,30 @@ export default function VisitFlow() {
     setState((current) => ({ ...current, message: '' }));
   }
 
+  function updateChecklist(next) {
+    setChecklistStarted(true);
+    setForm((current) => ({ ...current, ...next }));
+  }
+
+  useEffect(() => {
+    if (!checklistStarted || !visit || visit.consentState !== 'given') return undefined;
+    const timer = window.setTimeout(() => {
+      api(`/visits/${visitId}/checklist`, {
+        body: JSON.stringify({
+          capturedAt: new Date().toISOString(),
+          concerns: form.concerns,
+          medicationTaken: form.medicationTaken === 'yes',
+          mood: Number(form.mood),
+          note: form.note,
+        }),
+        method: 'POST',
+      })
+        .then(() => setState((current) => ({ ...current, sync: 'synced' })))
+        .catch(() => setState((current) => ({ ...current, sync: 'pending' })));
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [checklistStarted, form, visit, visitId]);
+
   function removeCapture(clientMediaId) {
     setCaptures((items) => {
       const selected = items.find((item) => item.clientMediaId === clientMediaId);
@@ -176,12 +230,12 @@ export default function VisitFlow() {
     const checklist = {
       medicationTaken: form.medicationTaken === 'yes',
       mood: Number(form.mood),
-      concerns: [],
+      concerns: form.concerns,
       note: form.note,
       capturedAt,
     };
     const draft = {
-      clientVisitId: visitId,
+      clientVisitId: visit.clientVisitId,
       visitId,
       checklist,
       captures,
@@ -222,6 +276,21 @@ export default function VisitFlow() {
     }
   }
 
+  async function markParentDeclined() {
+    try {
+      await api(`/visits/${visitId}/parent-declined`, {
+        body: JSON.stringify({ capturedAt: new Date().toISOString() }),
+        method: 'POST',
+      });
+      window.location.assign('/care/today');
+    } catch (error) {
+      setState((current) => ({ ...current, message: error.message }));
+    }
+  }
+
+  if (visitError) return <main className="portal-placeholder text-emergency">{visitError}</main>;
+  if (!visit) return <main className="portal-placeholder text-muted">Loading visit details…</main>;
+
   return (
     <main className="min-h-screen bg-background px-4 py-4 sm:px-6 sm:py-5 lg:h-screen lg:overflow-hidden">
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col lg:h-full lg:min-h-0">
@@ -230,8 +299,27 @@ export default function VisitFlow() {
             <BrandMark />
             <p className="mt-3 text-sm font-medium text-primary">Caregiver visit</p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-text">
-              Complete today&apos;s care
+              {visit.parentName}
             </h1>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              {new Date(visit.scheduledAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}{' '}
+              · {visit.addressText}
+            </p>
+            {visit.standingNote ? (
+              <p className="mt-2 rounded-full bg-surface px-3 py-1 text-sm text-primary">
+                {visit.standingNote}
+              </p>
+            ) : null}
+            {visit.consentChoices ? (
+              <p className="mt-2 text-xs text-muted">
+                Preferred times:{' '}
+                {visit.consentChoices.preferredTimes?.join(', ') || 'Not specified'} · Photo
+                boundaries: {visit.consentChoices.photoBoundaries || 'Not specified'}
+              </p>
+            ) : null}
           </div>
           <div className="flex max-w-xs flex-col items-start gap-3 sm:items-end">
             <p className="text-sm leading-6 text-muted sm:text-right">
@@ -249,6 +337,22 @@ export default function VisitFlow() {
             </div>
           </div>
         </header>
+        <div className="mt-4">
+          <SyncStateBar state={state.sync} />
+          {state.message ? <p className="mt-2 text-sm text-muted">{state.message}</p> : null}
+        </div>
+        {visit.consentState === 'pending' ? (
+          <div className="mt-5">
+            <ConsentPanel
+              onResolved={(consentState) => {
+                if (consentState === 'declined') window.location.assign('/care/today');
+                setVisit((current) => ({ ...current, consentState }));
+              }}
+              parentId={visit.parentId}
+              visitId={visit.id}
+            />
+          </div>
+        ) : null}
         <div className="mt-5 grid min-h-0 flex-1 gap-5 lg:grid-cols-[0.82fr_1.35fr_0.62fr] lg:items-stretch">
           <section className="flex min-h-0 flex-col rounded-lg border border-border bg-surface p-5 shadow-sm lg:h-full">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -259,33 +363,61 @@ export default function VisitFlow() {
                 Medication taken
                 <select
                   className="h-10 w-full rounded-sm border border-border bg-surface px-3 text-text"
-                  onChange={(event) => setForm({ ...form, medicationTaken: event.target.value })}
+                  onChange={(event) => updateChecklist({ medicationTaken: event.target.value })}
                   value={form.medicationTaken}
                 >
                   <option value="yes">Yes</option>
                   <option value="no">No</option>
                 </select>
               </label>
-              <FormInput
-                id="mood"
-                label="Mood (1–5)"
-                max="5"
-                min="1"
-                onChange={(event) => setForm({ ...form, mood: event.target.value })}
-                type="number"
-                value={form.mood}
-              />
+              <fieldset>
+                <legend className="text-sm font-medium text-text">Mood (1–5)</legend>
+                <div className="mt-2 flex gap-2">
+                  {[1, 2, 3, 4, 5].map((mood) => (
+                    <button
+                      aria-label={`Mood ${mood}`}
+                      className={`h-11 min-w-11 rounded-full border text-sm font-semibold ${Number(form.mood) === mood ? 'border-primary bg-primary text-surface' : 'border-border bg-surface text-text'}`}
+                      key={mood}
+                      onClick={() => updateChecklist({ mood: String(mood) })}
+                      type="button"
+                    >
+                      {mood}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend className="text-sm font-medium text-text">Concerns</legend>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {CONCERN_CHIPS.map(([value, label]) => (
+                    <button
+                      className={`min-h-11 rounded-full border px-3 text-sm ${form.concerns.includes(value) ? 'border-primary bg-primary text-surface' : 'border-primary bg-primary-soft text-primary'}`}
+                      key={value}
+                      onClick={() =>
+                        updateChecklist({
+                          concerns: form.concerns.includes(value)
+                            ? form.concerns.filter((item) => item !== value)
+                            : [...form.concerns, value],
+                        })
+                      }
+                      type="button"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
               <FormInput
                 id="note"
                 label="Short note"
-                onChange={(event) => setForm({ ...form, note: event.target.value })}
+                onChange={(event) => updateChecklist({ note: event.target.value })}
                 optional
                 value={form.note}
               />
             </div>
             <div className="mt-auto border-t border-border pt-4 text-sm leading-6 text-muted">
-              Save the checklist, then capture at least one photo in the in-app camera to complete
-              this visit.
+              Checklist changes save automatically. Capture at least one in-app camera photo to
+              complete this visit.
             </div>
           </section>
           <div className="min-h-[28rem] lg:min-h-0">
@@ -350,6 +482,20 @@ export default function VisitFlow() {
             onClick={complete}
           >
             Complete visit
+          </Button>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-sm text-muted">
+          <span>
+            Review: medication {form.medicationTaken}, mood {form.mood}/5, {form.concerns.length}{' '}
+            concern{form.concerns.length === 1 ? '' : 's'}, and {captures.length} photo
+            {captures.length === 1 ? '' : 's'}.
+          </span>
+          <Button
+            disabled={state.saving || visit.consentState !== 'given'}
+            onClick={markParentDeclined}
+            variant="ghost"
+          >
+            Parent declined
           </Button>
         </div>
         {selectedCapture ? (

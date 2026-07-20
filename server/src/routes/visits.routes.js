@@ -4,6 +4,7 @@ import {
   completeVisit,
   createMediaPermit,
   feed,
+  getCaregiverVisit,
   parentDeclined,
   saveChecklist,
   scheduleVisits,
@@ -42,6 +43,7 @@ visitsRouter.post(
   completeVisit,
 );
 visitsRouter.get('/today', requireRole('caregiver'), today);
+visitsRouter.get('/:id', requireRole('caregiver'), getCaregiverVisit);
 visitsRouter.post(
   '/:id/checklist',
   requireRole('caregiver'),

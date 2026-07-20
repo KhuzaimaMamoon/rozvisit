@@ -18,6 +18,7 @@ import {
   ValidationError,
 } from '../utils/AppError.js';
 import { encrypt } from '../utils/crypto.js';
+import { decrypt } from '../utils/crypto.js';
 
 function startOfWeek(date) {
   const value = new Date(date);
@@ -61,6 +62,44 @@ function serializeVisit(visit) {
       uploadedAt: item.uploadedAt,
       sourceFlag: item.sourceFlag,
     })),
+  };
+}
+
+function decryptOptional(value) {
+  return value ? decrypt(value) : null;
+}
+
+function serializeConsentChoices(parent) {
+  const choices = parent.consent?.choices;
+  if (!choices) return null;
+  return {
+    preferredTimes: choices.preferredTimes ?? [],
+    photoBoundaries: decryptOptional(choices.photoBoundaries),
+    other: decryptOptional(choices.other),
+  };
+}
+
+function serializeCaregiverVisitBase(visit, parent) {
+  return {
+    id: visit._id.toString(),
+    parentName: parent.name,
+    addressText: decrypt(parent.addressText),
+    location: { lng: parent.location.coordinates[0], lat: parent.location.coordinates[1] },
+    scheduledAt: visit.scheduledAt,
+    standingNote: visit.standingNote,
+    consentChoices: serializeConsentChoices(parent),
+    consentState: parent.consent.state,
+    status: visit.status,
+  };
+}
+
+function serializeCaregiverVisitContext(visit, parent) {
+  return {
+    ...serializeCaregiverVisitBase(visit, parent),
+    clientVisitId: visit.clientVisitId,
+    parentId: visit.parentId.toString(),
+    checklist: serializeVisit(visit).checklist,
+    media: serializeVisit(visit).media,
   };
 }
 
@@ -155,7 +194,35 @@ export const visitService = Object.freeze({
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
     const visits = await visitRepository.findTodayByCaregiver(caregiverId, start, end);
-    return { items: visits.map(serializeVisit) };
+    const parents = await Promise.all(
+      visits.map((visit) => parentRepository.findById(visit.parentId)),
+    );
+    return {
+      items: visits.map((visit, index) => serializeCaregiverVisitBase(visit, parents[index])),
+    };
+  },
+
+  async getCaregiverVisit(caregiverId, visitId) {
+    const visit = await getAssignedVisit(caregiverId, visitId);
+    const parent = await parentRepository.findById(visit.parentId);
+    if (!parent) throw new NotFoundError();
+    return serializeCaregiverVisitContext(visit, parent);
+  },
+
+  async createConsentPermit(caregiverId, parentId, _body) {
+    const [parent, firstVisit] = await Promise.all([
+      parentRepository.findById(parentId),
+      visitRepository.findFirstByParent(parentId),
+    ]);
+    if (!parent || !firstVisit) throw new NotFoundError();
+    if (
+      parent.consent.state !== CONSENT_STATE.PENDING ||
+      !firstVisit.caregiverId ||
+      firstVisit.caregiverId.toString() !== caregiverId
+    ) {
+      throw new ForbiddenError();
+    }
+    return cloudinaryMediaStorage.createConsentUploadPermit({ parentId });
   },
 
   async captureConsent(caregiverId, parentId, { state, recordingRef, choices, byVisitId }) {

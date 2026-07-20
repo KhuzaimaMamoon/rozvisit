@@ -6,6 +6,8 @@ function validDate(value) {
   return typeof value === 'string' && !Number.isNaN(new Date(value).getTime());
 }
 
+import { VISIT_CONCERN_CHIPS } from '../config/constants.js';
+
 export const scheduleVisitsSchema = {
   safeParse(value) {
     const fields = {};
@@ -66,7 +68,10 @@ export const checklistSchema = {
     if (typeof value?.medicationTaken !== 'boolean') fields.medicationTaken = ['Choose yes or no.'];
     if (!Number.isInteger(value?.mood) || value.mood < 1 || value.mood > 5)
       fields.mood = ['Choose a mood from 1 to 5.'];
-    if (!Array.isArray(value?.concerns) || value.concerns.some((item) => typeof item !== 'string'))
+    if (
+      !Array.isArray(value?.concerns) ||
+      value.concerns.some((item) => !Object.values(VISIT_CONCERN_CHIPS).includes(item))
+    )
       fields.concerns = ['Choose supported concern options.'];
     if (!validDate(value?.capturedAt)) fields.capturedAt = ['A capture time is required.'];
     return Object.keys(fields).length
@@ -93,6 +98,14 @@ export const parentDeclinedSchema = {
           },
         }
       : failure({ capturedAt: ['A capture time is required.'] });
+  },
+};
+
+export const consentPermitSchema = {
+  safeParse(value) {
+    return ['audio', 'video'].includes(value?.mediaType)
+      ? { success: true, data: { mediaType: value.mediaType } }
+      : failure({ mediaType: ['Choose audio or video for the consent recording.'] });
   },
 };
 

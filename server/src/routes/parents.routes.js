@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createParent,
+  createConsentPermit,
   captureConsent,
   getParent,
   listParents,
@@ -11,7 +12,7 @@ import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { validate } from '../middleware/validate.js';
 import { createParentSchema, updateParentSchema } from '../validators/parents.schemas.js';
-import { consentSchema } from '../validators/visits.schemas.js';
+import { consentPermitSchema, consentSchema } from '../validators/visits.schemas.js';
 
 export const parentsRouter = Router();
 
@@ -23,6 +24,12 @@ parentsRouter.post(
   requireRole('caregiver'),
   validate(consentSchema),
   captureConsent,
+);
+parentsRouter.post(
+  '/:id/consent-permit',
+  requireRole('caregiver'),
+  validate(consentPermitSchema),
+  createConsentPermit,
 );
 parentsRouter.post('/:id/consent/withdraw', requireRole('client', 'admin'), withdrawConsent);
 parentsRouter.get('/:id', requireRole('client', 'admin'), getParent);

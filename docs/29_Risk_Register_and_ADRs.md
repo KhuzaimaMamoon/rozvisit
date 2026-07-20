@@ -1201,6 +1201,17 @@ The following decisions were made across Documents 09–21 but never captured as
 
 ---
 
+### AD-31 — Consent recordings use a separate signed-upload permit from visit media
+
+- **Status:** Confirmed
+- **Context:** AD-30 established the visit-media permit contract. Consent recordings are a distinct, more sensitive category (Doc 18 §22) with their own folder and lifecycle needs.
+- **Decision:** A dedicated `POST /parents/:id/consent-permit` endpoint, separate folder scope, audio allowed as a first-class option (not just video).
+- **Alternatives considered:** Reusing the visit-media permit with a different folder parameter — rejected, since it would blur the authorization boundary (visit-media permits check visit assignment; consent permits check parent-level first-visit caregiver assignment — these are related but distinct checks worth keeping in separate code paths).
+- **Consequences:** A second permit-issuing endpoint to maintain, but clean separation of concerns.
+- **Review trigger:** None anticipated.
+
+---
+
 ## ADR Maintenance
 
 - **New ADRs are added** when a significant technical decision is made, in the same PR as the code that implements it.

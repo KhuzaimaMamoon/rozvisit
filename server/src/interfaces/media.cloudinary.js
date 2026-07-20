@@ -5,6 +5,7 @@ import { assertMediaStorage } from './MediaStorage.js';
 const PERMIT_TTL_SECONDS = 10 * 60;
 const MAX_FILE_SIZE = 52_428_800;
 const ALLOWED_FORMATS = Object.freeze(['jpg', 'jpeg', 'png', 'heic', 'mp4', 'mov']);
+const CONSENT_ALLOWED_FORMATS = Object.freeze(['mp3', 'm4a', 'wav', 'mp4', 'mov']);
 
 function compactIso(value) {
   return value
@@ -46,6 +47,25 @@ export const cloudinaryMediaStorage = assertMediaStorage({
       resourceType: 'auto',
       maxFileSize: MAX_FILE_SIZE,
       allowedFormats: ALLOWED_FORMATS,
+      expiresAt,
+    };
+  },
+  createConsentUploadPermit({ parentId }) {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const expiresAt = new Date((timestamp + PERMIT_TTL_SECONDS) * 1000).toISOString();
+    const folder = `rozvisit/consent/${parentId}/`;
+    const publicId = `${parentId}_${compactIso(new Date(timestamp * 1000))}`;
+    const signedParams = { folder, public_id: publicId, timestamp };
+    return {
+      cloudName: env.cloudinary.cloudName,
+      apiKey: env.cloudinary.apiKey,
+      timestamp,
+      signature: cloudinarySignature(signedParams),
+      folder,
+      publicId,
+      resourceType: 'auto',
+      maxFileSize: MAX_FILE_SIZE,
+      allowedFormats: CONSENT_ALLOWED_FORMATS,
       expiresAt,
     };
   },
