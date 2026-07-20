@@ -1,5 +1,12 @@
 # Clarifications Needed
 
+## Client report-a-problem MVP scope — Open
+
+- **Question:** Is the client `Report a Problem` screen (`/app/visits/:id/report`) MVP scope or Phase 2?
+- **Searched:** Doc 16 S-19 lists it as MVP but says its API is reserved/open; Doc 14 Module 7 places the dispute queue, its data shape, and API dependencies in Phase 2.
+- **Constraint:** Docs 14 and 16 have the same source-of-truth rank. No create-case endpoint or dispute model exists, so a client report form cannot save honestly.
+- **What is needed:** A founder decision to either authorize the minimal MVP create-case contract or defer the client report route with the Phase 2 dispute queue.
+
 ## Local auth-email link inspection — Open
 
 - **Question:** How should a developer obtain a real email-verification or password-reset URL during local manual testing when the local email channel is intentionally a no-op logger and raw single-use tokens must never appear in logs?
