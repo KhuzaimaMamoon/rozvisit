@@ -488,6 +488,11 @@ All endpoints: **Role admin**, all mutations audited automatically (FR-082).
 
 - **Role:** owner — **Success `200`:** `readAt` set
 
+### GET /notifications/failures — Delivery failures
+
+- **Role:** admin — **Query:** `page?`, `limit?` — open `notif.failed` records after a channel has
+  exhausted four delivery attempts; each item references its notification record.
+
 ---
 
 ## Module: Health

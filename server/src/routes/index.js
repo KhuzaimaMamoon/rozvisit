@@ -6,6 +6,7 @@ import { parentsRouter } from './parents.routes.js';
 import { plansRouter } from './plans.routes.js';
 import { subscriptionsRouter } from './subscriptions.routes.js';
 import { adminFlagsRouter, adminVisitsRouter, feedRouter, visitsRouter } from './visits.routes.js';
+import { notificationsRouter } from './notifications.routes.js';
 
 export const apiRouter = Router();
 
@@ -19,3 +20,4 @@ apiRouter.use('/visits', visitsRouter);
 apiRouter.use('/feed', feedRouter);
 apiRouter.use('/admin/visits', adminVisitsRouter);
 apiRouter.use('/admin/flags', adminFlagsRouter);
+apiRouter.use('/notifications', notificationsRouter);

@@ -135,7 +135,9 @@ The one-page overview. Section 1–7 walk each phase in detail.
 - **Scheduling + visit execution:** weekly slots with allowance; the offline-first caregiver visit flow with camera-only proof (US-VISIT-001–006).
 - **Client proof feed:** the core moment (Journey C7).
 - **Admin basics:** verification pipeline; assignment; visit oversight; audit trail (US-ADMIN-001–003).
-- **Notifications:** in-app + push + email; calm by default (US-NOTIF-001).
+- **Notifications:** in-app + push + email; calm by default (US-NOTIF-001). Push-device token
+  registration and per-channel preferences are deferred follow-up work; MVP retains a swap-ready
+  local push channel without collecting device tokens.
 
 **Features (Should):**
 - **Common-password screen** at registration (Doc 13 §8, §27).

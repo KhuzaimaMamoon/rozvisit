@@ -88,3 +88,16 @@ export const COUNTRY_CURRENCY_MAP = Object.freeze({
 });
 
 export const DEFAULT_CURRENCY = 'USD';
+
+export const NOTIFICATION_CHANNEL = Object.freeze({
+  EMAIL: 'email',
+  IN_APP: 'in_app',
+  PUSH: 'push',
+});
+
+export const NOTIFICATION_DELIVERY_STATE = Object.freeze({
+  FAILED: 'failed',
+  QUEUED: 'queued',
+  RETRYING: 'retrying',
+  SENT: 'sent',
+});
