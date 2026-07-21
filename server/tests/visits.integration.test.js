@@ -360,6 +360,7 @@ describe('Visit API lifecycle', () => {
       folder: `rozvisit/visits/${visit._id}/`,
       maxFileSize: 52428800,
       resourceType: 'auto',
+      type: 'authenticated',
     });
     const completion = {
       clientVisitId: 'offline-visit-1',

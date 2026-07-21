@@ -1,6 +1,6 @@
 # Clarifications Needed
 
-## Visit-proof Cloudinary delivery type — Open
+## Visit-proof Cloudinary delivery type — Resolved
 
 - **Question:** The documented client-feed contract requires short-lived, access-controlled
   media URLs, but the approved visit upload permit does not include Cloudinary's
@@ -10,10 +10,10 @@
   short-lived playback URLs.
 - **Searched:** Doc 12 `POST /visits/:id/media-permit` and `GET /feed`; Doc 18 §25;
   Doc 09 §§19 and 26; AD-30; `media.cloudinary.js`; `visit.service.js`.
-- **What is needed:** Approval to extend the documented visit-media permit/upload request with
-  `type: authenticated` (and update Doc 12/AD-30), or confirmation that access-controlled feed
-  issuance is sufficient while Cloudinary's original delivery URL remains public. The change
-  affects already-approved signed upload parameters and cannot be assumed.
+- **Resolution:** Founder approved `type: "authenticated"` for all new visit-media permits and
+  direct uploads. Feed media remains served through an ownership-checked, short-lived signed URL.
+  Doc 12 and AD-30 record the amended contract; earlier development assets using `upload` remain
+  legacy test data and require no migration.
 
 ## Client report-a-problem MVP scope — Resolved
 

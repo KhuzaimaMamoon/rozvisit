@@ -63,12 +63,14 @@ export const cloudinaryMediaStorage = assertMediaStorage({
     const expiresAt = new Date((timestamp + PERMIT_TTL_SECONDS) * 1000).toISOString();
     const folder = `rozvisit/visits/${visitId}/`;
     const publicId = `${visitId}*${clientMediaId}*${compactIso(capturedAt)}`;
+    const type = 'authenticated';
     // Cloudinary signs only parameters submitted with the direct-upload form.
     // resource_type selects the URL path; the policy fields below remain permit metadata.
     const signedParams = {
       folder,
       public_id: publicId,
       timestamp,
+      type,
     };
     return {
       clientMediaId,
@@ -79,6 +81,7 @@ export const cloudinaryMediaStorage = assertMediaStorage({
       folder,
       publicId,
       resourceType: 'auto',
+      type,
       maxFileSize: MAX_FILE_SIZE,
       allowedFormats: ALLOWED_FORMATS,
       expiresAt,

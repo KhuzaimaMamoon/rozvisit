@@ -50,6 +50,7 @@ async function uploadPermit(permit, blob) {
   body.append('signature', permit.signature);
   body.append('folder', permit.folder);
   body.append('public_id', permit.publicId);
+  body.append('type', permit.type);
   const uploadEndpoint = `https://api.cloudinary.com/v1_1/${permit.cloudName}/${permit.resourceType}/upload`;
   const response = await fetch(uploadEndpoint, {
     method: 'POST',

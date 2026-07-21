@@ -21,7 +21,7 @@ test.beforeEach(clearDatabase);
 
 async function openCaregiverVisit(page, visitId, caregiver) {
   await mockCamera(page);
-  await mockCloudinaryUpload(page);
+  const uploads = await mockCloudinaryUpload(page);
   await login(page, {
     destination: /\/care\/today$/,
     email: caregiver.email,
@@ -29,6 +29,7 @@ async function openCaregiverVisit(page, visitId, caregiver) {
   });
   await page.goto(`/care/visits/${visitId}`);
   await expect(page.getByRole('heading', { name: 'Amina Bibi' })).toBeVisible();
+  return uploads;
 }
 
 async function capturePhoto(page) {
@@ -182,7 +183,7 @@ test('AC-05: completion needs camera proof and the browser renders no gallery pi
 }) => {
   const caregiver = await createCaregiver();
   const { visit } = await createActiveCare({ caregiver });
-  await openCaregiverVisit(page, visit._id, caregiver);
+  const uploads = await openCaregiverVisit(page, visit._id, caregiver);
 
   await page.getByLabel('Mood 4').click();
   await expect(page.getByRole('button', { name: 'Complete visit' })).toBeDisabled();
@@ -191,6 +192,9 @@ test('AC-05: completion needs camera proof and the browser renders no gallery pi
   await page.getByRole('button', { name: 'Complete visit' }).click();
   await page.waitForURL(/\/care\/today$/);
   await expect.poll(async () => (await Visit.findById(visit._id)).status).toBe('completed');
+  expect(uploads).toHaveLength(1);
+  expect(uploads[0]).toContain('name="type"');
+  expect(uploads[0]).toContain('authenticated');
 });
 
 test('AC-06: offline completion persists, synchronizes after reconnect, and retains capture/upload times', async ({
