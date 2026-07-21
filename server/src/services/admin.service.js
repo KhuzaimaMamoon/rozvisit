@@ -7,6 +7,8 @@ import {
 import { auditRepository } from '../repositories/audit.repo.js';
 import { caregiverRepository } from '../repositories/caregiver.repo.js';
 import { parentRepository } from '../repositories/parent.repo.js';
+import { subscriptionRepository } from '../repositories/subscription.repo.js';
+import { userRepository } from '../repositories/user.repo.js';
 import { visitRepository } from '../repositories/visit.repo.js';
 import { notifyRecipient } from '../notifications/dispatch.js';
 import { ConflictError, NotFoundError } from '../utils/AppError.js';
@@ -55,6 +57,59 @@ function serializeApplication(profile, { includeSensitive = false } = {}) {
       decidedAt: profile.verification.decidedAt,
       decidedBy: profile.verification.decidedBy?.toString() ?? null,
     },
+  };
+}
+
+function serializeCaregiverDirectory(profile) {
+  const user = profile.userId;
+  return {
+    id: profile._id.toString(),
+    user: {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+    },
+    serviceArea: {
+      lng: profile.serviceArea.coordinates[0],
+      lat: profile.serviceArea.coordinates[1],
+      radiusKm: profile.serviceArea.radiusKm,
+    },
+    status: profile.status,
+    gates: profile.verification.gates,
+    applicationCreatedAt: profile.createdAt,
+    verification: {
+      cnicRecordedAt: profile.verification.gateRecords?.cnic?.recordedAt ?? null,
+      interviewRecordedAt: profile.verification.gateRecords?.interview?.recordedAt ?? null,
+      referenceRecordedAt: profile.verification.gateRecords?.reference?.recordedAt ?? null,
+      decidedAt: profile.verification.decidedAt ?? null,
+    },
+  };
+}
+
+function serializeClientDirectory({ client, profile, parents, subscriptions }) {
+  return {
+    id: client._id.toString(),
+    name: client.name,
+    email: client.email,
+    phone: client.phone,
+    countryCode: profile?.countryCode ?? null,
+    currency: profile?.currency ?? null,
+    createdAt: client.createdAt,
+    parents: parents.map((parent) => ({
+      id: parent._id.toString(),
+      name: parent.name,
+      status: parent.status,
+      createdAt: parent.createdAt,
+    })),
+    subscriptions: subscriptions.map((subscription) => ({
+      id: subscription._id.toString(),
+      parentId: subscription.parentId.toString(),
+      planKey: subscription.planKey,
+      state: subscription.state,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      updatedAt: subscription.updatedAt,
+    })),
   };
 }
 
@@ -195,6 +250,62 @@ function serializeSuggestion({ caregiver, continuity, inArea, todayScheduledCoun
 }
 
 export const adminService = Object.freeze({
+  async listCaregiverDirectory({ limit = 20, page = 1 }) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      caregiverRepository.listDirectory({ limit, skip }),
+      caregiverRepository.countDirectory(),
+    ]);
+    return { items: items.map(serializeCaregiverDirectory), page, total };
+  },
+
+  async viewCaregiverCnic(actorId, caregiverId) {
+    const profile = await caregiverRepository.findDirectoryCnicById(caregiverId);
+    if (!profile) throw new NotFoundError();
+    await audit(actorId, 'cnic.viewed', profile._id, { source: 'caregiver_directory' });
+    return { id: profile._id.toString(), cnicNumber: decrypt(profile.verification.cnicNumber) };
+  },
+
+  async listClientDirectory({ limit = 20, page = 1 }) {
+    const skip = (page - 1) * limit;
+    const [clients, total] = await Promise.all([
+      userRepository.listClients({ limit, skip }),
+      userRepository.countClients(),
+    ]);
+    const clientIds = clients.map((client) => client._id);
+    const [profiles, parents, subscriptions] = await Promise.all([
+      userRepository.findClientProfilesByUserIds(clientIds),
+      parentRepository.findDirectoryByClientIds(clientIds),
+      subscriptionRepository.findDirectoryByClientIds(clientIds),
+    ]);
+    const profilesByClientId = new Map(
+      profiles.map((profile) => [profile.userId.toString(), profile]),
+    );
+    const parentsByClientId = new Map();
+    for (const parent of parents) {
+      const key = parent.clientId.toString();
+      parentsByClientId.set(key, [...(parentsByClientId.get(key) ?? []), parent]);
+    }
+    const subscriptionsByClientId = new Map();
+    for (const subscription of subscriptions) {
+      const key = subscription.clientId.toString();
+      subscriptionsByClientId.set(key, [...(subscriptionsByClientId.get(key) ?? []), subscription]);
+    }
+    return {
+      items: clients.map((client) => {
+        const key = client._id.toString();
+        return serializeClientDirectory({
+          client,
+          profile: profilesByClientId.get(key),
+          parents: parentsByClientId.get(key) ?? [],
+          subscriptions: subscriptionsByClientId.get(key) ?? [],
+        });
+      }),
+      page,
+      total,
+    };
+  },
+
   async listApplications({ limit = 20, page = 1, status }) {
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([

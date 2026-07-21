@@ -34,6 +34,14 @@ export const visitRepository = Object.freeze({
       scheduledAt: 1,
     });
   },
+  findMineByCaregiver(caregiverId, { before, limit }) {
+    return Visit.find({
+      caregiverId,
+      ...(before ? { scheduledAt: { $lt: before } } : {}),
+    })
+      .sort({ scheduledAt: -1 })
+      .limit(limit);
+  },
   findWeekBySubscription(subscriptionId, start, end) {
     return Visit.find({ subscriptionId, scheduledAt: { $gte: start, $lt: end } });
   },

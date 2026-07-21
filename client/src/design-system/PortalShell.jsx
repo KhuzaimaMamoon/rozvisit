@@ -8,11 +8,14 @@ const linksByRole = Object.freeze({
   admin: [
     ['Overview', '/admin'],
     ['Applications', '/admin/applications'],
+    ['Caregivers', '/admin/caregivers'],
+    ['Clients', '/admin/clients'],
     ['Visits', '/admin/visits'],
     ['Subscriptions', '/admin/subscriptions'],
   ],
   caregiver: [
     ['Today', '/care/today'],
+    ['My visits', '/care/visits'],
     ['Earnings', '/care/earnings'],
   ],
   client: [

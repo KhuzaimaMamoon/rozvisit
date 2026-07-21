@@ -26,6 +26,11 @@ export const subscriptionRepository = Object.freeze({
   findByState(state) {
     return Subscription.find(state ? { state } : {}).sort({ updatedAt: -1 });
   },
+  findDirectoryByClientIds(clientIds) {
+    return Subscription.find({ clientId: { $in: clientIds } }).select(
+      'clientId parentId planKey state currentPeriodEnd updatedAt',
+    );
+  },
   findRenewalCandidates(now) {
     return Subscription.find({
       state: { $in: [SUBSCRIPTION_STATE.ACTIVE, SUBSCRIPTION_STATE.GRACE] },

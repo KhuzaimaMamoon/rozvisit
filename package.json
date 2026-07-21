@@ -14,6 +14,7 @@
     "build": "npm run build -w client",
     "test": "npm run test -w server",
     "seed": "DOTENV_CONFIG_PATH=server/.env node scripts/seed.js",
+    "grant:admin-directory-permissions": "DOTENV_CONFIG_PATH=server/.env node scripts/grant-admin-directory-permissions.js",
     "lint": "oxlint client server",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

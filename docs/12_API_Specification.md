@@ -190,13 +190,13 @@ POST /api/v1/auth/register
 
 - **Role:** public
 - **Body:** `{ email, password }`
-- **Success `200`:** `{ data: { accessToken, user: { id, name, role, status } } }` + refresh cookie set
+- **Success `200`:** `{ data: { accessToken, user: { id, name, role, status } } }` + a role-scoped refresh cookie set (`refreshToken_client`, `refreshToken_caregiver`, or `refreshToken_admin`)
 - **Errors:** `401 UNAUTHENTICATED` with the same status, message, shape, and approximate timing for wrong email, wrong password, and unverified email; `403 ACCOUNT_DISABLED`; `429`
 - **Note:** caregiver in `applied`/`in_review` logs in successfully but the portal routes them to status-only (FR-003) — the API reflects it in `user.status`
 
 ### POST /auth/refresh
 
-- **Role:** cookie-bearing — **Success `200`:** new `accessToken` — **Errors:** `401` (missing/revoked/expired → full re-login)
+- **Role:** cookie-bearing — **Header:** `X-RozVisit-Portal: client | caregiver | admin` on portal refreshes selects the matching role-scoped cookie. **Success `200`:** `{ data: { accessToken, user: { id, name, role, status } } }` and a rotated cookie for that role. The client restores its in-memory access token and user identity from this response before protected-route checks run, preserving the current route on a full page refresh. Role-scoped cookies permit client, caregiver, and admin sessions to coexist in separate tabs of one browser. **Errors:** `401` (missing/revoked/expired, or a cookie that does not belong to the requested portal role → full re-login)
 
 ### POST /auth/logout
 
@@ -255,7 +255,7 @@ POST /api/v1/auth/register
   pending consent.
 - **Body:** `{ byVisitId, mediaType: "audio" | "video" }`; `byVisitId` is the assigned visit
   currently recording the consent and is used for the ownership check.
-- **Success `200`:** `{ cloudName, apiKey, timestamp, signature, folder: "rozvisit/consent/<parentId>/", publicId: "<parentId>_<compact ISO timestamp>", type: "authenticated", resourceType: "auto", maxFileSize: 52428800, allowedFormats: ["mp3", "m4a", "wav", "mp4", "mov"], expiresAt }`. The permit expires after 10 minutes (AD-31).
+- **Success `200`:** `{ cloudName, apiKey, timestamp, signature, folder: "rozvisit/consent/<parentId>/", publicId: "<parentId>_<compact ISO timestamp>", type: "authenticated", resourceType: "auto", maxFileSize: 52428800, allowedFormats: ["mp3", "m4a", "wav", "webm", "mp4", "mov"], expiresAt }`. The permit expires after 10 minutes (AD-31). `webm` supports browser-native microphone/camera recording when MP4 recording is unavailable.
 - **Behavior:** audio is a first-class consent option. Uploads are Cloudinary authenticated assets; after direct upload, the caregiver sends the returned `public_id` as `recordingRef` to `POST /parents/:id/consent`.
 - **Errors:** `403` unless the caregiver is assigned to that parent's pending-consent visit; `422`
   invalid media type or missing `byVisitId`.
@@ -333,7 +333,7 @@ Example response:
 
 - **Role:** client
 - **Body:** `{ parentId, slots: [{ dayOfWeek: 0-6, time: "HH:mm" }], standingNote? }`
-- **Validation:** slots within service hours (08:00–20:00 *(Recommendation)*); slot count ≤ plan allowance (FR-030); active subscription required; consented or first-visit-pending parent. The server sets one week only: the current week when it is not yet set, or the following week during the two-day reminder window. Times must still be ahead in that target week.
+- **Validation:** slots within service hours (08:00–20:00 *(Recommendation)*); slot count ≤ plan allowance (FR-030); active subscription required; consented or first-visit-pending parent. The server uses the current week when it is not yet set, or the following week during the two-day reminder window. Each selected weekday/time resolves to its next real occurrence: an already-passed weekday (or already-passed time today) advances seven days, so no visit can be scheduled in the past.
 - **Success `201`:** `{ items: [visits], weekStart }` for exactly that weekly cycle. Once a cycle
   is set it cannot be submitted again; individual visits retain their documented reschedule/cancel
   actions. Two days before the boundary, the client may set the following week. If they do not,
@@ -359,6 +359,13 @@ Example response:
 - **Success `200`:** `{ items: [{ id, scheduledAt, parentName, addressText, location, standingNote, consentChoices, consentState, status }] }` ordered by time (FR-040). `consentState` is the parent's existing `pending | given | declined | withdrawn` value; S-24 displays its consent panel only when it is `pending`.
 - **Security:** assigned visits only; address visible within the confirmed window (PRV-004)
 - **Note:** the portal caches this response for offline display; the API sets no-store on nothing here — cacheable by design
+
+### GET /visits/mine — Caregiver assigned-visit history
+
+- **Role:** caregiver
+- **Query:** `before?` (ISO scheduled-at cursor), `limit?` (default 20, maximum 100).
+- **Success `200`:** `{ items: [{ id, parentName, addressText, location, scheduledAt, standingNote, consentChoices, consentState, status }], nextCursor }`, newest first by `scheduledAt`. The list contains only visits assigned to the authenticated caregiver, across scheduled, completed, missed, and parent-declined states.
+- **Security:** caregiver-scoped; it does not grant general parent-profile access.
 
 ### GET /visits/:id — Caregiver visit context
 
@@ -463,6 +470,24 @@ All endpoints: **Role admin**, all mutations audited automatically (FR-082).
 - **Body:** `{ decision: "approve" | "reject" | "request_info", note? }`
 - **Validation:** approve refused unless all gates true — `409 STATE_INVALID` "Verification gates incomplete" (FR-081)
 - **Success:** status flips; applicant notified with next steps
+
+### GET /admin/caregivers — Caregiver directory
+
+- **Permission:** `caregivers.directory.view`
+- **Query:** `page?`, `limit?` (default 20, maximum 100)
+- **Success `200`:** `{ items, page, total }`; each item includes non-sensitive operational fields only: caregiver and user IDs, name, email, phone, service area, verification status and gate summary, application date, and gate/decision timestamps. CNIC numbers and document references are never returned in this list.
+
+### GET /admin/caregivers/:id/cnic — Explicit CNIC reveal
+
+- **Permission:** `caregivers.cnic.view`
+- **Success `200`:** `{ id, cnicNumber }`
+- **Security:** called only after an explicit admin action; writes the audited `cnic.viewed` event with source `caregiver_directory`. CNIC is not returned by any directory list response.
+
+### GET /admin/clients — Client directory
+
+- **Permission:** `clients.directory.view`
+- **Query:** `page?`, `limit?` (default 20, maximum 100)
+- **Success `200`:** `{ items, page, total }`; each item includes the client’s name, email, phone, country, currency, associated parent names/statuses, and subscription plan/state summaries. It excludes parent addresses, care notes, emergency contacts, consent recordings, and all other sensitive profile content.
 
 ### POST /admin/visits/:id/assign
 
@@ -617,6 +642,7 @@ paths:
   /visits/{id}/reschedule: { patch }
   /visits/{id}/cancel: { post }
   /visits/today: { get }
+  /visits/mine: { get }
   /visits/{id}: { get }
   /visits/{id}/checklist: { post }
   /visits/{id}/media-permit: { post }

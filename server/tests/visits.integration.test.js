@@ -163,6 +163,70 @@ describe('Visit API lifecycle', () => {
     expect(blocked.status).toBe(403);
   });
 
+  it('returns only the authenticated caregiver’s assigned visits, newest first, with a cursor', async () => {
+    await ParentProfile.updateOne(
+      { _id: parent._id },
+      { $set: { addressText: encrypt('Rawalpindi') } },
+    );
+    const otherCaregiver = await User.create({
+      role: 'caregiver',
+      name: 'Other caregiver',
+      email: 'other-caregiver@visit.test',
+      phone: '+923001234570',
+      passwordHash: 'hash',
+      status: 'active',
+    });
+    const subscription = await Subscription.findOne();
+    await Visit.create([
+      {
+        clientVisitId: 'my-older-visit',
+        caregiverId: caregiver._id,
+        parentId: parent._id,
+        subscriptionId: subscription._id,
+        scheduledAt: new Date('2026-07-19T10:00:00.000Z'),
+        status: 'completed',
+        statusHistory: [{ status: 'completed', at: new Date('2026-07-19T11:00:00.000Z') }],
+      },
+      {
+        clientVisitId: 'my-newer-visit',
+        caregiverId: caregiver._id,
+        parentId: parent._id,
+        subscriptionId: subscription._id,
+        scheduledAt: new Date('2026-07-20T10:00:00.000Z'),
+        status: 'scheduled',
+        statusHistory: [{ status: 'scheduled', at: new Date('2026-07-20T10:00:00.000Z') }],
+      },
+      {
+        clientVisitId: 'other-caregiver-visit',
+        caregiverId: otherCaregiver._id,
+        parentId: parent._id,
+        subscriptionId: subscription._id,
+        scheduledAt: new Date('2026-07-21T10:00:00.000Z'),
+        status: 'scheduled',
+        statusHistory: [{ status: 'scheduled', at: new Date('2026-07-21T10:00:00.000Z') }],
+      },
+    ]);
+
+    const firstPage = await request(app).get('/api/v1/visits/mine?limit=1').set(auth(caregiver));
+
+    expect(firstPage.status).toBe(200);
+    expect(firstPage.body.data.items).toHaveLength(1);
+    expect(firstPage.body.data.items[0]).toMatchObject({
+      parentName: 'Amina Bibi',
+      status: 'scheduled',
+    });
+    expect(firstPage.body.data.nextCursor).toBe('2026-07-20T10:00:00.000Z');
+
+    const secondPage = await request(app)
+      .get(
+        `/api/v1/visits/mine?limit=1&before=${encodeURIComponent(firstPage.body.data.nextCursor)}`,
+      )
+      .set(auth(caregiver));
+    expect(secondPage.status).toBe(200);
+    expect(secondPage.body.data.items[0].status).toBe('completed');
+    expect(secondPage.body.data.nextCursor).toBeNull();
+  });
+
   it('returns caregiver-scoped S-24 context and a separate consent permit', async () => {
     await ParentProfile.updateOne(
       { _id: parent._id },
@@ -214,7 +278,7 @@ describe('Visit API lifecycle', () => {
       folder: `rozvisit/consent/${parent._id}/`,
       maxFileSize: 52428800,
       resourceType: 'auto',
-      allowedFormats: ['mp3', 'm4a', 'wav', 'mp4', 'mov'],
+      allowedFormats: ['mp3', 'm4a', 'wav', 'webm', 'mp4', 'mov'],
     });
   });
 
@@ -233,6 +297,39 @@ describe('Visit API lifecycle', () => {
     expect(repeated.status).toBe(409);
     expect(repeated.body.error.code).toBe('SCHEDULING_LOCKED');
     expect(await Visit.countDocuments({ parentId: parent._id })).toBe(first.body.data.items.length);
+  });
+
+  it('returns client proof feed items newest first', async () => {
+    const subscription = await Subscription.findOne();
+    await Visit.create([
+      {
+        clientVisitId: 'older-proof',
+        parentId: parent._id,
+        subscriptionId: subscription._id,
+        scheduledAt: new Date('2026-07-19T10:00:00.000Z'),
+        status: 'completed',
+        statusHistory: [{ status: 'completed', at: new Date('2026-07-19T11:00:00.000Z') }],
+      },
+      {
+        clientVisitId: 'newer-proof',
+        parentId: parent._id,
+        subscriptionId: subscription._id,
+        scheduledAt: new Date('2026-07-20T10:00:00.000Z'),
+        status: 'completed',
+        statusHistory: [{ status: 'completed', at: new Date('2026-07-20T11:00:00.000Z') }],
+      },
+    ]);
+
+    const feed = await request(app).get(`/api/v1/feed?parentId=${parent._id}`).set(auth(client));
+
+    expect(feed.status).toBe(200);
+    expect(feed.body.data.items.map((item) => item.visitId)).toEqual([
+      expect.any(String),
+      expect.any(String),
+    ]);
+    expect(new Date(feed.body.data.items[0].scheduledAt)).toEqual(
+      new Date('2026-07-20T10:00:00.000Z'),
+    );
   });
 
   it('mints camera-only permits and completes an offline retry exactly once', async () => {

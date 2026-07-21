@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
+import { FormValidationBanner } from '../../design-system/FormValidation.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 
 function GateCard({ children, title }) {
@@ -28,6 +29,7 @@ export default function ApplicationDetail() {
   const [reference, setReference] = useState({ note: '', referenceOutcome: 'unreachable' });
   const [decisionNote, setDecisionNote] = useState('');
   const [savingAction, setSavingAction] = useState('');
+  const [validationMessage, setValidationMessage] = useState('');
 
   const loadApplication = useCallback(() => {
     api(`/admin/applications/${applicationId}`)
@@ -59,10 +61,17 @@ export default function ApplicationDetail() {
     if (savingAction) return;
     if (path === 'cnic-gate' && !body.cnicDocRef.trim()) {
       setFields({ cnicDocRef: ['Enter the CNIC document reference before recording this check.'] });
+      setValidationMessage('Please fill in the required information below.');
+      window.requestAnimationFrame(() => {
+        const field = document.getElementById('cnic-document-reference');
+        field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        field?.focus({ preventScroll: true });
+      });
       return;
     }
     setError('');
     setFields({});
+    setValidationMessage('');
     setMessage('');
     setSavingAction(path);
     try {
@@ -144,6 +153,9 @@ export default function ApplicationDetail() {
         {error && Object.keys(fields).length === 0 ? (
           <p className="mt-5 text-sm text-emergency">{error}</p>
         ) : null}
+        <div className="mt-5">
+          <FormValidationBanner message={validationMessage} />
+        </div>
         <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_20rem]">
           <div className="space-y-5">
             <GateCard title="CNIC check">
@@ -158,6 +170,7 @@ export default function ApplicationDetail() {
               </dl>
               <FormInput
                 error={fields.cnicDocRef?.[0]}
+                id="cnic-document-reference"
                 label="CNIC document reference"
                 onChange={(event) => setCnic({ ...cnic, cnicDocRef: event.target.value })}
                 value={cnic.cnicDocRef}
@@ -171,6 +184,7 @@ export default function ApplicationDetail() {
                 CNIC is genuine and matches the applicant
               </label>
               <FormInput
+                id="cnic-note"
                 label="Note (optional)"
                 onChange={(event) => setCnic({ ...cnic, note: event.target.value })}
                 value={cnic.note}
@@ -186,6 +200,7 @@ export default function ApplicationDetail() {
             </GateCard>
             <GateCard title="Interview">
               <FormInput
+                id="interview-recording-reference"
                 label="Interview recording reference (optional)"
                 onChange={(event) =>
                   setInterview({ ...interview, interviewRecordingRef: event.target.value })
@@ -201,6 +216,7 @@ export default function ApplicationDetail() {
                 Interview passed
               </label>
               <FormInput
+                id="interview-note"
                 label="Note (optional)"
                 onChange={(event) => setInterview({ ...interview, note: event.target.value })}
                 value={interview.note}
@@ -230,6 +246,7 @@ export default function ApplicationDetail() {
                 </select>
               </label>
               <FormInput
+                id="reference-note"
                 label="Note"
                 onChange={(event) => setReference({ ...reference, note: event.target.value })}
                 value={reference.note}
@@ -251,6 +268,7 @@ export default function ApplicationDetail() {
             </p>
             <div className="mt-5 space-y-5">
               <FormInput
+                id="decision-note"
                 label="Decision note (optional)"
                 onChange={(event) => setDecisionNote(event.target.value)}
                 value={decisionNote}

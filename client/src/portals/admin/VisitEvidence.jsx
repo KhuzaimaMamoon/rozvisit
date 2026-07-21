@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
+import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 import { navigate } from '../../navigation.js';
 import ConsentPlayback from '../../components/ConsentPlayback.jsx';
@@ -13,6 +14,8 @@ export default function VisitEvidence() {
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const missedValidation = useFormValidation();
+  const resolutionValidation = useFormValidation();
   const [saving, setSaving] = useState(false);
   const [parent, setParent] = useState(null);
 
@@ -31,6 +34,7 @@ export default function VisitEvidence() {
 
   async function resolveFlag(event) {
     event.preventDefault();
+    resolutionValidation.clearValidationNotice();
     if (saving) return;
     setError('');
     setSaving(true);
@@ -50,6 +54,7 @@ export default function VisitEvidence() {
 
   async function markMissed(event) {
     event.preventDefault();
+    missedValidation.clearValidationNotice();
     if (saving) return;
     setError('');
     setMessage('');
@@ -195,7 +200,12 @@ export default function VisitEvidence() {
               <p className="mt-2 text-sm text-muted">
                 Record what happened so the family sees an honest care update.
               </p>
-              <form className="mt-4 space-y-3" onSubmit={markMissed}>
+              <form
+                {...missedValidation.formProps}
+                className="mt-4 space-y-3"
+                onSubmit={markMissed}
+              >
+                <FormValidationBanner message={missedValidation.validationMessage} />
                 <label className="block text-sm font-medium text-text">
                   Reason
                   <textarea
@@ -238,7 +248,12 @@ export default function VisitEvidence() {
                   </p>
                 ) : null}
                 {openFlag ? (
-                  <form className="mt-4 space-y-3" onSubmit={resolveFlag}>
+                  <form
+                    {...resolutionValidation.formProps}
+                    className="mt-4 space-y-3"
+                    onSubmit={resolveFlag}
+                  >
+                    <FormValidationBanner message={resolutionValidation.validationMessage} />
                     <label className="block text-sm font-medium text-text">
                       Resolution note
                       <textarea

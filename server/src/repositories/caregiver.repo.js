@@ -40,6 +40,20 @@ export const caregiverRepository = Object.freeze({
   countApplications(status) {
     return CaregiverProfile.countDocuments(status ? { status } : {});
   },
+  listDirectory({ limit, skip }) {
+    return CaregiverProfile.find({})
+      .populate('userId', 'name email phone')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+  },
+  countDirectory() {
+    return CaregiverProfile.countDocuments({});
+  },
+  findDirectoryCnicById(id) {
+    if (!mongoose.isValidObjectId(id)) return null;
+    return CaregiverProfile.findById(id).select('+verification.cnicNumber');
+  },
   updateApplication(id, update) {
     if (!mongoose.isValidObjectId(id)) return null;
     return CaregiverProfile.findByIdAndUpdate(id, update, {

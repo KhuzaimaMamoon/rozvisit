@@ -6,6 +6,9 @@ export const ROLES = Object.freeze({
 
 export const ADMIN_PERMISSIONS = Object.freeze({
   APPLICATIONS_REVIEW: 'applications.review',
+  CAREGIVERS_DIRECTORY_VIEW: 'caregivers.directory.view',
+  CAREGIVERS_CNIC_VIEW: 'caregivers.cnic.view',
+  CLIENTS_DIRECTORY_VIEW: 'clients.directory.view',
   FLAGS_RESOLVE: 'flags.resolve',
   SUBSCRIPTIONS_MANAGE: 'subscriptions.manage',
   VISITS_OVERSEE: 'visits.oversee',

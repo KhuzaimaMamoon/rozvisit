@@ -15,7 +15,9 @@ const userSchema = new Schema(
     permissions: {
       type: [{ type: String, enum: Object.values(ADMIN_PERMISSIONS) }],
       required: true,
-      default: [],
+      default: function defaultPermissions() {
+        return this.role === ROLES.ADMIN ? Object.values(ADMIN_PERMISSIONS) : [];
+      },
     },
   },
   { strict: 'throw', timestamps: true },

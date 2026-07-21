@@ -13,6 +13,7 @@ import {
 import { env } from '../src/config/env.js';
 import { AuditEvent } from '../src/models/AuditEvent.js';
 import { CaregiverProfile } from '../src/models/CaregiverProfile.js';
+import { ClientProfile } from '../src/models/ClientProfile.js';
 import { ParentProfile } from '../src/models/ParentProfile.js';
 import { Notification } from '../src/models/Notification.js';
 import { Subscription } from '../src/models/Subscription.js';
@@ -36,6 +37,7 @@ describe('Admin verification API', () => {
     await Promise.all([
       AuditEvent.deleteMany({}),
       CaregiverProfile.deleteMany({}),
+      ClientProfile.deleteMany({}),
       Notification.deleteMany({}),
       ParentProfile.deleteMany({}),
       Subscription.deleteMany({}),
@@ -431,5 +433,84 @@ describe('Admin verification API', () => {
       .send({ reason });
     expect(repeated.status).toBe(409);
     expect(repeated.body.error.code).toBe('STATE_INVALID');
+  });
+
+  it('lists non-sensitive caregiver and client directories and audits an explicit CNIC reveal', async () => {
+    const client = await User.create({
+      email: 'directory-client@admin.test',
+      name: 'Ayesha Directory',
+      passwordHash: 'hash',
+      phone: '+971501234566',
+      role: ROLES.CLIENT,
+      status: USER_STATUS.ACTIVE,
+    });
+    await ClientProfile.create({ userId: client._id, countryCode: 'AE', currency: 'AED' });
+    const parent = await ParentProfile.create({
+      clientId: client._id,
+      name: 'Amina Directory',
+      age: 68,
+      addressText: encrypt('Rawalpindi address'),
+      location: { type: 'Point', coordinates: [73, 33] },
+      emergencyContacts: [
+        { name: 'Ayesha', phone: '+971501234566', relation: 'Daughter', priority: 1 },
+      ],
+    });
+    await Subscription.create({
+      clientId: client._id,
+      parentId: parent._id,
+      planKey: 'Standard',
+      planSnapshot: { visitsPerWeek: 3, errandsPerWeek: 1, price: 195, currency: 'AED' },
+      state: 'active',
+      stateHistory: [{ state: 'active', at: new Date() }],
+    });
+
+    const caregivers = await request(app).get('/api/v1/admin/caregivers').set(auth(admin));
+    expect(caregivers.status).toBe(200);
+    expect(caregivers.body.data.items[0]).toMatchObject({
+      id: application._id.toString(),
+      user: { email: 'bilal@admin.test', name: 'Bilal Ahmed', phone: '+923001234567' },
+    });
+    expect(caregivers.body.data.items[0].verification.cnicNumber).toBeUndefined();
+
+    const cnic = await request(app)
+      .get(`/api/v1/admin/caregivers/${application._id}/cnic`)
+      .set(auth(admin));
+    expect(cnic.status).toBe(200);
+    expect(cnic.body.data.cnicNumber).toBe('35202-1234567-1');
+    expect(
+      await AuditEvent.countDocuments({
+        action: 'cnic.viewed',
+        targetId: application._id,
+        'detail.source': 'caregiver_directory',
+      }),
+    ).toBe(1);
+
+    const clients = await request(app).get('/api/v1/admin/clients').set(auth(admin));
+    expect(clients.status).toBe(200);
+    expect(clients.body.data.items[0]).toMatchObject({
+      countryCode: 'AE',
+      currency: 'AED',
+      email: 'directory-client@admin.test',
+      parents: [{ name: 'Amina Directory' }],
+      subscriptions: [{ planKey: 'Standard', state: 'active' }],
+    });
+
+    const limitedAdmin = await User.create({
+      email: 'directory-limited@admin.test',
+      name: 'Directory Limited',
+      passwordHash: 'hash',
+      permissions: [ADMIN_PERMISSIONS.CAREGIVERS_DIRECTORY_VIEW],
+      phone: '+923001234560',
+      role: ROLES.ADMIN,
+      status: USER_STATUS.ACTIVE,
+    });
+    const forbiddenCnic = await request(app)
+      .get(`/api/v1/admin/caregivers/${application._id}/cnic`)
+      .set(auth(limitedAdmin));
+    expect(forbiddenCnic.status).toBe(403);
+    const forbiddenClients = await request(app)
+      .get('/api/v1/admin/clients')
+      .set(auth(limitedAdmin));
+    expect(forbiddenClients.status).toBe(403);
   });
 });
