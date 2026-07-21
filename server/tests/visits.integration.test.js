@@ -347,7 +347,7 @@ describe('Visit API lifecycle', () => {
       { _id: parent._id },
       { $set: { 'consent.state': 'given', status: 'active' } },
     );
-    const capturedAt = '2026-07-20T12:00:00.000Z';
+    const capturedAt = new Date().toISOString();
     const permit = await request(app)
       .post(`/api/v1/visits/${visit._id}/media-permit`)
       .set(auth(caregiver))

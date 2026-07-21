@@ -137,7 +137,7 @@ export default function VisitScheduling() {
           </div>
           <Button
             className="mt-4"
-            disabled={!allowance || scheduled || slots.length >= allowance}
+            disabled={!allowance || scheduled}
             onClick={() =>
               setSlots((current) => [
                 ...current,
@@ -147,7 +147,7 @@ export default function VisitScheduling() {
             type="button"
             variant="secondary"
           >
-            Add weekly slot{allowance ? ` (${slots.length}/${allowance})` : ''}
+            Add weekly slot{allowance ? ` (${allowance} visits included each week)` : ''}
           </Button>
           <div className="mt-6 flex flex-col gap-4 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted">

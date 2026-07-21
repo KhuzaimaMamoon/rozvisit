@@ -10,6 +10,7 @@ configureE2eEnvironment({ mongoUri: state.mongoUri });
 const [
   { encrypt },
   { AuthToken, AUTH_TOKEN_TYPES },
+  { AuditEvent },
   { CarePlan },
   { CaregiverProfile },
   { ClientProfile },
@@ -20,6 +21,7 @@ const [
 ] = await Promise.all([
   import('../../server/src/utils/crypto.js'),
   import('../../server/src/models/AuthToken.js'),
+  import('../../server/src/models/AuditEvent.js'),
   import('../../server/src/models/CarePlan.js'),
   import('../../server/src/models/CaregiverProfile.js'),
   import('../../server/src/models/ClientProfile.js'),
@@ -32,7 +34,16 @@ const [
 const password = 'Password123';
 let connected = false;
 
-export { AuthToken, CaregiverProfile, ParentProfile, Subscription, User, Visit, password };
+export {
+  AuditEvent,
+  AuthToken,
+  CaregiverProfile,
+  ParentProfile,
+  Subscription,
+  User,
+  Visit,
+  password,
+};
 
 export async function connectDatabase() {
   if (connected) return;
@@ -81,8 +92,8 @@ export async function createAdmin() {
   return createUser({ email: 'admin@e2e.test', name: 'Nasreen Shah', role: 'admin' });
 }
 
-export async function createClient() {
-  const user = await createUser({ email: 'client@e2e.test', name: 'Ayesha Khan', role: 'client' });
+export async function createClient({ email = 'client@e2e.test', name = 'Ayesha Khan' } = {}) {
+  const user = await createUser({ email, name, role: 'client' });
   await ClientProfile.create({ countryCode: 'AE', currency: 'AED', userId: user._id });
   return user;
 }

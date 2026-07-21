@@ -223,7 +223,7 @@ describe('visitService', () => {
       statusHistory: [{ status: 'scheduled', at: new Date() }],
       checklist: { medicationTaken: true, mood: 5, concerns: [], capturedAt: new Date() },
     });
-    const capturedAt = new Date('2026-07-20T12:00:00Z');
+    const capturedAt = new Date();
     const permit = await visitService.createMediaPermit(
       caregiver._id.toString(),
       visit._id.toString(),

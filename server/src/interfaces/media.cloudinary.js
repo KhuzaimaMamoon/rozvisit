@@ -31,21 +31,30 @@ function cloudinarySignature(params) {
   return crypto.createHash('sha1').update(`${joined}${env.cloudinary.apiSecret}`).digest('hex');
 }
 
-function publicIdFromConsentReference(recordingRef) {
-  if (!recordingRef.startsWith('http')) return { publicId: recordingRef, type: 'authenticated' };
-  const parsed = new URL(recordingRef);
-  if (parsed.hostname !== `res.cloudinary.com` && !parsed.hostname.endsWith('.cloudinary.com')) {
-    throw new TypeError('Consent recording reference is not a Cloudinary asset.');
+function cloudinaryAssetFromReference(
+  reference,
+  { defaultResourceType = 'image', defaultType = 'upload' } = {},
+) {
+  if (!reference.startsWith('http')) {
+    return { publicId: reference, resourceType: defaultResourceType, type: defaultType };
   }
-  const uploadMarker = '/upload/';
-  const markerIndex = parsed.pathname.indexOf(uploadMarker);
-  if (markerIndex === -1) throw new TypeError('Consent recording reference cannot be played.');
+  const parsed = new URL(reference);
+  if (parsed.hostname !== `res.cloudinary.com` && !parsed.hostname.endsWith('.cloudinary.com')) {
+    throw new TypeError('Media reference is not a Cloudinary asset.');
+  }
+  const match = parsed.pathname.match(/\/(image|video|raw)\/(?:upload|authenticated)\//);
+  if (!match) throw new TypeError('Media reference cannot be played.');
+  const markerIndex = match.index + match[0].length;
   const assetPath = parsed.pathname
-    .slice(markerIndex + uploadMarker.length)
+    .slice(markerIndex)
     .replace(/^v\d+\//, '')
     .replace(/\.[^.]+$/, '');
-  if (!assetPath) throw new TypeError('Consent recording reference cannot be played.');
-  return { publicId: decodeURIComponent(assetPath), type: 'upload' };
+  if (!assetPath) throw new TypeError('Media reference cannot be played.');
+  return {
+    publicId: decodeURIComponent(assetPath),
+    resourceType: match[1],
+    type: match[0].includes('/authenticated/') ? 'authenticated' : 'upload',
+  };
 }
 
 export const cloudinaryMediaStorage = assertMediaStorage({
@@ -97,13 +106,28 @@ export const cloudinaryMediaStorage = assertMediaStorage({
     };
   },
   createConsentPlaybackUrl({ recordingRef }) {
-    const { publicId, type } = publicIdFromConsentReference(recordingRef);
+    const { publicId, resourceType, type } = cloudinaryAssetFromReference(recordingRef, {
+      defaultResourceType: 'video',
+      defaultType: 'authenticated',
+    });
     const expiresAt = Math.floor(Date.now() / 1000) + PERMIT_TTL_SECONDS;
     return {
       expiresAt: new Date(expiresAt * 1000).toISOString(),
       url: cloudinary.utils.private_download_url(publicId, undefined, {
         expires_at: expiresAt,
-        resource_type: 'video',
+        resource_type: resourceType,
+        type,
+      }),
+    };
+  },
+  createVisitMediaPlaybackUrl({ mediaRef }) {
+    const { publicId, resourceType, type } = cloudinaryAssetFromReference(mediaRef);
+    const expiresAt = Math.floor(Date.now() / 1000) + PERMIT_TTL_SECONDS;
+    return {
+      expiresAt: new Date(expiresAt * 1000).toISOString(),
+      url: cloudinary.utils.private_download_url(publicId, undefined, {
+        expires_at: expiresAt,
+        resource_type: resourceType,
         type,
       }),
     };
