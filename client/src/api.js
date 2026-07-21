@@ -18,6 +18,14 @@ export function clearAccessToken() {
   accessToken = null;
 }
 
+function portalRoleForCurrentPath() {
+  const root = window.location.pathname.split('/')[1];
+  if (root === 'app') return 'client';
+  if (root === 'care') return 'caregiver';
+  if (root === 'admin') return 'admin';
+  return null;
+}
+
 async function decode(response) {
   const payload = await response.json();
   if (!response.ok) {
@@ -33,8 +41,10 @@ async function decode(response) {
 
 export async function refreshAccessToken() {
   if (!refreshInFlight) {
+    const portalRole = portalRoleForCurrentPath();
     refreshInFlight = fetch('/api/v1/auth/refresh', {
       credentials: 'include',
+      headers: portalRole ? { 'X-RozVisit-Portal': portalRole } : undefined,
       method: 'POST',
     })
       .then(decode)

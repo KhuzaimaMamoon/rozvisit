@@ -190,13 +190,13 @@ POST /api/v1/auth/register
 
 - **Role:** public
 - **Body:** `{ email, password }`
-- **Success `200`:** `{ data: { accessToken, user: { id, name, role, status } } }` + refresh cookie set
+- **Success `200`:** `{ data: { accessToken, user: { id, name, role, status } } }` + a role-scoped refresh cookie set (`refreshToken_client`, `refreshToken_caregiver`, or `refreshToken_admin`)
 - **Errors:** `401 UNAUTHENTICATED` with the same status, message, shape, and approximate timing for wrong email, wrong password, and unverified email; `403 ACCOUNT_DISABLED`; `429`
 - **Note:** caregiver in `applied`/`in_review` logs in successfully but the portal routes them to status-only (FR-003) — the API reflects it in `user.status`
 
 ### POST /auth/refresh
 
-- **Role:** cookie-bearing — **Success `200`:** `{ data: { accessToken, user: { id, name, role, status } } }` and a rotated refresh cookie. The client restores its in-memory access token and user identity from this response before protected-route checks run, preserving the current route on a full page refresh. — **Errors:** `401` (missing/revoked/expired → full re-login)
+- **Role:** cookie-bearing — **Header:** `X-RozVisit-Portal: client | caregiver | admin` on portal refreshes selects the matching role-scoped cookie. **Success `200`:** `{ data: { accessToken, user: { id, name, role, status } } }` and a rotated cookie for that role. The client restores its in-memory access token and user identity from this response before protected-route checks run, preserving the current route on a full page refresh. Role-scoped cookies permit client, caregiver, and admin sessions to coexist in separate tabs of one browser. **Errors:** `401` (missing/revoked/expired, or a cookie that does not belong to the requested portal role → full re-login)
 
 ### POST /auth/logout
 

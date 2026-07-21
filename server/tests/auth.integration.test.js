@@ -24,8 +24,10 @@ function hash(token) {
   return createHash('sha256').update(token).digest('hex');
 }
 
-function refreshCookie(response) {
-  return response.headers['set-cookie'][0].split(';')[0];
+function refreshCookie(response, role) {
+  const prefix = `refreshToken_${role}=`;
+  const cookie = response.headers['set-cookie'].find((value) => value.startsWith(prefix));
+  return cookie?.split(';')[0];
 }
 
 describe('Auth API', () => {
@@ -173,14 +175,20 @@ describe('Auth API', () => {
       .post('/api/v1/auth/login')
       .send({ email: user.email, password: PASSWORD });
     const accessToken = login.body.data.accessToken;
-    const firstCookie = refreshCookie(login);
-    const refresh = await request(app).post('/api/v1/auth/refresh').set('Cookie', firstCookie);
-    const secondCookie = refreshCookie(refresh);
+    const firstCookie = refreshCookie(login, 'client');
+    const refresh = await request(app)
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', firstCookie)
+      .set('X-RozVisit-Portal', 'client');
+    const secondCookie = refreshCookie(refresh, 'client');
     const logout = await request(app)
       .post('/api/v1/auth/logout')
       .set('Authorization', `Bearer ${accessToken}`)
       .set('Cookie', secondCookie);
-    const reused = await request(app).post('/api/v1/auth/refresh').set('Cookie', secondCookie);
+    const reused = await request(app)
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', secondCookie)
+      .set('X-RozVisit-Portal', 'client');
 
     expect(login.status).toBe(200);
     expect(refresh.status).toBe(200);
@@ -196,7 +204,8 @@ describe('Auth API', () => {
       .send({ email: user.email, password: PASSWORD });
     const refresh = await request(app)
       .post('/api/v1/auth/refresh')
-      .set('Cookie', refreshCookie(login));
+      .set('Cookie', refreshCookie(login, 'client'))
+      .set('X-RozVisit-Portal', 'client');
 
     expect(login.headers['set-cookie'][0]).toContain('HttpOnly');
     expect(login.headers['set-cookie'][0]).not.toContain('Secure');
@@ -235,13 +244,49 @@ describe('Auth API', () => {
         .send({ email: expected.email, password: PASSWORD });
       const refresh = await request(app)
         .post('/api/v1/auth/refresh')
-        .set('Cookie', refreshCookie(login));
+        .set('Cookie', refreshCookie(login, expected.role))
+        .set('X-RozVisit-Portal', expected.role);
 
       expect(refresh.status).toBe(200);
       expect(refresh.body.data.user).toMatchObject({
         role: expected.role,
         status: expected.status,
       });
+    }
+  });
+
+  it('keeps independently scoped client, caregiver, and admin refresh sessions in one browser', async () => {
+    const client = await createVerifiedUser({ email: 'tab-client@example.com' });
+    const caregiver = await createVerifiedUser({
+      email: 'tab-caregiver@example.com',
+      role: 'caregiver',
+    });
+    await CaregiverProfile.create({
+      userId: caregiver._id,
+      verification: { cnicNumber: 'test-only-placeholder', gates: {} },
+      serviceArea: { type: 'Point', coordinates: [73.0479, 33.6844], radiusKm: 10 },
+      status: 'verified',
+    });
+    const admin = await createVerifiedUser({ email: 'tab-admin@example.com', role: 'admin' });
+
+    const logins = await Promise.all(
+      [client, caregiver, admin].map((user) =>
+        request(app).post('/api/v1/auth/login').send({ email: user.email, password: PASSWORD }),
+      ),
+    );
+    const cookies = [
+      refreshCookie(logins[0], 'client'),
+      refreshCookie(logins[1], 'caregiver'),
+      refreshCookie(logins[2], 'admin'),
+    ];
+
+    for (const expected of ['client', 'caregiver', 'admin']) {
+      const response = await request(app)
+        .post('/api/v1/auth/refresh')
+        .set('Cookie', cookies)
+        .set('X-RozVisit-Portal', expected);
+      expect(response.status).toBe(200);
+      expect(response.body.data.user.role).toBe(expected);
     }
   });
 

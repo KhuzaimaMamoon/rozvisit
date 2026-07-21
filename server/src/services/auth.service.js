@@ -282,7 +282,7 @@ export const authService = Object.freeze({
     return { accessToken: signAccessToken(user), refreshToken, user: await userResponse(user) };
   },
 
-  async refresh({ refreshToken }) {
+  async refresh({ expectedRole = null, refreshToken }) {
     if (!refreshToken) throw new UnauthenticatedError();
     let payload;
     try {
@@ -295,6 +295,7 @@ export const authService = Object.freeze({
     if (!session || session.userId.toString() !== payload.sub) throw new UnauthenticatedError();
     const user = await userRepository.findById(payload.sub);
     if (!user || user.status === USER_STATUS.DISABLED) throw new UnauthenticatedError();
+    if (expectedRole && user.role !== expectedRole) throw new UnauthenticatedError();
     await tokenRepository.revokeRefresh(tokenHash, new Date());
     const nextRefreshToken = signRefreshToken(user);
     await tokenRepository.createRefresh({
