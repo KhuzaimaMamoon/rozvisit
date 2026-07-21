@@ -3,6 +3,7 @@ import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import Card from '../../design-system/Card.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
+import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import { navigate } from '../../navigation.js';
 
 const DRAFT_KEY = 'rozvisit.parent-profile.draft';
@@ -31,6 +32,8 @@ export default function ParentProfileForm() {
   const [error, setError] = useState('');
   const [fields, setFields] = useState({});
   const [saving, setSaving] = useState(false);
+  const { clearValidationNotice, formProps, revealFirstInvalid, validationMessage } =
+    useFormValidation();
 
   useEffect(() => {
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
@@ -73,6 +76,7 @@ export default function ParentProfileForm() {
     event.preventDefault();
     if (saving) return;
 
+    clearValidationNotice();
     setError('');
     setFields({});
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
@@ -98,6 +102,7 @@ export default function ParentProfileForm() {
     } catch (requestError) {
       setError(requestError.message);
       setFields(requestError.fields ?? {});
+      if (Object.keys(requestError.fields ?? {}).length) revealFirstInvalid();
     } finally {
       setSaving(false);
     }
@@ -125,7 +130,8 @@ export default function ParentProfileForm() {
           </div>
         </header>
 
-        <form className="mt-6 space-y-6" onSubmit={saveParent}>
+        <form {...formProps} className="mt-6 space-y-6" onSubmit={saveParent}>
+          <FormValidationBanner message={validationMessage} />
           <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
             <Card className="p-5 sm:p-6" title="Parent details">
               <p className="mt-2 text-sm leading-6 text-muted">

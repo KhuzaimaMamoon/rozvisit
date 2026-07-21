@@ -333,7 +333,7 @@ Example response:
 
 - **Role:** client
 - **Body:** `{ parentId, slots: [{ dayOfWeek: 0-6, time: "HH:mm" }], standingNote? }`
-- **Validation:** slots within service hours (08:00–20:00 *(Recommendation)*); slot count ≤ plan allowance (FR-030); active subscription required; consented or first-visit-pending parent. The server sets one week only: the current week when it is not yet set, or the following week during the two-day reminder window. Times must still be ahead in that target week.
+- **Validation:** slots within service hours (08:00–20:00 *(Recommendation)*); slot count ≤ plan allowance (FR-030); active subscription required; consented or first-visit-pending parent. The server uses the current week when it is not yet set, or the following week during the two-day reminder window. Each selected weekday/time resolves to its next real occurrence: an already-passed weekday (or already-passed time today) advances seven days, so no visit can be scheduled in the past.
 - **Success `201`:** `{ items: [visits], weekStart }` for exactly that weekly cycle. Once a cycle
   is set it cannot be submitted again; individual visits retain their documented reschedule/cancel
   actions. Two days before the boundary, the client may set the following week. If they do not,

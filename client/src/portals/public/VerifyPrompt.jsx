@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
+import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import PublicAuthLayout from './PublicAuthLayout.jsx';
 
 export default function VerifyPrompt() {
@@ -9,9 +10,11 @@ export default function VerifyPrompt() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const { clearValidationNotice, formProps, validationMessage } = useFormValidation();
 
   async function submit(event) {
     event.preventDefault();
+    clearValidationNotice();
     setError('');
     setLoading(true);
     try {
@@ -42,7 +45,8 @@ export default function VerifyPrompt() {
           If an account needs verification, we have sent an email.
         </p>
       ) : null}
-      <form className="mt-5 space-y-5" onSubmit={submit}>
+      <form {...formProps} className="mt-5 space-y-5" onSubmit={submit}>
+        <FormValidationBanner message={validationMessage} />
         {error ? (
           <p
             className="border-l-[3px] border-emergency bg-emergency-soft px-4 py-3 text-sm text-emergency"

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
+import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import { roleHome, useAuth } from '../../context/AuthContext.jsx';
 import { navigate } from '../../navigation.js';
 import PublicAuthLayout from './PublicAuthLayout.jsx';
@@ -12,9 +13,11 @@ export default function Login() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { clearValidationNotice, formProps, validationMessage } = useFormValidation();
 
   async function submit(event) {
     event.preventDefault();
+    clearValidationNotice();
     setError('');
     setLoading(true);
     try {
@@ -36,7 +39,8 @@ export default function Login() {
           {error}
         </p>
       ) : null}
-      <form className="mt-7 space-y-5" onSubmit={submit}>
+      <form {...formProps} className="mt-7 space-y-5" onSubmit={submit}>
+        <FormValidationBanner message={validationMessage} />
         <FormInput
           autoComplete="email"
           id="email"

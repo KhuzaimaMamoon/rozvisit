@@ -32,11 +32,12 @@ function startOfWeek(date) {
   return value;
 }
 
-function dateForSlot(now, dayOfWeek, time) {
+export function dateForSlot(weekStart, dayOfWeek, time, notBefore = null) {
   const [hours, minutes] = time.split(':').map(Number);
-  const date = startOfWeek(now);
+  const date = startOfWeek(weekStart);
   date.setDate(date.getDate() + dayOfWeek);
   date.setHours(hours, minutes, 0, 0);
+  if (notBefore && date < notBefore) date.setDate(date.getDate() + 7);
   return date;
 }
 
@@ -59,7 +60,7 @@ function slotsFromVisits(visits) {
 }
 
 function scheduleRecord({ clientId, parentId, slot, subscription, weekStart, now }) {
-  const scheduledAt = dateForSlot(weekStart, slot.dayOfWeek, slot.time);
+  const scheduledAt = dateForSlot(weekStart, slot.dayOfWeek, slot.time, now);
   return {
     clientVisitId: crypto
       .createHash('sha256')
@@ -195,14 +196,21 @@ export const visitService = Object.freeze({
     const now = new Date();
     const currentWeekStart = startOfWeek(now);
     const currentWeekEnd = endOfWeek(now);
+    const nextWeekEnd = endOfWeek(currentWeekEnd);
     const reminderStart = new Date(currentWeekEnd);
     reminderStart.setDate(reminderStart.getDate() - WEEKLY_REMINDER_LEAD_DAYS);
-    const currentWeekVisits = await visitRepository.findWeekBySubscription(
-      subscription._id,
-      currentWeekStart,
-      currentWeekEnd,
-    );
+    const [currentWeekVisits, nextWeekVisits] = await Promise.all([
+      visitRepository.findWeekBySubscription(subscription._id, currentWeekStart, currentWeekEnd),
+      visitRepository.findWeekBySubscription(subscription._id, currentWeekEnd, nextWeekEnd),
+    ]);
     const currentWeekLocked = currentWeekVisits.some(isCountedWeeklyVisit);
+    const nextWeekLocked = nextWeekVisits.some(isCountedWeeklyVisit);
+    if (nextWeekLocked && !currentWeekLocked) {
+      throw new ConflictError(
+        'SCHEDULING_LOCKED',
+        'Your next weekly visit pattern is already set. You can make changes when the next reminder window opens.',
+      );
+    }
     if (currentWeekLocked && now < reminderStart) {
       throw new ConflictError(
         'SCHEDULING_LOCKED',
@@ -212,14 +220,7 @@ export const visitService = Object.freeze({
     const targetWeekStart = currentWeekLocked
       ? new Date(currentWeekEnd)
       : new Date(currentWeekStart);
-    const targetWeekEnd = endOfWeek(targetWeekStart);
-    const existingTargetVisits = currentWeekLocked
-      ? await visitRepository.findWeekBySubscription(
-          subscription._id,
-          targetWeekStart,
-          targetWeekEnd,
-        )
-      : currentWeekVisits;
+    const existingTargetVisits = currentWeekLocked ? nextWeekVisits : currentWeekVisits;
     if (existingTargetVisits.some(isCountedWeeklyVisit)) {
       throw new ConflictError(
         'SCHEDULE_ALREADY_SET',

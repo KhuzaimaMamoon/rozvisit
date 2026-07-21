@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
+import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import PublicAuthLayout from './PublicAuthLayout.jsx';
 
 const initialForm = Object.freeze({
@@ -18,6 +19,8 @@ export default function Register() {
   const [fields, setFields] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const { clearValidationNotice, formProps, revealFirstInvalid, validationMessage } =
+    useFormValidation();
 
   function update(key) {
     return (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
@@ -25,6 +28,7 @@ export default function Register() {
 
   async function submit(event) {
     event.preventDefault();
+    clearValidationNotice();
     setError('');
     setFields({});
     setLoading(true);
@@ -34,6 +38,7 @@ export default function Register() {
     } catch (requestError) {
       setError(requestError.message);
       setFields(requestError.fields ?? {});
+      if (Object.keys(requestError.fields ?? {}).length) revealFirstInvalid();
     } finally {
       setLoading(false);
     }
@@ -52,7 +57,8 @@ export default function Register() {
           </a>
         </div>
       ) : (
-        <form className="mt-7 space-y-5" onSubmit={submit}>
+        <form {...formProps} className="mt-7 space-y-5" onSubmit={submit}>
+          <FormValidationBanner message={validationMessage} />
           {error && Object.keys(fields).length === 0 ? (
             <p
               className="border-l-[3px] border-emergency bg-emergency-soft px-4 py-3 text-sm text-emergency"

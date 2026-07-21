@@ -235,6 +235,39 @@ describe('Visit API lifecycle', () => {
     expect(await Visit.countDocuments({ parentId: parent._id })).toBe(first.body.data.items.length);
   });
 
+  it('returns client proof feed items newest first', async () => {
+    const subscription = await Subscription.findOne();
+    await Visit.create([
+      {
+        clientVisitId: 'older-proof',
+        parentId: parent._id,
+        subscriptionId: subscription._id,
+        scheduledAt: new Date('2026-07-19T10:00:00.000Z'),
+        status: 'completed',
+        statusHistory: [{ status: 'completed', at: new Date('2026-07-19T11:00:00.000Z') }],
+      },
+      {
+        clientVisitId: 'newer-proof',
+        parentId: parent._id,
+        subscriptionId: subscription._id,
+        scheduledAt: new Date('2026-07-20T10:00:00.000Z'),
+        status: 'completed',
+        statusHistory: [{ status: 'completed', at: new Date('2026-07-20T11:00:00.000Z') }],
+      },
+    ]);
+
+    const feed = await request(app).get(`/api/v1/feed?parentId=${parent._id}`).set(auth(client));
+
+    expect(feed.status).toBe(200);
+    expect(feed.body.data.items.map((item) => item.visitId)).toEqual([
+      expect.any(String),
+      expect.any(String),
+    ]);
+    expect(new Date(feed.body.data.items[0].scheduledAt)).toEqual(
+      new Date('2026-07-20T10:00:00.000Z'),
+    );
+  });
+
   it('mints camera-only permits and completes an offline retry exactly once', async () => {
     const visit = await Visit.create({
       clientVisitId: 'offline-visit-1',

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
+import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import PublicAuthLayout from './PublicAuthLayout.jsx';
 
 const initial = {
@@ -21,10 +22,13 @@ export default function Apply() {
   const [fields, setFields] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const { clearValidationNotice, formProps, revealFirstInvalid, validationMessage } =
+    useFormValidation();
   const update = (key) => (event) =>
     setForm((current) => ({ ...current, [key]: event.target.value }));
   async function submit(event) {
     event.preventDefault();
+    clearValidationNotice();
     setError('');
     setFields({});
     setLoading(true);
@@ -45,6 +49,7 @@ export default function Apply() {
     } catch (requestError) {
       setError(requestError.message);
       setFields(requestError.fields ?? {});
+      if (Object.keys(requestError.fields ?? {}).length) revealFirstInvalid();
     } finally {
       setLoading(false);
     }
@@ -67,7 +72,10 @@ export default function Apply() {
           </a>
         </div>
       ) : (
-        <form className="mt-6 grid gap-4 lg:grid-cols-2" onSubmit={submit}>
+        <form {...formProps} className="mt-6 grid gap-4 lg:grid-cols-2" onSubmit={submit}>
+          <div className="lg:col-span-2">
+            <FormValidationBanner message={validationMessage} />
+          </div>
           {error && Object.keys(fields).length === 0 ? (
             <p
               className="border-l-[3px] border-emergency bg-emergency-soft px-4 py-3 text-sm text-emergency lg:col-span-2"
@@ -77,7 +85,7 @@ export default function Apply() {
             </p>
           ) : null}
           <FormInput
-            error={fields.email?.[0]}
+            error={fields.name?.[0]}
             id="name"
             label="Full name"
             onChange={update('name')}
@@ -85,32 +93,34 @@ export default function Apply() {
             value={form.name}
           />
           <FormInput
-            error={fields.phone?.[0]}
+            error={fields.email?.[0]}
             id="email"
             label="Email"
             onChange={update('email')}
             required
-            requiredMessage="Phone number must include a country code, like +923001234567."
+            requiredMessage="Enter a valid email address."
             type="email"
             value={form.email}
           />
           <FormInput
-            error={fields.cnicNumber?.[0]}
+            error={fields.phone?.[0]}
             helperText="Include your country code, for example +923001234567."
             id="phone"
             label="Phone"
             onChange={update('phone')}
             required
-            requiredMessage="CNIC must be exactly 13 digits."
+            requiredMessage="Phone number must include a country code, like +923001234567."
             type="tel"
             value={form.phone}
           />
           <FormInput
+            error={fields.cnicNumber?.[0]}
             helperText="13 digits, without dashes."
             id="cnic"
             label="CNIC number"
             onChange={update('cnicNumber')}
             required
+            requiredMessage="CNIC must be exactly 13 digits."
             value={form.cnicNumber}
           />
           <div className="lg:col-span-2">

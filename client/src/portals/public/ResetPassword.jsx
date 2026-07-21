@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
+import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import { navigate } from '../../navigation.js';
 import PublicAuthLayout from './PublicAuthLayout.jsx';
 
@@ -33,13 +34,23 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [visible, setVisible] = useState(false);
+  const { clearValidationNotice, formProps, revealFirstInvalid, validationMessage } =
+    useFormValidation();
 
   async function submit(event) {
     event.preventDefault();
+    clearValidationNotice();
     const validationError = passwordError(newPassword);
-    if (validationError) return setFields({ newPassword: [validationError] });
-    if (newPassword !== confirmPassword)
-      return setFields({ confirmPassword: ['The passwords do not match.'] });
+    if (validationError) {
+      setFields({ newPassword: [validationError] });
+      revealFirstInvalid();
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setFields({ confirmPassword: ['The passwords do not match.'] });
+      revealFirstInvalid();
+      return;
+    }
     if (!token) return setError('This reset link is not valid. Please request a new one.');
     setError('');
     setFields({});
@@ -80,7 +91,8 @@ export default function ResetPassword() {
           </Button>
         </div>
       ) : (
-        <form className="mt-7 space-y-5" onSubmit={submit}>
+        <form {...formProps} className="mt-7 space-y-5" onSubmit={submit}>
+          <FormValidationBanner message={validationMessage} />
           {error ? (
             <p
               className="border-l-[3px] border-emergency bg-emergency-soft px-4 py-3 text-sm leading-6 text-emergency"

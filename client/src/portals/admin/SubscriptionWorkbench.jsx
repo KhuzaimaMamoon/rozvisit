@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
+import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 
 const stateLabels = {
@@ -39,6 +40,8 @@ export default function SubscriptionWorkbench() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [fields, setFields] = useState({});
+  const { clearValidationNotice, formProps, revealFirstInvalid, validationMessage } =
+    useFormValidation();
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -55,6 +58,7 @@ export default function SubscriptionWorkbench() {
 
   async function activate(event) {
     event.preventDefault();
+    clearValidationNotice();
     if (saving) return;
     const nextFields = {};
     if (!paymentRef.trim()) nextFields.paymentRef = ['Enter the verified payment reference.'];
@@ -62,6 +66,7 @@ export default function SubscriptionWorkbench() {
       nextFields.price = ['Enter a positive agreed price.'];
     if (Object.keys(nextFields).length) {
       setFields(nextFields);
+      revealFirstInvalid();
       return;
     }
     setSaving(true);
@@ -85,6 +90,7 @@ export default function SubscriptionWorkbench() {
     } catch (requestError) {
       setError(requestError.message);
       setFields(requestError.fields ?? {});
+      if (Object.keys(requestError.fields ?? {}).length) revealFirstInvalid();
     } finally {
       setSaving(false);
     }
@@ -285,13 +291,16 @@ export default function SubscriptionWorkbench() {
                   subscription.
                 </p>
               </div>
-              <form className="space-y-5 p-5 sm:p-6" onSubmit={activate}>
+              <form {...formProps} className="space-y-5 p-5 sm:p-6" onSubmit={activate}>
+                <FormValidationBanner message={validationMessage} />
                 <FormInput
                   error={fields.paymentRef?.[0]}
                   id="payment-reference"
                   label="Payoneer reference"
                   value={paymentRef}
                   onChange={(event) => setPaymentRef(event.target.value)}
+                  required
+                  requiredMessage="Enter the Payoneer payment reference."
                 />
                 <FormInput
                   error={fields.price?.[0]}
@@ -302,6 +311,8 @@ export default function SubscriptionWorkbench() {
                   type="number"
                   value={agreedPrice}
                   onChange={(event) => setAgreedPrice(event.target.value)}
+                  required
+                  requiredMessage="Enter the agreed subscription price."
                 />
                 <label className="block text-sm font-medium text-text" htmlFor="agreed-currency">
                   Currency

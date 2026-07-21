@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
+import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import { navigate } from '../../navigation.js';
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -14,6 +15,8 @@ export default function VisitScheduling() {
   const [allowance, setAllowance] = useState(null);
   const [planName, setPlanName] = useState('');
   const [scheduling, setScheduling] = useState(null);
+  const { clearValidationNotice, formProps, revealFirstInvalid, validationMessage } =
+    useFormValidation();
 
   useEffect(() => {
     api(`/parents/${parentId}`)
@@ -25,8 +28,14 @@ export default function VisitScheduling() {
       .catch((error) => setMessage(error.message));
   }, [parentId]);
 
-  async function confirmSchedule() {
+  async function confirmSchedule(event) {
+    event.preventDefault();
     if (saving) return;
+    clearValidationNotice();
+    if (!slots.length) {
+      revealFirstInvalid();
+      return;
+    }
     setMessage('');
     setSaving(true);
     try {
@@ -60,7 +69,12 @@ export default function VisitScheduling() {
               : 'Choose the weekly visit times included in your active care plan.'}
           </p>
         </header>
-        <section className="mt-6 rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6">
+        <form
+          {...formProps}
+          className="mt-6 rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6"
+          onSubmit={confirmSchedule}
+        >
+          <FormValidationBanner message={validationMessage} />
           <h2 className="text-lg font-semibold text-text">Weekly slots</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
             Visits are planned one week at a time. Two days before this week ends, we will notify
@@ -77,6 +91,7 @@ export default function VisitScheduling() {
                 <select
                   aria-label={`Visit day ${index + 1}`}
                   className="h-10 rounded-sm border border-border bg-surface px-3 text-sm text-text"
+                  required
                   value={slot.day}
                   onChange={(event) =>
                     setSlots((current) =>
@@ -93,6 +108,7 @@ export default function VisitScheduling() {
                 <input
                   aria-label={`Visit time ${index + 1}`}
                   className="h-10 rounded-sm border border-border bg-surface px-3 text-sm text-text"
+                  required
                   type="time"
                   value={slot.time}
                   onChange={(event) =>
@@ -142,13 +158,13 @@ export default function VisitScheduling() {
             <Button
               className="w-full sm:w-auto"
               loading={saving}
-              onClick={() => void confirmSchedule()}
+              type="submit"
               disabled={!allowance || saving || scheduled || scheduling?.scheduleEnabled === false}
             >
               Confirm schedule
             </Button>
           </div>
-        </section>
+        </form>
         {message ? (
           <p
             aria-live="polite"

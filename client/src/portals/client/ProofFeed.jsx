@@ -20,6 +20,9 @@ export default function ProofFeed({ parentId: parentIdProp = null }) {
       .then(({ items }) => setState({ items, loading: false, error: '' }))
       .catch((error) => setState({ items: [], loading: false, error: error.message }));
   }, [parentId]);
+  const newestFirst = [...state.items].sort(
+    (first, second) => new Date(second.scheduledAt) - new Date(first.scheduledAt),
+  );
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-7xl">
@@ -48,7 +51,7 @@ export default function ProofFeed({ parentId: parentIdProp = null }) {
               No completed visit proof is available yet.
             </p>
           ) : null}
-          {state.items.map((visit) => (
+          {newestFirst.map((visit) => (
             <article
               className="rounded-lg border border-border bg-surface p-4 shadow-sm sm:p-5"
               key={visit.visitId}

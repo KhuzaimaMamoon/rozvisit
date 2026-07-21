@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
+import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import PublicAuthLayout from './PublicAuthLayout.jsx';
 
 export default function ForgotPassword() {
@@ -9,9 +10,11 @@ export default function ForgotPassword() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const { clearValidationNotice, formProps, validationMessage } = useFormValidation();
 
   async function submit(event) {
     event.preventDefault();
+    clearValidationNotice();
     setError('');
     setLoading(true);
     try {
@@ -37,7 +40,8 @@ export default function ForgotPassword() {
           If an account exists for that email, we&apos;ve sent reset instructions.
         </div>
       ) : (
-        <form className="mt-7 space-y-5" onSubmit={submit}>
+        <form {...formProps} className="mt-7 space-y-5" onSubmit={submit}>
+          <FormValidationBanner message={validationMessage} />
           {error ? (
             <p
               className="border-l-[3px] border-emergency bg-emergency-soft px-4 py-3 text-sm text-emergency"
