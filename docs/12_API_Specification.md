@@ -255,7 +255,7 @@ POST /api/v1/auth/register
   pending consent.
 - **Body:** `{ byVisitId, mediaType: "audio" | "video" }`; `byVisitId` is the assigned visit
   currently recording the consent and is used for the ownership check.
-- **Success `200`:** `{ cloudName, apiKey, timestamp, signature, folder: "rozvisit/consent/<parentId>/", publicId: "<parentId>_<compact ISO timestamp>", type: "authenticated", resourceType: "auto", maxFileSize: 52428800, allowedFormats: ["mp3", "m4a", "wav", "mp4", "mov"], expiresAt }`. The permit expires after 10 minutes (AD-31).
+- **Success `200`:** `{ cloudName, apiKey, timestamp, signature, folder: "rozvisit/consent/<parentId>/", publicId: "<parentId>_<compact ISO timestamp>", type: "authenticated", resourceType: "auto", maxFileSize: 52428800, allowedFormats: ["mp3", "m4a", "wav", "webm", "mp4", "mov"], expiresAt }`. The permit expires after 10 minutes (AD-31). `webm` supports browser-native microphone/camera recording when MP4 recording is unavailable.
 - **Behavior:** audio is a first-class consent option. Uploads are Cloudinary authenticated assets; after direct upload, the caregiver sends the returned `public_id` as `recordingRef` to `POST /parents/:id/consent`.
 - **Errors:** `403` unless the caregiver is assigned to that parent's pending-consent visit; `422`
   invalid media type or missing `byVisitId`.

@@ -3,9 +3,22 @@ import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
 
-async function uploadRecording(permit, blob, mediaType) {
+function preferredMimeType(mediaType) {
+  const options =
+    mediaType === 'video'
+      ? ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4']
+      : ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+  return options.find((option) => MediaRecorder.isTypeSupported(option)) ?? '';
+}
+
+function extensionForMimeType(mimeType, mediaType) {
+  if (mimeType.includes('webm')) return 'webm';
+  return mediaType === 'video' ? 'mp4' : 'm4a';
+}
+
+async function uploadRecording(permit, blob, mediaType, mimeType) {
   const body = new FormData();
-  body.append('file', blob, `consent-recording.${mediaType === 'audio' ? 'm4a' : 'mp4'}`);
+  body.append('file', blob, `consent-recording.${extensionForMimeType(mimeType, mediaType)}`);
   body.append('api_key', permit.apiKey);
   body.append('timestamp', String(permit.timestamp));
   body.append('signature', permit.signature);
@@ -23,11 +36,24 @@ async function uploadRecording(permit, blob, mediaType) {
 export default function ConsentPanel({ parentId, visitId, onResolved }) {
   const recorderRef = useRef(null);
   const streamRef = useRef(null);
-  const [state, setState] = useState({ blob: null, error: '', recording: false, saving: false });
+  const [state, setState] = useState({
+    blob: null,
+    error: '',
+    mimeType: '',
+    previewUrl: null,
+    recording: false,
+    saving: false,
+  });
   const [mediaType, setMediaType] = useState('audio');
   const [choices, setChoices] = useState({ other: '', photoBoundaries: '', preferredTimes: '' });
 
-  useEffect(() => () => streamRef.current?.getTracks().forEach((track) => track.stop()), []);
+  useEffect(
+    () => () => {
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+    },
+    [state.previewUrl],
+  );
 
   async function startRecording() {
     try {
@@ -36,15 +62,20 @@ export default function ConsentPanel({ parentId, visitId, onResolved }) {
         video: mediaType === 'video',
       });
       const chunks = [];
-      const recorder = new MediaRecorder(stream);
+      const mimeType = preferredMimeType(mediaType);
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       streamRef.current = stream;
       recorderRef.current = recorder;
       recorder.ondataavailable = (event) => chunks.push(event.data);
       recorder.onstop = () => {
         stream.getTracks().forEach((track) => track.stop());
+        const blob = new Blob(chunks, { type: recorder.mimeType || mimeType });
         setState((current) => ({
           ...current,
-          blob: new Blob(chunks, { type: recorder.mimeType }),
+          blob,
+          error: '',
+          mimeType: blob.type,
+          previewUrl: URL.createObjectURL(blob),
           recording: false,
         }));
       };
@@ -73,7 +104,7 @@ export default function ConsentPanel({ parentId, visitId, onResolved }) {
           body: JSON.stringify({ byVisitId: visitId, mediaType }),
           method: 'POST',
         });
-        const uploaded = await uploadRecording(permit, state.blob, mediaType);
+        const uploaded = await uploadRecording(permit, state.blob, mediaType, state.mimeType);
         await api(`/parents/${parentId}/consent`, {
           body: JSON.stringify({
             byVisitId: visitId,
@@ -118,7 +149,11 @@ export default function ConsentPanel({ parentId, visitId, onResolved }) {
                 : 'border-border bg-surface text-text'
             }`}
             key={type}
-            onClick={() => setMediaType(type)}
+            onClick={() => {
+              if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+              setMediaType(type);
+              setState((current) => ({ ...current, blob: null, mimeType: '', previewUrl: null }));
+            }}
             type="button"
           >
             {type === 'audio' ? 'Audio only' : 'Video'}
@@ -175,7 +210,16 @@ export default function ConsentPanel({ parentId, visitId, onResolved }) {
           Record decline
         </Button>
       </div>
-      {state.blob ? <p className="mt-3 text-sm text-success">Recording ready to save.</p> : null}
+      {state.previewUrl ? (
+        <div className="mt-4 rounded-md border border-border bg-primary-soft p-3">
+          <p className="text-sm font-medium text-text">Review the recording before saving</p>
+          {mediaType === 'video' ? (
+            <video className="mt-3 w-full rounded-sm bg-text" controls src={state.previewUrl} />
+          ) : (
+            <audio className="mt-3 w-full" controls src={state.previewUrl} />
+          )}
+        </div>
+      ) : null}
       {state.error ? <p className="mt-3 text-sm text-emergency">{state.error}</p> : null}
     </section>
   );

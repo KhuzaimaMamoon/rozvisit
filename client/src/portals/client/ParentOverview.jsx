@@ -31,8 +31,7 @@ export default function ParentOverview() {
   const subscription = p.subscriptionSummary;
   const subscriptionState = subscription?.state ?? null;
   const scheduleEnabled = p.schedulingSummary?.scheduleEnabled ?? false;
-  const proofEnabled =
-    scheduleEnabled || subscriptionState === 'paused' || subscriptionState === 'cancelled';
+  const proofEnabled = ['active', 'grace', 'paused', 'cancelled'].includes(subscriptionState);
   const links = [
     [
       'Choose a plan',

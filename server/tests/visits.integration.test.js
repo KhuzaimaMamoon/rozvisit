@@ -214,7 +214,7 @@ describe('Visit API lifecycle', () => {
       folder: `rozvisit/consent/${parent._id}/`,
       maxFileSize: 52428800,
       resourceType: 'auto',
-      allowedFormats: ['mp3', 'm4a', 'wav', 'mp4', 'mov'],
+      allowedFormats: ['mp3', 'm4a', 'wav', 'webm', 'mp4', 'mov'],
     });
   });
 

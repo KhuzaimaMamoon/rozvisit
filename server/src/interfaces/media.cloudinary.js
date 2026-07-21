@@ -6,7 +6,7 @@ import { assertMediaStorage } from './MediaStorage.js';
 const PERMIT_TTL_SECONDS = 10 * 60;
 const MAX_FILE_SIZE = 52_428_800;
 const ALLOWED_FORMATS = Object.freeze(['jpg', 'jpeg', 'png', 'heic', 'mp4', 'mov']);
-const CONSENT_ALLOWED_FORMATS = Object.freeze(['mp3', 'm4a', 'wav', 'mp4', 'mov']);
+const CONSENT_ALLOWED_FORMATS = Object.freeze(['mp3', 'm4a', 'wav', 'webm', 'mp4', 'mov']);
 
 cloudinary.config({
   api_key: env.cloudinary.apiKey,
