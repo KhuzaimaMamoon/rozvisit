@@ -2,6 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 
+const concernLabels = {
+  appetite: 'Ate less than usual',
+  home_condition: 'Home needs attention',
+  medication: 'Medication question',
+  mobility: 'Moved less than usual',
+  mood_change: 'Seemed different than usual',
+  other: 'Something else',
+};
+
 export default function ProofFeed({ parentId: parentIdProp = null }) {
   const parentIdFromPath = useMemo(() => window.location.pathname.split('/')[3], []);
   const parentId = parentIdProp ?? parentIdFromPath;
@@ -73,6 +82,18 @@ export default function ProofFeed({ parentId: parentIdProp = null }) {
                     <dt className="text-xs font-medium uppercase tracking-wide text-muted">Mood</dt>
                     <dd className="mt-1 text-sm font-medium text-text">
                       {visit.checklistSummary.mood}/5
+                    </dd>
+                  </div>
+                  <div className="rounded-md bg-primary-soft p-3 sm:col-span-2">
+                    <dt className="text-xs font-medium uppercase tracking-wide text-muted">
+                      Concerns
+                    </dt>
+                    <dd className="mt-1 text-sm font-medium text-text">
+                      {visit.checklistSummary.concerns?.length
+                        ? visit.checklistSummary.concerns
+                            .map((concern) => concernLabels[concern] ?? concern)
+                            .join(', ')
+                        : 'None recorded'}
                     </dd>
                   </div>
                 </dl>

@@ -203,19 +203,19 @@ Every variable is specified with the 9 fields from the prompt:
 
 ## A.7 Email
 
-### `EMAIL_PROVIDER_API_KEY`
+### `RESEND_API_KEY`
 
 | Field | Value |
 |---|---|
-| Variable | `EMAIL_PROVIDER_API_KEY` |
-| Service | Email provider (EXT-003) — provider chosen at build *(Recommendation)* |
-| Purpose | Authenticates the backend to the transactional email service |
-| Required | Required |
-| Development example | `EMAIL_PROVIDER_API_KEY=devonly-fake-email-provider-key-please-replace` |
-| Production rule | From the chosen provider's dashboard; stored in Render |
+| Variable | `RESEND_API_KEY` |
+| Service | Resend transactional email |
+| Purpose | Enables real delivery for verification, password-reset, and product notification emails through the Resend-backed email channel. |
+| Required | Optional — when unset, the email channel deliberately uses its local/CI no-op delivery mode. |
+| Development example | `RESEND_API_KEY=re_...` **(never commit a real key)** |
+| Production rule | Set from the Resend dashboard only after the configured sender domain/address is verified. |
 | Sensitivity | Secret |
-| Default behavior | Boot refused; in local development, if left unset, the email channel logs to the console instead of sending (Doc 25 §1) *(Recommendation — the local console fallback is behavior of the email interface implementation, not of env.js, so env.js still requires it in `production` and `test`, but permits absence in `development`)* |
-| Validation | Non-empty in `production` and `test`; permitted absent in `development` |
+| Default behavior | No-op email delivery; in-app notifications continue and `DEV_LOG_AUTH_LINKS` remains available only under its existing localhost-development guard. |
+| Validation | Non-empty when set. |
 
 ### `EMAIL_FROM_ADDRESS`
 
@@ -225,7 +225,7 @@ Every variable is specified with the 9 fields from the prompt:
 | Service | Email provider |
 | Purpose | The `From:` address on outgoing mail |
 | Required | Required |
-| Development example | `EMAIL_FROM_ADDRESS=dev-noreply@example.invalid` **(`.invalid` TLD guarantees non-delivery)** |
+| Development example | `EMAIL_FROM_ADDRESS=onboarding@resend.dev` **(Resend test sender; delivery is limited by Resend until a production domain is verified)** |
 | Production rule | `noreply@<rozvisit-domain>` for automated messages; `support@<rozvisit-domain>` reserved for reply-expected mail (Doc 19 §5) |
 | Sensitivity | Public |
 | Default behavior | Boot refused |
@@ -431,9 +431,9 @@ CLOUDINARY_API_SECRET=
 # Push notifications (Firebase service account JSON, single-line)
 FIREBASE_SERVICE_ACCOUNT_JSON=
 
-# Email (provider chosen at build)
-EMAIL_PROVIDER_API_KEY=
-EMAIL_FROM_ADDRESS=
+# Email (Resend is the transactional provider; real delivery remains opt-in)
+EMAIL_FROM_ADDRESS=onboarding@resend.dev
+RESEND_API_KEY=
 
 # Error tracking (optional at MVP)
 SENTRY_DSN=

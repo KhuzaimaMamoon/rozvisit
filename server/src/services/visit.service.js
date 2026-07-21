@@ -39,6 +39,10 @@ function dateForSlot(now, dayOfWeek, time) {
   return date;
 }
 
+function weekKey(date) {
+  return startOfWeek(date).toISOString();
+}
+
 function serializeVisit(visit) {
   return {
     id: visit._id.toString(),
@@ -179,6 +183,30 @@ export const visitService = Object.freeze({
           statusHistory: [{ status: VISIT_STATUS.SCHEDULED, at: now, byUserId: clientId }],
         });
       }
+    }
+    const existingVisits = await visitRepository.findForSubscriptionPeriod(
+      subscription._id,
+      startOfWeek(now),
+      periodEnd,
+    );
+    const existingIds = new Set(existingVisits.map((visit) => visit.clientVisitId));
+    const occupiedByWeek = new Map();
+    for (const visit of existingVisits) {
+      if (![VISIT_STATUS.SCHEDULED, VISIT_STATUS.COMPLETED].includes(visit.status)) continue;
+      const key = weekKey(visit.scheduledAt);
+      occupiedByWeek.set(key, (occupiedByWeek.get(key) ?? 0) + 1);
+    }
+    for (const record of records) {
+      if (existingIds.has(record.clientVisitId)) continue;
+      const key = weekKey(record.scheduledAt);
+      const nextCount = (occupiedByWeek.get(key) ?? 0) + 1;
+      if (nextCount > limit) {
+        throw new ConflictError(
+          'ALLOWANCE_EXCEEDED',
+          `Your plan includes ${limit} visits per week. Upgrade to add more.`,
+        );
+      }
+      occupiedByWeek.set(key, nextCount);
     }
     const visits = records.length ? await visitRepository.upsertScheduled(records) : [];
     return {

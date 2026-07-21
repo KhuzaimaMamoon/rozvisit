@@ -5,10 +5,11 @@ export function notificationEventKey(type, recipientId, targetId) {
   return `${type}:${recipientId}:${targetId}`;
 }
 
-export async function notifyRecipient({ recipientId, targetId, type, values }) {
+export async function notifyRecipient({ channels, recipientId, targetId, type, values }) {
   const rendered = renderNotification(type, values);
   return notificationService.notify({
     ...rendered,
+    channels: channels ?? rendered.channels,
     idempotencyKey: notificationEventKey(type, recipientId, targetId),
     type,
     userId: recipientId,

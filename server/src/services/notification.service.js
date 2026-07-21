@@ -4,6 +4,7 @@ import { emailChannel } from '../interfaces/channel.email.js';
 import { inAppChannel } from '../interfaces/channel.in-app.js';
 import { pushChannel } from '../interfaces/channel.push.js';
 import { notificationRepository } from '../repositories/notification.repo.js';
+import { userRepository } from '../repositories/user.repo.js';
 import { NotFoundError } from '../utils/AppError.js';
 import { logger } from '../utils/logger.js';
 
@@ -62,11 +63,16 @@ async function deliver(notificationId, channel) {
   delivery.attempts += 1;
   delivery.lastAttemptAt = new Date();
   try {
+    const recipient =
+      channel === NOTIFICATION_CHANNEL.EMAIL
+        ? await userRepository.findEmailById(notification.userId)
+        : null;
     await channels[channel].send({
       body: notification.body,
       notificationId: notification._id.toString(),
       title: notification.title,
       type: notification.type,
+      to: recipient?.email,
       userId: notification.userId.toString(),
     });
     delivery.nextAttemptAt = null;
