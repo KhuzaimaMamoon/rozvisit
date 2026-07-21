@@ -116,6 +116,35 @@ describe('visitService', () => {
     expect(assigned.caregiverId).toBe(caregiver._id.toString());
   });
 
+  it.each([
+    ['Basic', 1],
+    ['Standard', 3],
+    ['Premium', 7],
+  ])(
+    'enforces the %s weekly allowance across separate schedule submissions',
+    async (_plan, limit) => {
+      subscription.planKey = _plan;
+      subscription.planSnapshot.visitsPerWeek = limit;
+      await subscription.save();
+
+      const initialSlots = Array.from({ length: limit }, (_, index) => ({
+        dayOfWeek: index,
+        time: '10:00',
+      }));
+      await visitService.schedule(client._id.toString(), {
+        parentId: parent._id.toString(),
+        slots: initialSlots,
+      });
+
+      await expect(
+        visitService.schedule(client._id.toString(), {
+          parentId: parent._id.toString(),
+          slots: [{ dayOfWeek: 0, time: '11:00' }],
+        }),
+      ).rejects.toMatchObject({ code: 'ALLOWANCE_EXCEEDED' });
+    },
+  );
+
   it('requires assignment for caregiver actions and pauses the parent on declined consent', async () => {
     const [visit] = await Visit.create([
       {

@@ -29,7 +29,7 @@ authRouter.post('/apply', authRateLimit, validate(applySchema), apply);
 authRouter.post('/verify-email', authRateLimit, validate(verifySchema), verifyEmail);
 authRouter.post('/resend-verification', authRateLimit, validate(emailSchema), resendVerification);
 authRouter.post('/login', authRateLimit, validate(loginSchema), login);
-authRouter.post('/refresh', authRateLimit, refresh);
+authRouter.post('/refresh', refresh);
 authRouter.post('/logout', requireAuth, logout);
 authRouter.post('/forgot', authRateLimit, validate(emailSchema), forgot);
 authRouter.post('/reset', authRateLimit, validate(resetSchema), reset);

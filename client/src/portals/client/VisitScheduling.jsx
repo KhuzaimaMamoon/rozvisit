@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
+import { navigate } from '../../navigation.js';
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -9,6 +10,7 @@ export default function VisitScheduling() {
   const [slots, setSlots] = useState([{ day: 'Tuesday', time: '10:00' }]);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [scheduled, setScheduled] = useState(false);
   const [allowance, setAllowance] = useState(null);
   const [planName, setPlanName] = useState('');
 
@@ -34,6 +36,8 @@ export default function VisitScheduling() {
         method: 'POST',
       });
       setMessage(result.message);
+      setScheduled(true);
+      window.setTimeout(() => navigate(`/app/parents/${parentId}`), 1400);
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -113,7 +117,7 @@ export default function VisitScheduling() {
           </div>
           <Button
             className="mt-4"
-            disabled={!allowance || slots.length >= allowance}
+            disabled={!allowance || scheduled || slots.length >= allowance}
             onClick={() =>
               setSlots((current) => [
                 ...current,
@@ -133,7 +137,7 @@ export default function VisitScheduling() {
               className="w-full sm:w-auto"
               loading={saving}
               onClick={() => void confirmSchedule()}
-              disabled={!allowance || saving}
+              disabled={!allowance || saving || scheduled}
             >
               Confirm schedule
             </Button>

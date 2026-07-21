@@ -37,6 +37,11 @@ export const visitRepository = Object.freeze({
   findWeekBySubscription(subscriptionId, start, end) {
     return Visit.find({ subscriptionId, scheduledAt: { $gte: start, $lt: end } });
   },
+  findForSubscriptionPeriod(subscriptionId, start, end) {
+    return Visit.find({ subscriptionId, scheduledAt: { $gte: start, $lt: end } }).select(
+      'clientVisitId scheduledAt status',
+    );
+  },
   findFeedByParent(parentId, limit) {
     return Visit.find({ parentId }).sort({ scheduledAt: -1 }).limit(limit);
   },

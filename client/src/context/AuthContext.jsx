@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, clearAccessToken, refreshAccessToken, setAccessToken } from '../api.js';
 
 const AuthContext = createContext(null);
@@ -22,17 +22,22 @@ export function roleHome(user) {
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState({ loading: true, user: null });
+  const sessionGeneration = useRef(0);
 
   useEffect(() => {
     let active = true;
+    const generation = ++sessionGeneration.current;
     refreshAccessToken()
       .then((token) => {
         const role = roleFromAccessToken(token);
-        if (active && role) setSession({ loading: false, user: { role, status: null } });
-        else if (active) setSession({ loading: false, user: null });
+        if (!active || generation !== sessionGeneration.current) return;
+        if (role) setSession({ loading: false, user: { role, status: null } });
+        else setSession({ loading: false, user: null });
       })
       .catch(() => {
-        if (active) setSession({ loading: false, user: null });
+        if (active && generation === sessionGeneration.current) {
+          setSession({ loading: false, user: null });
+        }
       });
     return () => {
       active = false;
@@ -48,6 +53,7 @@ export function AuthProvider({ children }) {
           method: 'POST',
           retry: false,
         });
+        sessionGeneration.current += 1;
         setAccessToken(data.accessToken);
         const user = { ...data.user, email };
         setSession({ loading: false, user });
@@ -57,6 +63,7 @@ export function AuthProvider({ children }) {
         try {
           await api('/auth/logout', { method: 'POST', retry: false });
         } finally {
+          sessionGeneration.current += 1;
           clearAccessToken();
           setSession({ loading: false, user: null });
         }

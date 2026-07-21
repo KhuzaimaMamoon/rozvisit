@@ -6,7 +6,7 @@ const attempts = new Map();
 
 export function authRateLimit(req, res, next) {
   const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
-  const key = `${req.ip}:${email}`;
+  const key = `${req.ip}:${req.path}:${email}`;
   const now = Date.now();
   const entry = attempts.get(key);
   const timestamps = (entry?.timestamps ?? []).filter((timestamp) => now - timestamp < WINDOW_MS);
