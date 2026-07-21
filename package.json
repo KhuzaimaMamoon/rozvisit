@@ -19,17 +19,10 @@
     "lint": "oxlint client server",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check:bundle": "node scripts/check-bundle-budget.js",
-    "prepare": "husky"
-  },
-  "lint-staged": {
-    "*.{js,jsx,json,css,md,yml,yaml}": "prettier --write",
-    "*.{js,jsx}": "oxlint"
+    "check:bundle": "node scripts/check-bundle-budget.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
-    "husky": "*",
-    "lint-staged": "*",
     "oxlint": "*",
     "prettier": "*"
   }

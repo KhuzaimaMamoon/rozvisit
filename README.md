@@ -420,7 +420,7 @@ Testing details: [`docs/09_System_Architecture.md`](docs/09_System_Architecture.
 - `.oxlintrc.json` at the repo root.
 - `.prettierrc` at the repo root.
 - Both run in CI on every pull request.
-- Pre-commit hooks (Husky + lint-staged) run both on staged files.
+- Husky hooks are intentionally not used. Before every commit or push, contributors must run the six local verifications: `npm install`, `npm run lint`, `npm run format:check`, `npm run test`, `npm run build`, and `npm audit --audit-level=high`.
 
 The choice of Oxlint over ESLint is documented as an ADR in [`docs/29_Risk_Register_and_ADRs.md`](docs/29_Risk_Register_and_ADRs.md) (AD-11), with the reason recorded per Rule 8 of the documentation series.
 
