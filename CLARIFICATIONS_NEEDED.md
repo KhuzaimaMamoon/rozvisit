@@ -330,3 +330,16 @@ note }`, and `POST /admin/flags/:id/resolve` must close a flag with a note. Afte
 - **Resolution:** Founder approved Option A: `GET /parents/:id` includes `subscriptionSummary`.
   It is `null` with no subscription; otherwise it provides `id`, `state`, `planKey`, and
   `visitsPerWeek` once the plan is active (including grace). Doc 12 records the response.
+
+## Client schedule lock after first scheduling — Documentation conflict
+
+- **Question:** Should a client be prevented from scheduling again after their first saved weekly
+  schedule, and should the UI say that the schedule is permanently fixed for MVP?
+- **Searched:** Doc 09 visit lifecycle, Doc 12 `PATCH /visits/:id/reschedule` and
+  `POST /visits/:id/cancel`, Doc 14 Visit Scheduling module, and Doc 16 S-18.
+- **Finding:** The canonical MVP specification explicitly requires the schedule screen to expose
+  upcoming visits with **Reschedule / Cancel** actions. A one-time immutable schedule and a
+  disabled Schedule visits action would contradict that documented capability.
+- **Needed to proceed with a change:** An approved documentation decision removing or deferring
+  the documented reschedule/cancel MVP capability. Until then, the existing active-plan action
+  remains enabled and no misleading “fixed forever” copy is added.

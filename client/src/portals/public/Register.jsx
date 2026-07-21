@@ -53,7 +53,7 @@ export default function Register() {
         </div>
       ) : (
         <form className="mt-7 space-y-5" onSubmit={submit}>
-          {error ? (
+          {error && Object.keys(fields).length === 0 ? (
             <p
               className="border-l-[3px] border-emergency bg-emergency-soft px-4 py-3 text-sm text-emergency"
               role="alert"
@@ -87,6 +87,7 @@ export default function Register() {
               label="Phone"
               onChange={update('phone')}
               required
+              requiredMessage="Phone number must include a country code, like +971501234567."
               type="tel"
               value={form.phone}
             />
@@ -109,6 +110,7 @@ export default function Register() {
             label="Password"
             onChange={update('password')}
             required
+            requiredMessage="Password must be at least 8 characters with letters and numbers."
             type="password"
             value={form.password}
           />

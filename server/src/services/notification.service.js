@@ -17,6 +17,11 @@ const channels = Object.freeze({
 });
 const eventBus = new EventEmitter();
 const timers = new Map();
+const ADMIN_INBOX_TYPES = Object.freeze([
+  'admin_new_application',
+  'admin_payment_reconciled',
+  'flag_raised',
+]);
 
 function serialize(notification) {
   return {
@@ -111,11 +116,12 @@ eventBus.on('notification.deliver', (notificationId, channel) => {
 });
 
 export const notificationService = Object.freeze({
-  async list(userId, { before, limit = 20 }) {
+  async list(actor, { before, limit = 20 }) {
     const result = await notificationRepository.listForUser({
       before: before ? new Date(before) : null,
       limit,
-      userId,
+      types: actor.role === 'admin' ? ADMIN_INBOX_TYPES : null,
+      userId: actor.sub,
     });
     return {
       items: result.items.map(serialize),

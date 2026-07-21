@@ -42,3 +42,6 @@ export const createConsentPermit = run(async (req, res) =>
     await visitService.createConsentPermit(req.auth.sub, req.params.id, req.validatedBody),
   ),
 );
+export const createConsentPlayback = run(async (req, res) =>
+  respond.ok(res, await profileService.createConsentPlayback(req.auth, req.params.id)),
+);

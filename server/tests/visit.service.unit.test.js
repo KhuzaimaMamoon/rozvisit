@@ -120,30 +120,58 @@ describe('visitService', () => {
     ['Basic', 1],
     ['Standard', 3],
     ['Premium', 7],
-  ])(
-    'enforces the %s weekly allowance across separate schedule submissions',
-    async (_plan, limit) => {
-      subscription.planKey = _plan;
-      subscription.planSnapshot.visitsPerWeek = limit;
-      await subscription.save();
+  ])('locks the %s weekly cycle after the plan allowance is scheduled', async (_plan, limit) => {
+    subscription.planKey = _plan;
+    subscription.planSnapshot.visitsPerWeek = limit;
+    await subscription.save();
 
-      const initialSlots = Array.from({ length: limit }, (_, index) => ({
-        dayOfWeek: index,
-        time: '10:00',
-      }));
-      await visitService.schedule(client._id.toString(), {
+    const initialSlots = Array.from({ length: limit }, (_, index) => ({
+      dayOfWeek: index,
+      time: '10:00',
+    }));
+    await visitService.schedule(client._id.toString(), {
+      parentId: parent._id.toString(),
+      slots: initialSlots,
+    });
+
+    await expect(
+      visitService.schedule(client._id.toString(), {
         parentId: parent._id.toString(),
-        slots: initialSlots,
-      });
+        slots: [{ dayOfWeek: 0, time: '11:00' }],
+      }),
+    ).rejects.toMatchObject({ code: 'SCHEDULING_LOCKED' });
+  });
 
-      await expect(
-        visitService.schedule(client._id.toString(), {
-          parentId: parent._id.toString(),
-          slots: [{ dayOfWeek: 0, time: '11:00' }],
-        }),
-      ).rejects.toMatchObject({ code: 'ALLOWANCE_EXCEEDED' });
-    },
-  );
+  it('carries the prior weekly pattern forward when the new week has no client schedule', async () => {
+    const now = new Date();
+    now.setHours(7, 0, 0, 0);
+    const currentWeekStart = new Date(now);
+    currentWeekStart.setHours(0, 0, 0, 0);
+    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
+    const previousWeekStart = new Date(currentWeekStart);
+    previousWeekStart.setDate(previousWeekStart.getDate() - 7);
+    const dayOfWeek = (now.getDay() + 1) % 7;
+    const priorScheduledAt = new Date(previousWeekStart);
+    priorScheduledAt.setDate(priorScheduledAt.getDate() + dayOfWeek);
+    priorScheduledAt.setHours(10, 0, 0, 0);
+    await Visit.create({
+      clientVisitId: 'prior-week-pattern',
+      parentId: parent._id,
+      subscriptionId: subscription._id,
+      scheduledAt: priorScheduledAt,
+      standingNote: 'Weekly care pattern',
+      status: 'completed',
+      statusHistory: [{ status: 'completed', at: priorScheduledAt }],
+    });
+
+    await visitService.processWeeklyCycles(now);
+    const currentVisits = await Visit.find({
+      subscriptionId: subscription._id,
+      scheduledAt: { $gte: currentWeekStart },
+    });
+    expect(currentVisits).toHaveLength(1);
+    expect(currentVisits[0].standingNote).toBe('Weekly care pattern');
+  });
 
   it('requires assignment for caregiver actions and pauses the parent on declined consent', async () => {
     const [visit] = await Visit.create([

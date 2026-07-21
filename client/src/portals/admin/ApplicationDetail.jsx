@@ -17,6 +17,7 @@ export default function ApplicationDetail() {
   const applicationId = useMemo(() => window.location.pathname.split('/').at(-1), []);
   const [application, setApplication] = useState(null);
   const [error, setError] = useState('');
+  const [fields, setFields] = useState({});
   const [message, setMessage] = useState('');
   const [cnic, setCnic] = useState({ cnicDocRef: '', note: '', verified: false });
   const [interview, setInterview] = useState({
@@ -56,7 +57,12 @@ export default function ApplicationDetail() {
 
   async function saveGate(path, body) {
     if (savingAction) return;
+    if (path === 'cnic-gate' && !body.cnicDocRef.trim()) {
+      setFields({ cnicDocRef: ['Enter the CNIC document reference before recording this check.'] });
+      return;
+    }
     setError('');
+    setFields({});
     setMessage('');
     setSavingAction(path);
     try {
@@ -68,6 +74,7 @@ export default function ApplicationDetail() {
       setMessage('Verification gate recorded.');
     } catch (requestError) {
       setError(requestError.message);
+      setFields(requestError.fields ?? {});
     } finally {
       setSavingAction('');
     }
@@ -134,7 +141,9 @@ export default function ApplicationDetail() {
           </div>
         </header>
         {message ? <p className="mt-5 text-sm text-success">{message}</p> : null}
-        {error ? <p className="mt-5 text-sm text-emergency">{error}</p> : null}
+        {error && Object.keys(fields).length === 0 ? (
+          <p className="mt-5 text-sm text-emergency">{error}</p>
+        ) : null}
         <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_20rem]">
           <div className="space-y-5">
             <GateCard title="CNIC check">
@@ -148,6 +157,7 @@ export default function ApplicationDetail() {
                 </dd>
               </dl>
               <FormInput
+                error={fields.cnicDocRef?.[0]}
                 label="CNIC document reference"
                 onChange={(event) => setCnic({ ...cnic, cnicDocRef: event.target.value })}
                 value={cnic.cnicDocRef}

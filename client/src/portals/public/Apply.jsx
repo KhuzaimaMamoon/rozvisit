@@ -18,6 +18,7 @@ const initial = {
 export default function Apply() {
   const [form, setForm] = useState(initial);
   const [error, setError] = useState('');
+  const [fields, setFields] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const update = (key) => (event) =>
@@ -25,6 +26,7 @@ export default function Apply() {
   async function submit(event) {
     event.preventDefault();
     setError('');
+    setFields({});
     setLoading(true);
     try {
       await api('/auth/apply', {
@@ -42,6 +44,7 @@ export default function Apply() {
       setSubmitted(true);
     } catch (requestError) {
       setError(requestError.message);
+      setFields(requestError.fields ?? {});
     } finally {
       setLoading(false);
     }
@@ -65,7 +68,7 @@ export default function Apply() {
         </div>
       ) : (
         <form className="mt-6 grid gap-4 lg:grid-cols-2" onSubmit={submit}>
-          {error ? (
+          {error && Object.keys(fields).length === 0 ? (
             <p
               className="border-l-[3px] border-emergency bg-emergency-soft px-4 py-3 text-sm text-emergency lg:col-span-2"
               role="alert"
@@ -74,6 +77,7 @@ export default function Apply() {
             </p>
           ) : null}
           <FormInput
+            error={fields.email?.[0]}
             id="name"
             label="Full name"
             onChange={update('name')}
@@ -81,19 +85,23 @@ export default function Apply() {
             value={form.name}
           />
           <FormInput
+            error={fields.phone?.[0]}
             id="email"
             label="Email"
             onChange={update('email')}
             required
+            requiredMessage="Phone number must include a country code, like +923001234567."
             type="email"
             value={form.email}
           />
           <FormInput
+            error={fields.cnicNumber?.[0]}
             helperText="Include your country code, for example +923001234567."
             id="phone"
             label="Phone"
             onChange={update('phone')}
             required
+            requiredMessage="CNIC must be exactly 13 digits."
             type="tel"
             value={form.phone}
           />
@@ -107,17 +115,20 @@ export default function Apply() {
           />
           <div className="lg:col-span-2">
             <FormInput
+              error={fields.password?.[0]}
               helperText="At least 8 characters, with letters and numbers."
               id="password"
               label="Password"
               onChange={update('password')}
               required
+              requiredMessage="Password must be at least 8 characters with letters and numbers."
               type="password"
               value={form.password}
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2">
             <FormInput
+              error={fields.serviceArea?.[0]}
               id="lat"
               label="Service latitude"
               onChange={update('lat')}
@@ -126,6 +137,7 @@ export default function Apply() {
               value={form.lat}
             />
             <FormInput
+              error={fields.serviceArea?.[0]}
               id="lng"
               label="Service longitude"
               onChange={update('lng')}
@@ -134,6 +146,7 @@ export default function Apply() {
               value={form.lng}
             />
             <FormInput
+              error={fields.serviceArea?.[0]}
               id="radius"
               label="Radius (km)"
               min="1"

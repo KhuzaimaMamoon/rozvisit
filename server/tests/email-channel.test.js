@@ -24,11 +24,13 @@ describe('Resend email channel', () => {
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
         from: 'noreply@example.com',
+        html: expect.stringContaining('RozVisit'),
         subject: 'Your plan is active',
         text: 'Your Standard plan is active.',
         to: ['ayesha@example.com'],
       }),
     );
+    expect(send.mock.calls[0][0].html).toContain('Your Standard plan is active.');
   });
 
   it('uses no-op delivery without a Resend key while retaining the development auth-link log', async () => {

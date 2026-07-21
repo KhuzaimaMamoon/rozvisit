@@ -32,4 +32,9 @@ export const subscriptionRepository = Object.freeze({
       currentPeriodEnd: { $lte: now },
     });
   },
+  findWeeklySchedulingCandidates() {
+    return Subscription.find({
+      state: { $in: [SUBSCRIPTION_STATE.ACTIVE, SUBSCRIPTION_STATE.GRACE] },
+    });
+  },
 });

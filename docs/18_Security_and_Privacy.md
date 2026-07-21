@@ -286,6 +286,10 @@ Concrete rules for the file listed in Document 10 §8:
 - **Passwords, tokens, secrets, and media contents never appear in any log line**, ever.
 - **Payment references are logged** (they are not card data) — needed for reconciliation.
 - **Consent recording references are logged only when necessary for admin diagnosis** (e.g., following up on a specific support case that mentions the consent event) — routine notification, subscription, and visit-completion logging omits them. The reference identifier alone is not sensitive content, but treating it as *"log only when needed"* keeps the honesty rule intact: consent belongs to the parent, and the audit trail (Section 24) is the appropriate primary record for consent access.
+- **Consent-recording playback** is available only to the owning client and an authorized admin.
+  Playback links are minted per request with a short lifetime after an ownership check, and each
+  request writes a `consent.recording_played` audit event. Audit detail never includes the
+  recording reference or the signed URL.
 - **Failed logins log the email attempted** (a security signal), but never the password attempted; success/failure booleans and rate-limit counters feed the alert rules.
 
 ---

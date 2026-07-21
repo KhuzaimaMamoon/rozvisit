@@ -31,6 +31,8 @@ const EMAIL_VERIFICATION_EXPIRY_MS = 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_EXPIRY_MS = 60 * 60 * 1000;
 const PROGRESSIVE_DELAY_AFTER = 5;
 const PROGRESSIVE_DELAY_MS = 1000;
+const AUTH_EMAIL_MAX_ATTEMPTS = 4;
+const AUTH_EMAIL_RETRY_DELAYS_MS = [30_000, 60_000, 120_000];
 const DUMMY_PASSWORD_HASH = '$2b$10$PpbAcrK4aD7gFuQb7LJZk.43q69CYhf7trM7.7VXx4wsaNpoZjT8K';
 const failures = new Map();
 
@@ -97,6 +99,35 @@ function clearFailedLogins(email) {
   failures.delete(failureKey(email));
 }
 
+function scheduleAuthEmailRetry(message, attempt) {
+  const timer = setTimeout(
+    () => {
+      void deliverAuthEmail(message, { attempt: attempt + 1 });
+    },
+    AUTH_EMAIL_RETRY_DELAYS_MS[attempt - 1],
+  );
+  timer.unref?.();
+}
+
+export async function deliverAuthEmail(
+  message,
+  {
+    attempt = 1,
+    channel = emailChannel,
+    log = logger,
+    scheduleRetry = scheduleAuthEmailRetry,
+  } = {},
+) {
+  try {
+    await channel.send(message);
+    return { sent: true };
+  } catch {
+    log.error('auth.email_delivery_failed', { attempt, type: message.type });
+    if (attempt < AUTH_EMAIL_MAX_ATTEMPTS) scheduleRetry(message, attempt);
+    return { sent: false };
+  }
+}
+
 async function issueEmailToken(user, type) {
   const rawToken = makeRawToken();
   const expiresAt = new Date(
@@ -113,7 +144,7 @@ async function issueEmailToken(user, type) {
   });
 
   const path = type === AUTH_TOKEN_TYPES.EMAIL_VERIFICATION ? '/verify?token=' : '/reset?token=';
-  await emailChannel.send({ type, to: user.email, link: `${env.appBaseUrl}${path}${rawToken}` });
+  void deliverAuthEmail({ type, to: user.email, link: `${env.appBaseUrl}${path}${rawToken}` });
 }
 
 export const authService = Object.freeze({
