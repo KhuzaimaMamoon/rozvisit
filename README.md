@@ -326,8 +326,11 @@ CLOUDINARY_API_SECRET=
 FIREBASE_SERVICE_ACCOUNT_JSON=
 
 # Email
-EMAIL_PROVIDER_API_KEY=
+# Temporary Gmail SMTP bridge for real-user testing; do not use for bulk production delivery.
+GMAIL_USER=
+GMAIL_APP_PASSWORD=
 EMAIL_FROM_ADDRESS=
+RESEND_API_KEY=
 
 # Optional
 SENTRY_DSN=

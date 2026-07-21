@@ -1,7 +1,62 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { createEmailChannel } from '../src/interfaces/channel.email.js';
 
-describe('Resend email channel', () => {
+describe('Email channel', () => {
+  it('uses Gmail SMTP ahead of Resend when both delivery options are configured', async () => {
+    const sendMail = jest.fn().mockResolvedValue({ messageId: 'gmail-1' });
+    const createGmailTransport = jest.fn(() => ({ sendMail }));
+    const resendSend = jest.fn();
+    const createClient = jest.fn(() => ({ emails: { send: resendSend } }));
+    const channel = createEmailChannel({
+      apiKey: 're_test_key',
+      createClient,
+      createGmailTransport,
+      enableDelivery: true,
+      fromAddress: 'noreply@verified-resend.example',
+      gmailAppPassword: 'abcdefghijklmnop',
+      gmailUser: 'rozvisit.testing@gmail.com',
+      log: { info: jest.fn(), warn: jest.fn() },
+    });
+
+    await channel.send({
+      body: 'Confirm your email address.',
+      to: 'ayesha@example.com',
+      type: 'email_verification',
+    });
+
+    expect(createGmailTransport).toHaveBeenCalledWith({
+      service: 'gmail',
+      auth: { user: 'rozvisit.testing@gmail.com', pass: 'abcdefghijklmnop' },
+    });
+    expect(resendSend).not.toHaveBeenCalled();
+    expect(sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: 'rozvisit.testing@gmail.com',
+        to: 'ayesha@example.com',
+      }),
+    );
+  });
+
+  it('falls back to Resend when configured Gmail SMTP cannot deliver', async () => {
+    const sendMail = jest.fn().mockRejectedValue(new Error('SMTP unavailable'));
+    const send = jest.fn().mockResolvedValue({ data: { id: 'resend-1' }, error: null });
+    const channel = createEmailChannel({
+      apiKey: 're_test_key',
+      createClient: () => ({ emails: { send } }),
+      createGmailTransport: () => ({ sendMail }),
+      enableDelivery: true,
+      fromAddress: 'noreply@verified-resend.example',
+      gmailAppPassword: 'abcdefghijklmnop',
+      gmailUser: 'rozvisit.testing@gmail.com',
+      log: { info: jest.fn(), warn: jest.fn() },
+    });
+
+    await channel.send({ to: 'ayesha@example.com', type: 'password_reset' });
+
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
   it('delivers a Resend email when a dedicated API key is configured', async () => {
     const send = jest.fn().mockResolvedValue({ data: { id: 'email-1' }, error: null });
     const createClient = jest.fn(() => ({ emails: { send } }));

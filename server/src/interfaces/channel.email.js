@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { logger } from '../utils/logger.js';
 import { env } from '../config/env.js';
 import { assertNotificationChannel } from './NotificationChannel.js';
@@ -93,11 +94,24 @@ function messageFor({ body, link, title, type }) {
 export function createEmailChannel({
   apiKey = env.email.resendApiKey,
   createClient = (key) => new Resend(key),
+  createGmailTransport = (options) => nodemailer.createTransport(options),
   devLogAuthLinks = env.devLogAuthLinks,
   enableDelivery = !process.env.JEST_WORKER_ID,
   fromAddress = env.email.fromAddress,
+  gmailAppPassword = env.email.gmailAppPassword,
+  gmailUser = env.email.gmailUser,
   log = logger,
 } = {}) {
+  // Gmail SMTP is a short-term bridge for real-user testing. It has sending
+  // limits and is not the long-term production delivery provider; Resend is
+  // retained as the fallback once its custom sender domain is verified.
+  const gmailTransport =
+    gmailUser && gmailAppPassword && enableDelivery
+      ? createGmailTransport({
+          service: 'gmail',
+          auth: { user: gmailUser, pass: gmailAppPassword },
+        })
+      : null;
   const client = apiKey && enableDelivery ? createClient(apiKey) : null;
   return assertNotificationChannel({
     async send({ body, link, title, to, type }) {
@@ -108,12 +122,27 @@ export function createEmailChannel({
           type,
         });
       }
+      if ((gmailTransport || client) && !to) {
+        throw new Error('Email delivery requires a recipient address.');
+      }
+      if (gmailTransport) {
+        try {
+          const response = await gmailTransport.sendMail({
+            from: gmailUser,
+            to,
+            ...messageFor({ body, link, title, type }),
+          });
+          log.info('notification.email_sent', { delivery: 'gmail_smtp', type });
+          return response;
+        } catch (error) {
+          if (!client) throw error;
+          log.warn('notification.gmail_smtp_failed', { type, error: error.message });
+        }
+      }
       if (!client) {
         log.info('notification.email_queued', { delivery: 'noop', type });
         return { delivery: 'noop' };
       }
-      if (!to) throw new Error('Email delivery requires a recipient address.');
-
       const response = await client.emails.send({
         from: fromAddress,
         to: [to],
