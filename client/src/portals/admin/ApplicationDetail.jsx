@@ -75,8 +75,12 @@ export default function ApplicationDetail() {
     setMessage('');
     setSavingAction(path);
     try {
+      const requestBody = { ...body };
+      if (path === 'interview-gate' && !requestBody.interviewRecordingRef?.trim()) {
+        delete requestBody.interviewRecordingRef;
+      }
       const data = await api(`/admin/applications/${applicationId}/${path}`, {
-        body: JSON.stringify(body),
+        body: JSON.stringify(requestBody),
         method: 'PATCH',
       });
       setApplication(data);

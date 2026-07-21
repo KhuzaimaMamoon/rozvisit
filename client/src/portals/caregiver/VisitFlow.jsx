@@ -489,7 +489,7 @@ export default function VisitFlow() {
             )}
           </aside>
         </div>
-        <div className="sticky bottom-3 z-10 mt-6 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="mt-6 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-lg sm:sticky sm:bottom-3 sm:z-10 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <span className="text-sm leading-6 text-muted">
             Review: medication {form.medicationTaken}, mood {form.mood}/5, {form.concerns.length}{' '}
             concern{form.concerns.length === 1 ? '' : 's'}, and {captures.length} photo

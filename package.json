@@ -13,6 +13,7 @@
     "dev": "npm run dev -w server & npm run dev -w client",
     "build": "npm run build -w client",
     "test": "npm run test -w server",
+    "test:e2e": "playwright test",
     "seed": "DOTENV_CONFIG_PATH=server/.env node scripts/seed.js",
     "grant:admin-directory-permissions": "DOTENV_CONFIG_PATH=server/.env node scripts/grant-admin-directory-permissions.js",
     "lint": "oxlint client server",
@@ -26,6 +27,7 @@
     "*.{js,jsx}": "oxlint"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "husky": "*",
     "lint-staged": "*",
     "oxlint": "*",
