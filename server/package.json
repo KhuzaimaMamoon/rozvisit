@@ -14,7 +14,8 @@
     "dotenv": "*",
     "express": "^4.21.2",
     "jsonwebtoken": "*",
-    "mongoose": "^8.18.0"
+    "mongoose": "^8.18.0",
+    "resend": "^6.17.2"
   },
   "devDependencies": {
     "jest": "*",

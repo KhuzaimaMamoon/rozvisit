@@ -141,6 +141,7 @@ export const authService = Object.freeze({
     });
     await issueEmailToken(user, AUTH_TOKEN_TYPES.EMAIL_VERIFICATION);
     await notifyRecipient({
+      channels: [],
       recipientId: user._id,
       targetId: user._id,
       type: 'registration_verify',
@@ -178,6 +179,7 @@ export const authService = Object.freeze({
     await issueEmailToken(user, AUTH_TOKEN_TYPES.EMAIL_VERIFICATION);
     await Promise.all([
       notifyRecipient({
+        channels: [],
         recipientId: user._id,
         targetId: application._id,
         type: 'registration_verify',

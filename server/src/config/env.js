@@ -10,12 +10,11 @@ const REQUIRED = [
   'CLOUDINARY_API_KEY',
   'CLOUDINARY_API_SECRET',
   'FIREBASE_SERVICE_ACCOUNT_JSON',
-  'EMAIL_PROVIDER_API_KEY',
   'EMAIL_FROM_ADDRESS',
   'APP_BASE_URL',
 ];
 
-const OPTIONAL = ['PORT', 'LOG_LEVEL', 'SENTRY_DSN', 'DEV_LOG_AUTH_LINKS'];
+const OPTIONAL = ['PORT', 'LOG_LEVEL', 'SENTRY_DSN', 'DEV_LOG_AUTH_LINKS', 'RESEND_API_KEY'];
 const VALID_NODE_ENVS = new Set(['development', 'test', 'production']);
 const VALID_LOG_LEVELS = new Set(['error', 'warn', 'info', 'debug']);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -127,8 +126,8 @@ export const env = Object.freeze({
   }),
   firebase: Object.freeze({ serviceAccountJson: process.env.FIREBASE_SERVICE_ACCOUNT_JSON }),
   email: Object.freeze({
-    apiKey: process.env.EMAIL_PROVIDER_API_KEY,
     fromAddress: process.env.EMAIL_FROM_ADDRESS,
+    resendApiKey: process.env.RESEND_API_KEY ?? null,
   }),
   appBaseUrl: process.env.APP_BASE_URL,
   devLogAuthLinks,
