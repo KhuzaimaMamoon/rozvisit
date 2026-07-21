@@ -225,7 +225,7 @@ Every variable is specified with the 9 fields from the prompt:
 | Service | Email provider |
 | Purpose | The `From:` address on outgoing mail |
 | Required | Required |
-| Development example | `EMAIL_FROM_ADDRESS=dev-noreply@example.invalid` **(`.invalid` TLD guarantees non-delivery)** |
+| Development example | `EMAIL_FROM_ADDRESS=onboarding@resend.dev` **(Resend test sender; delivery is limited by Resend until a production domain is verified)** |
 | Production rule | `noreply@<rozvisit-domain>` for automated messages; `support@<rozvisit-domain>` reserved for reply-expected mail (Doc 19 §5) |
 | Sensitivity | Public |
 | Default behavior | Boot refused |
@@ -432,7 +432,7 @@ CLOUDINARY_API_SECRET=
 FIREBASE_SERVICE_ACCOUNT_JSON=
 
 # Email (Resend is the transactional provider; real delivery remains opt-in)
-EMAIL_FROM_ADDRESS=
+EMAIL_FROM_ADDRESS=onboarding@resend.dev
 RESEND_API_KEY=
 
 # Error tracking (optional at MVP)
