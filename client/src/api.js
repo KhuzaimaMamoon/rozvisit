@@ -40,7 +40,7 @@ export async function refreshAccessToken() {
       .then(decode)
       .then((data) => {
         setAccessToken(data.accessToken);
-        return data.accessToken;
+        return data;
       })
       .finally(() => {
         refreshInFlight = null;

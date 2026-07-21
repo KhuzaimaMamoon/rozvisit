@@ -302,7 +302,11 @@ export const authService = Object.freeze({
       tokenHash: hashToken(nextRefreshToken),
       expiresAt: refreshExpiry(),
     });
-    return { accessToken: signAccessToken(user), refreshToken: nextRefreshToken };
+    return {
+      accessToken: signAccessToken(user),
+      refreshToken: nextRefreshToken,
+      user: await userResponse(user),
+    };
   },
 
   async logout({ refreshToken }) {

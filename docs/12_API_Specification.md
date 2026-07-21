@@ -196,7 +196,7 @@ POST /api/v1/auth/register
 
 ### POST /auth/refresh
 
-- **Role:** cookie-bearing — **Success `200`:** new `accessToken` — **Errors:** `401` (missing/revoked/expired → full re-login)
+- **Role:** cookie-bearing — **Success `200`:** `{ data: { accessToken, user: { id, name, role, status } } }` and a rotated refresh cookie. The client restores its in-memory access token and user identity from this response before protected-route checks run, preserving the current route on a full page refresh. — **Errors:** `401` (missing/revoked/expired → full re-login)
 
 ### POST /auth/logout
 

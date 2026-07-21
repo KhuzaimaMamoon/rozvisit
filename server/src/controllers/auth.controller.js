@@ -44,7 +44,7 @@ export const login = run(async (req, res) => {
 export const refresh = run(async (req, res) => {
   const result = await authService.refresh({ refreshToken: req.cookies[REFRESH_COOKIE] });
   setRefreshCookie(res, result.refreshToken);
-  respond.ok(res, { accessToken: result.accessToken });
+  respond.ok(res, { accessToken: result.accessToken, user: result.user });
 });
 export const logout = run(async (req, res) => {
   await authService.logout({ refreshToken: req.cookies[REFRESH_COOKIE] });

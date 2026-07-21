@@ -202,6 +202,47 @@ describe('Auth API', () => {
     expect(login.headers['set-cookie'][0]).not.toContain('Secure');
     expect(refresh.status).toBe(200);
     expect(refresh.body.data.accessToken).toEqual(expect.any(String));
+    expect(refresh.body.data.user).toMatchObject({
+      id: user._id.toString(),
+      name: user.name,
+      role: 'client',
+      status: 'active',
+    });
+  });
+
+  it('restores the role-specific user record needed by every portal after a refresh', async () => {
+    const caregiver = await createVerifiedUser({
+      email: 'refresh-caregiver@example.com',
+      role: 'caregiver',
+    });
+    await CaregiverProfile.create({
+      userId: caregiver._id,
+      verification: { cnicNumber: 'test-only-placeholder', gates: {} },
+      serviceArea: { type: 'Point', coordinates: [73.0479, 33.6844], radiusKm: 10 },
+      status: 'verified',
+    });
+    const admin = await createVerifiedUser({
+      email: 'refresh-admin@example.com',
+      role: 'admin',
+    });
+
+    for (const expected of [
+      { email: caregiver.email, role: 'caregiver', status: 'verified' },
+      { email: admin.email, role: 'admin', status: 'active' },
+    ]) {
+      const login = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email: expected.email, password: PASSWORD });
+      const refresh = await request(app)
+        .post('/api/v1/auth/refresh')
+        .set('Cookie', refreshCookie(login));
+
+      expect(refresh.status).toBe(200);
+      expect(refresh.body.data.user).toMatchObject({
+        role: expected.role,
+        status: expected.status,
+      });
+    }
   });
 
   it('returns the caregiver verification status at login for role-based portal routing', async () => {

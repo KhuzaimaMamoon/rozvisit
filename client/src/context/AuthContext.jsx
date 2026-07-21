@@ -3,15 +3,6 @@ import { api, clearAccessToken, refreshAccessToken, setAccessToken } from '../ap
 
 const AuthContext = createContext(null);
 
-function roleFromAccessToken(token) {
-  try {
-    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(window.atob(payload)).role ?? null;
-  } catch {
-    return null;
-  }
-}
-
 export function roleHome(user) {
   if (user.role === 'caregiver') {
     return user.status && user.status !== 'verified' ? '/care/status' : '/care/today';
@@ -28,11 +19,9 @@ export function AuthProvider({ children }) {
     let active = true;
     const generation = ++sessionGeneration.current;
     refreshAccessToken()
-      .then((token) => {
-        const role = roleFromAccessToken(token);
+      .then(({ user }) => {
         if (!active || generation !== sessionGeneration.current) return;
-        if (role) setSession({ loading: false, user: { role, status: null } });
-        else setSession({ loading: false, user: null });
+        setSession({ loading: false, user: user ?? null });
       })
       .catch(() => {
         if (active && generation === sessionGeneration.current) {
