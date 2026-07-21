@@ -163,7 +163,7 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | parentId | ObjectId → parentProfiles | R | |
 | caregiverId | ObjectId → users | O / nullable until assigned | `null` only while a visit is scheduled and awaiting `POST /admin/visits/:id/assign`; every caregiver action requires a real verified assignment (FR-034) |
 | subscriptionId | ObjectId → subscriptions | R | Allowance accounting (FR-030) |
-| scheduledAt | Date | R | |
+| scheduledAt | Date | R | The visit’s one-week scheduling-cycle occurrence. The active cycle is computed from visit dates; no mutable scheduling counter or “current week” field is stored. |
 | standingNote | String | O | The client's recurring note (FR-031) |
 | makeUpPlan | String | O | Optional admin-recorded plan after the `scheduled` → `missed` transition; shown with the missed-visit reason in the client feed (FR-052) |
 | status | String enum | R | `scheduled` \| `in_progress` \| `completed` \| `missed` \| `parent_declined` \| `flagged` (FR-035) |
@@ -412,7 +412,7 @@ Required and designed-in (DATA-002):
 **None at MVP, by design** (Principle 1). Each business action is one document write:
 - Completing a visit: one visit update (embed makes it atomic).
 - Activating a subscription: one subscription update with history push.
-- The one cross-document moment — visit completion increasing "used allowance" — is avoided by *computing* allowance from visits (count of this week's non-cancelled visits against the snapshot's visitsPerWeek) rather than storing a counter. Computation cannot drift; counters can.
+- The one cross-document moment — visit completion increasing "used allowance" — is avoided by *computing* allowance from visits (count of this week's non-cancelled visits against the snapshot's visitsPerWeek) rather than storing a counter. Computation cannot drift; counters can. The same date-derived weekly query decides whether the current cycle is locked, whether the two-day next-week scheduling window is open, and whether carry-forward is needed.
 
 If Phase 4 wallet math ever genuinely needs multi-document atomicity, Atlas supports transactions on replica sets — available then, unneeded now.
 

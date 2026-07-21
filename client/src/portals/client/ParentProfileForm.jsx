@@ -29,6 +29,7 @@ function loadDraft() {
 export default function ParentProfileForm() {
   const [form, setForm] = useState(loadDraft);
   const [error, setError] = useState('');
+  const [fields, setFields] = useState({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -73,6 +74,7 @@ export default function ParentProfileForm() {
     if (saving) return;
 
     setError('');
+    setFields({});
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
     setSaving(true);
     try {
@@ -95,6 +97,7 @@ export default function ParentProfileForm() {
       navigate(`/app/parents/${parent.id}`);
     } catch (requestError) {
       setError(requestError.message);
+      setFields(requestError.fields ?? {});
     } finally {
       setSaving(false);
     }
@@ -131,12 +134,15 @@ export default function ParentProfileForm() {
               <div className="mt-6 space-y-5">
                 <div className="grid gap-5 sm:grid-cols-2">
                   <FormInput
+                    error={fields.name?.[0]}
                     id="parent-name"
                     label="Name"
                     value={form.name}
                     onChange={(event) => update('name', event.target.value)}
+                    required
                   />
                   <FormInput
+                    error={fields.age?.[0]}
                     id="parent-age"
                     label="Age"
                     min="40"
@@ -144,6 +150,7 @@ export default function ParentProfileForm() {
                     type="number"
                     value={form.age}
                     onChange={(event) => update('age', event.target.value)}
+                    required
                   />
                 </div>
                 <FormInput
@@ -154,26 +161,32 @@ export default function ParentProfileForm() {
                   onChange={(event) => update('phone', event.target.value)}
                 />
                 <FormInput
+                  error={fields.addressText?.[0]}
                   id="parent-address"
                   label="Address"
                   value={form.addressText}
                   onChange={(event) => update('addressText', event.target.value)}
+                  required
                 />
               </div>
               <div className="mt-6 border-t border-border pt-6">
                 <h2 className="text-base font-semibold text-text">Location</h2>
                 <div className="mt-4 grid gap-5 sm:grid-cols-2">
                   <FormInput
+                    error={fields.location?.[0]}
                     id="parent-lng"
                     label="Longitude"
                     value={form.lng}
                     onChange={(event) => update('lng', event.target.value)}
+                    required
                   />
                   <FormInput
+                    error={fields.location?.[0]}
                     id="parent-lat"
                     label="Latitude"
                     value={form.lat}
                     onChange={(event) => update('lat', event.target.value)}
+                    required
                   />
                 </div>
               </div>
@@ -252,18 +265,21 @@ export default function ParentProfileForm() {
                       label="Name"
                       value={contact.name}
                       onChange={(event) => updateContact(index, 'name', event.target.value)}
+                      required
                     />
                     <FormInput
                       id={`contact-relation-${index}`}
                       label="Relationship"
                       value={contact.relation}
                       onChange={(event) => updateContact(index, 'relation', event.target.value)}
+                      required
                     />
                     <FormInput
                       id={`contact-phone-${index}`}
                       label="Phone"
                       value={contact.phone}
                       onChange={(event) => updateContact(index, 'phone', event.target.value)}
+                      required
                     />
                     <FormInput
                       id={`contact-priority-${index}`}
@@ -272,6 +288,7 @@ export default function ParentProfileForm() {
                       type="number"
                       value={contact.priority}
                       onChange={(event) => updateContact(index, 'priority', event.target.value)}
+                      required
                     />
                   </div>
                 </section>
@@ -294,7 +311,7 @@ export default function ParentProfileForm() {
               assigned caregiver. Nothing is treated as consent until that conversation happens.
             </p>
           </section>
-          {error ? (
+          {error && Object.keys(fields).length === 0 ? (
             <p
               aria-live="polite"
               className="rounded-r-md border-l-[3px] border-emergency bg-emergency-soft p-4 text-sm leading-6 text-emergency"

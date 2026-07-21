@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "bcrypt": "*",
+    "cloudinary": "^2.10.0",
     "cookie-parser": "*",
     "dotenv": "*",
     "express": "^4.21.2",

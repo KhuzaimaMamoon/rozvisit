@@ -3,6 +3,7 @@ import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 import { navigate } from '../../navigation.js';
+import ConsentPlayback from '../../components/ConsentPlayback.jsx';
 
 export default function VisitEvidence() {
   const visitId = useMemo(() => window.location.pathname.split('/').at(-1), []);
@@ -13,6 +14,7 @@ export default function VisitEvidence() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [parent, setParent] = useState(null);
 
   const load = () => {
     api(`/admin/visits/${visitId}`)
@@ -20,6 +22,12 @@ export default function VisitEvidence() {
       .catch((requestError) => setError(requestError.message));
   };
   useEffect(load, [visitId]);
+  useEffect(() => {
+    if (!visit?.parent?.id) return;
+    api(`/parents/${visit.parent.id}`)
+      .then(setParent)
+      .catch(() => setParent(null));
+  }, [visit?.parent?.id]);
 
   async function resolveFlag(event) {
     event.preventDefault();
@@ -145,6 +153,7 @@ export default function VisitEvidence() {
               <p className="mt-3 text-sm text-muted">No checklist saved.</p>
             )}
           </section>
+          {parent?.consent?.state === 'given' ? <ConsentPlayback parentId={parent.id} /> : null}
           <section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-text">Media proof</h2>
             <div className="mt-4 grid grid-cols-2 gap-3">

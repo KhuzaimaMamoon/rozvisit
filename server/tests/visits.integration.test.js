@@ -218,7 +218,7 @@ describe('Visit API lifecycle', () => {
     });
   });
 
-  it('returns existing visits when the same weekly schedule is submitted again', async () => {
+  it('locks a weekly cycle after it is scheduled', async () => {
     const body = {
       parentId: parent._id.toString(),
       slots: [{ dayOfWeek: 2, time: '10:00' }],
@@ -230,10 +230,8 @@ describe('Visit API lifecycle', () => {
       .send(body);
 
     expect(first.status).toBe(201);
-    expect(repeated.status).toBe(201);
-    expect(repeated.body.data.items.map((visit) => visit.id)).toEqual(
-      first.body.data.items.map((visit) => visit.id),
-    );
+    expect(repeated.status).toBe(409);
+    expect(repeated.body.error.code).toBe('SCHEDULING_LOCKED');
     expect(await Visit.countDocuments({ parentId: parent._id })).toBe(first.body.data.items.length);
   });
 

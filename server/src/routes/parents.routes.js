@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   createParent,
   createConsentPermit,
+  createConsentPlayback,
   captureConsent,
   getParent,
   listParents,
@@ -32,5 +33,6 @@ parentsRouter.post(
   createConsentPermit,
 );
 parentsRouter.post('/:id/consent/withdraw', requireRole('client', 'admin'), withdrawConsent);
+parentsRouter.post('/:id/consent/playback', requireRole('client', 'admin'), createConsentPlayback);
 parentsRouter.get('/:id', requireRole('client', 'admin'), getParent);
 parentsRouter.patch('/:id', requireRole('client'), validate(updateParentSchema), updateParent);

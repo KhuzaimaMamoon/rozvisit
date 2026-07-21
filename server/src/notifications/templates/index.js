@@ -55,6 +55,12 @@ export const notificationTemplates = Object.freeze({
       `Your visit for ${parentName} on ${scheduledDate} has been updated.`,
       [IN_APP, PUSH],
     ),
+  weekly_reschedule_reminder: ({ parentName }) =>
+    message(
+      'Set next week’s visits',
+      `You can now choose next week’s visit times for ${parentName}. If you do not make changes, this week’s schedule will continue automatically.`,
+      [IN_APP, PUSH],
+    ),
   visit_completed: ({ caregiverName, parentName }) =>
     message(
       'Visit complete',

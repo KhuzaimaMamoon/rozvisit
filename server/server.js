@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { createApp } from './src/app.js';
 import { env } from './src/config/env.js';
 import { logger } from './src/utils/logger.js';
+import { visitService } from './src/services/visit.service.js';
 
 const app = createApp();
 
@@ -9,6 +10,12 @@ async function start() {
   try {
     await mongoose.connect(env.mongoUri);
     logger.info('database.connected');
+    const runWeeklyScheduling = () =>
+      visitService.processWeeklyCycles().catch((error) => {
+        logger.error('weekly_scheduling.failed', { error: error.message });
+      });
+    runWeeklyScheduling();
+    const weeklySchedulingTimer = setInterval(runWeeklyScheduling, 60 * 60 * 1000);
 
     const server = app.listen(env.port, () => {
       logger.info('server.listening', { port: env.port, env: env.nodeEnv });
@@ -17,6 +24,7 @@ async function start() {
     const shutdown = async (signal) => {
       logger.info('server.shutdown_start', { signal });
       server.close();
+      clearInterval(weeklySchedulingTimer);
       await mongoose.connection.close();
       logger.info('server.shutdown_complete');
       process.exit(0);

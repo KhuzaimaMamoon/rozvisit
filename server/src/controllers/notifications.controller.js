@@ -12,7 +12,7 @@ function run(handler) {
 }
 
 export const listNotifications = run(async (req, res) =>
-  respond.ok(res, await notificationService.list(req.auth.sub, req.validatedQuery)),
+  respond.ok(res, await notificationService.list(req.auth, req.validatedQuery)),
 );
 export const markNotificationRead = run(async (req, res) =>
   respond.ok(res, await notificationService.markRead(req.auth.sub, req.params.id)),

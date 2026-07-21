@@ -329,7 +329,12 @@ Concrete MVP mechanics:
 **MVP truth: there is no background worker.** Everything runs in the request that caused it, except:
 
 - **Event listeners** run just after the response (fire-and-forget within the process) — notifications never delay the API answer.
-- **Scheduled needs** at MVP are tiny: visit generation from weekly schedules, and grace-period transitions (FR-025). Both run as a small in-process scheduler (a daily/hourly tick inside the app). *(Recommendation — node-cron or equivalent; chosen at build.)* On the free tier the app may be asleep at tick time; the scheduler therefore runs catch-up logic on boot — transitions are date-calculated, never tick-dependent, so a missed tick delays nothing incorrectly.
+- **Scheduled needs** at MVP are tiny: weekly visit-cycle carry-forward, weekly scheduling reminders,
+  and grace-period transitions (FR-025). The visit scheduler runs hourly with boot catch-up. Two
+  days before a weekly boundary it opens the client’s next-week scheduling window and sends the
+  reminder; at the new-week boundary it carries the prior week’s pattern forward only when the
+  client did not set a next-week pattern. On the free tier the app may be asleep at tick time, so
+  catch-up creates only still-future visits and never fabricates past attendance.
 - **Phase 4–5:** the confirmed job queue (BullMQ + Redis per the original plan) takes over the event transport and scheduled work when payment automation and volume justify it. Listener and scheduler logic move transports without rewriting.
 
 This is the honest smallest design: date-math correctness now, infrastructure later.

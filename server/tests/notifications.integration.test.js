@@ -103,6 +103,36 @@ describe('Notification API', () => {
     expect(forbidden.status).toBe(404);
   });
 
+  it('keeps client and caregiver updates out of the admin inbox', async () => {
+    const admin = await createUser({ email: 'nasreen@example.com', role: ROLES.ADMIN });
+    const client = await createUser({ email: 'client@example.com' });
+    await Notification.create([
+      {
+        body: 'A visit was completed.',
+        deliveries: [{ channel: NOTIFICATION_CHANNEL.IN_APP }],
+        idempotencyKey: `visit_completed:${client._id}:visit-1`,
+        title: 'Visit complete',
+        type: 'visit_completed',
+        userId: admin._id,
+      },
+      {
+        body: 'A caregiver application is ready for review.',
+        deliveries: [{ channel: NOTIFICATION_CHANNEL.IN_APP }],
+        idempotencyKey: `admin_new_application:${admin._id}:application-1`,
+        title: 'New caregiver application',
+        type: 'admin_new_application',
+        userId: admin._id,
+      },
+    ]);
+    const response = await request(app)
+      .get('/api/v1/notifications')
+      .set('Authorization', `Bearer ${await tokenFor(admin)}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.items).toHaveLength(1);
+    expect(response.body.data.items[0].type).toBe('admin_new_application');
+  });
+
   it('allows admins to inspect permanent notification failures', async () => {
     const admin = await createUser({ email: 'nasreen@example.com', role: ROLES.ADMIN });
     const notification = await Notification.create({

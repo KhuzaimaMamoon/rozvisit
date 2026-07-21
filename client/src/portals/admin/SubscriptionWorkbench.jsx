@@ -38,6 +38,7 @@ export default function SubscriptionWorkbench() {
   const [currency, setCurrency] = useState('USD');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [fields, setFields] = useState({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -54,9 +55,18 @@ export default function SubscriptionWorkbench() {
 
   async function activate(event) {
     event.preventDefault();
-    if (!paymentRef || !agreedPrice || saving) return;
+    if (saving) return;
+    const nextFields = {};
+    if (!paymentRef.trim()) nextFields.paymentRef = ['Enter the verified payment reference.'];
+    if (!agreedPrice || Number(agreedPrice) <= 0)
+      nextFields.price = ['Enter a positive agreed price.'];
+    if (Object.keys(nextFields).length) {
+      setFields(nextFields);
+      return;
+    }
     setSaving(true);
     setError('');
+    setFields({});
     try {
       const updated = await api(`/admin/subscriptions/${selectedSubscription.id}/state`, {
         body: JSON.stringify({
@@ -74,6 +84,7 @@ export default function SubscriptionWorkbench() {
       setActivationOpen(false);
     } catch (requestError) {
       setError(requestError.message);
+      setFields(requestError.fields ?? {});
     } finally {
       setSaving(false);
     }
@@ -276,12 +287,14 @@ export default function SubscriptionWorkbench() {
               </div>
               <form className="space-y-5 p-5 sm:p-6" onSubmit={activate}>
                 <FormInput
+                  error={fields.paymentRef?.[0]}
                   id="payment-reference"
                   label="Payoneer reference"
                   value={paymentRef}
                   onChange={(event) => setPaymentRef(event.target.value)}
                 />
                 <FormInput
+                  error={fields.price?.[0]}
                   id="agreed-price"
                   label="Agreed price"
                   min="0"
