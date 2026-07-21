@@ -28,6 +28,7 @@ export default function ResetPassword() {
   const token = useMemo(() => new URLSearchParams(window.location.search).get('token') ?? '', []);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [fields, setFields] = useState({});
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -36,10 +37,12 @@ export default function ResetPassword() {
   async function submit(event) {
     event.preventDefault();
     const validationError = passwordError(newPassword);
-    if (validationError) return setError(validationError);
-    if (newPassword !== confirmPassword) return setError('The passwords do not match.');
+    if (validationError) return setFields({ newPassword: [validationError] });
+    if (newPassword !== confirmPassword)
+      return setFields({ confirmPassword: ['The passwords do not match.'] });
     if (!token) return setError('This reset link is not valid. Please request a new one.');
     setError('');
+    setFields({});
     setLoading(true);
     try {
       await api('/auth/reset', {
@@ -90,6 +93,7 @@ export default function ResetPassword() {
             autoComplete="new-password"
             helperText="At least 8 characters, with letters and numbers."
             id="new-password"
+            error={fields.newPassword?.[0]}
             label="New password"
             onChange={(event) => setNewPassword(event.target.value)}
             required
@@ -102,6 +106,7 @@ export default function ResetPassword() {
           <FormInput
             autoComplete="new-password"
             id="confirm-password"
+            error={fields.confirmPassword?.[0]}
             label="Confirm new password"
             onChange={(event) => setConfirmPassword(event.target.value)}
             required

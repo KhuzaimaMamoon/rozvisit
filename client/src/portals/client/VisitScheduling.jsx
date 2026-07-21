@@ -13,12 +13,14 @@ export default function VisitScheduling() {
   const [scheduled, setScheduled] = useState(false);
   const [allowance, setAllowance] = useState(null);
   const [planName, setPlanName] = useState('');
+  const [scheduling, setScheduling] = useState(null);
 
   useEffect(() => {
     api(`/parents/${parentId}`)
       .then((parent) => {
         setAllowance(parent.subscriptionSummary?.visitsPerWeek ?? null);
         setPlanName(parent.subscriptionSummary?.planKey ?? '');
+        setScheduling(parent.schedulingSummary);
       })
       .catch((error) => setMessage(error.message));
   }, [parentId]);
@@ -61,8 +63,10 @@ export default function VisitScheduling() {
         <section className="mt-6 rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6">
           <h2 className="text-lg font-semibold text-text">Weekly slots</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Choose the recurring times that work best for your family. Individual scheduled visits
-            can be rescheduled or cancelled under the documented visit rules.
+            Visits are planned one week at a time. Two days before this week ends, we will notify
+            you when next week’s scheduling window opens. You can choose different days and times;
+            if you do not make changes, this week’s pattern continues automatically so care stays
+            consistent.
           </p>
           <div className="mt-5 space-y-3">
             {slots.map((slot, index) => (
@@ -131,13 +135,15 @@ export default function VisitScheduling() {
           </Button>
           <div className="mt-6 flex flex-col gap-4 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted">
-              A caregiver will be assigned after your schedule is confirmed.
+              {scheduling?.reminderWindowOpen
+                ? 'You are setting next week’s visit pattern. This week’s visits stay unchanged.'
+                : 'A caregiver will be assigned after your schedule is confirmed.'}
             </p>
             <Button
               className="w-full sm:w-auto"
               loading={saving}
               onClick={() => void confirmSchedule()}
-              disabled={!allowance || saving || scheduled}
+              disabled={!allowance || saving || scheduled || scheduling?.scheduleEnabled === false}
             >
               Confirm schedule
             </Button>

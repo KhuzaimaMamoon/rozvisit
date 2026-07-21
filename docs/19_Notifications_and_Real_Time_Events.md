@@ -83,6 +83,7 @@ substitutions from the relevant record, never HTML.
 | admin_payment_reconciled | admin | in-app | Payment recorded | A payment has been recorded for {clientName}'s subscription. |
 | visit_assigned | client | in-app, push | A caregiver has been assigned | {caregiverName} will visit {parentName} on {scheduledDate}. |
 | visit_changed | client | in-app, push | Your visit was updated | Your visit for {parentName} on {scheduledDate} has been updated. |
+| weekly_reschedule_reminder | client | in-app, push | Set next week’s visits | You can now choose next week’s visit times for {parentName}. If you do not make changes, this week’s schedule will continue automatically. |
 | visit_completed | client | in-app, push | Visit complete | {caregiverName} completed today's visit with {parentName}. See the details in your feed. |
 | visit_missed | client | in-app, push, email | A visit was missed | Today's visit with {parentName} did not happen. We are looking into it. |
 | visit_parent_declined | client | in-app, email | Your parent declined today's visit | {parentName} chose not to have today's visit. No action is needed from you. |
@@ -159,7 +160,10 @@ references the notification. Notifications are never silently dropped — the fa
 ## 14. Scheduling
 
 - Most notifications fire on the event that triggered them (event bus → dispatcher, Document 09 §16). No scheduling needed.
-- The tiny scheduled work — grace transitions (FR-025), visit generation from weekly schedules — runs in the in-process scheduler with boot catch-up (Document 09 §16). When those jobs fire an event (e.g. `subscription.grace_entered`), the notification path is exactly the same as any event-driven send.
+- The tiny scheduled work — grace transitions (FR-025), the two-day weekly scheduling reminder,
+  and visit carry-forward from the prior weekly pattern — runs in the in-process scheduler with
+  boot catch-up (Document 09 §16). When those jobs fire an event (e.g.
+  `weekly_reschedule_reminder`), the notification path is exactly the same as any event-driven send.
 - **No digest notifications at MVP.** They come only when a real use case names them.
 
 ## 15. Time Zones

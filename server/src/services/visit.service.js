@@ -23,6 +23,7 @@ import { encrypt } from '../utils/crypto.js';
 import { decrypt } from '../utils/crypto.js';
 
 const UPLOAD_FLAG_DELAY_MS = 24 * 60 * 60 * 1000;
+export const WEEKLY_REMINDER_LEAD_DAYS = 2;
 
 function startOfWeek(date) {
   const value = new Date(date);
@@ -39,8 +40,39 @@ function dateForSlot(now, dayOfWeek, time) {
   return date;
 }
 
-function weekKey(date) {
-  return startOfWeek(date).toISOString();
+function endOfWeek(date) {
+  const end = startOfWeek(date);
+  end.setDate(end.getDate() + 7);
+  return end;
+}
+
+function isCountedWeeklyVisit(visit) {
+  return visit.status !== VISIT_STATUS.PARENT_DECLINED;
+}
+
+function slotsFromVisits(visits) {
+  return visits.filter(isCountedWeeklyVisit).map((visit) => ({
+    dayOfWeek: visit.scheduledAt.getDay(),
+    time: `${String(visit.scheduledAt.getHours()).padStart(2, '0')}:${String(visit.scheduledAt.getMinutes()).padStart(2, '0')}`,
+    standingNote: visit.standingNote,
+  }));
+}
+
+function scheduleRecord({ clientId, parentId, slot, subscription, weekStart, now }) {
+  const scheduledAt = dateForSlot(weekStart, slot.dayOfWeek, slot.time);
+  return {
+    clientVisitId: crypto
+      .createHash('sha256')
+      .update(`${parentId}:${subscription._id.toString()}:${scheduledAt.toISOString()}`)
+      .digest('hex'),
+    parentId,
+    caregiverId: null,
+    subscriptionId: subscription._id,
+    scheduledAt,
+    standingNote: slot.standingNote ?? null,
+    status: VISIT_STATUS.SCHEDULED,
+    statusHistory: [{ status: VISIT_STATUS.SCHEDULED, at: now, byUserId: clientId }],
+  };
 }
 
 function serializeVisit(visit) {
@@ -161,58 +193,109 @@ export const visitService = Object.freeze({
       );
     }
     const now = new Date();
-    const periodEnd =
-      subscription.currentPeriodEnd ??
-      new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
-    const records = [];
-    for (const week = startOfWeek(now); week < periodEnd; week.setDate(week.getDate() + 7)) {
-      for (const slot of slots) {
-        const scheduledAt = dateForSlot(week, slot.dayOfWeek, slot.time);
-        if (scheduledAt < now || scheduledAt >= periodEnd) continue;
-        records.push({
-          clientVisitId: crypto
-            .createHash('sha256')
-            .update(`${parentId}:${subscription._id.toString()}:${scheduledAt.toISOString()}`)
-            .digest('hex'),
-          parentId,
-          caregiverId: null,
-          subscriptionId: subscription._id,
-          scheduledAt,
-          standingNote: standingNote ?? null,
-          status: VISIT_STATUS.SCHEDULED,
-          statusHistory: [{ status: VISIT_STATUS.SCHEDULED, at: now, byUserId: clientId }],
-        });
-      }
-    }
-    const existingVisits = await visitRepository.findForSubscriptionPeriod(
+    const currentWeekStart = startOfWeek(now);
+    const currentWeekEnd = endOfWeek(now);
+    const reminderStart = new Date(currentWeekEnd);
+    reminderStart.setDate(reminderStart.getDate() - WEEKLY_REMINDER_LEAD_DAYS);
+    const currentWeekVisits = await visitRepository.findWeekBySubscription(
       subscription._id,
-      startOfWeek(now),
-      periodEnd,
+      currentWeekStart,
+      currentWeekEnd,
     );
-    const existingIds = new Set(existingVisits.map((visit) => visit.clientVisitId));
-    const occupiedByWeek = new Map();
-    for (const visit of existingVisits) {
-      if (![VISIT_STATUS.SCHEDULED, VISIT_STATUS.COMPLETED].includes(visit.status)) continue;
-      const key = weekKey(visit.scheduledAt);
-      occupiedByWeek.set(key, (occupiedByWeek.get(key) ?? 0) + 1);
+    const currentWeekLocked = currentWeekVisits.some(isCountedWeeklyVisit);
+    if (currentWeekLocked && now < reminderStart) {
+      throw new ConflictError(
+        'SCHEDULING_LOCKED',
+        'This week is already scheduled. You can set next week’s visits when the reminder window opens.',
+      );
     }
-    for (const record of records) {
-      if (existingIds.has(record.clientVisitId)) continue;
-      const key = weekKey(record.scheduledAt);
-      const nextCount = (occupiedByWeek.get(key) ?? 0) + 1;
-      if (nextCount > limit) {
-        throw new ConflictError(
-          'ALLOWANCE_EXCEEDED',
-          `Your plan includes ${limit} visits per week. Upgrade to add more.`,
-        );
-      }
-      occupiedByWeek.set(key, nextCount);
+    const targetWeekStart = currentWeekLocked
+      ? new Date(currentWeekEnd)
+      : new Date(currentWeekStart);
+    const targetWeekEnd = endOfWeek(targetWeekStart);
+    const existingTargetVisits = currentWeekLocked
+      ? await visitRepository.findWeekBySubscription(
+          subscription._id,
+          targetWeekStart,
+          targetWeekEnd,
+        )
+      : currentWeekVisits;
+    if (existingTargetVisits.some(isCountedWeeklyVisit)) {
+      throw new ConflictError(
+        'SCHEDULE_ALREADY_SET',
+        'Visits are already set for this week. You can update individual visits using reschedule or cancel.',
+      );
     }
-    const visits = records.length ? await visitRepository.upsertScheduled(records) : [];
+    const records = slots.map((slot) =>
+      scheduleRecord({
+        clientId,
+        parentId,
+        slot: { ...slot, standingNote: standingNote ?? null },
+        subscription,
+        weekStart: targetWeekStart,
+        now,
+      }),
+    );
+    const visits = await visitRepository.upsertScheduled(records);
     return {
       items: visits.map(serializeVisit),
-      message: 'Your visit is scheduled and a caregiver will be assigned shortly.',
+      weekStart: targetWeekStart,
+      message: 'This week’s visits are scheduled. A caregiver will be assigned shortly.',
     };
+  },
+
+  async processWeeklyCycles(now = new Date()) {
+    const subscriptions = await subscriptionRepository.findWeeklySchedulingCandidates();
+    const currentWeekStart = startOfWeek(now);
+    const currentWeekEnd = endOfWeek(now);
+    const reminderStart = new Date(currentWeekEnd);
+    reminderStart.setDate(reminderStart.getDate() - WEEKLY_REMINDER_LEAD_DAYS);
+    let carriedForward = 0;
+    let remindersSent = 0;
+
+    for (const subscription of subscriptions) {
+      const [currentVisits, previousVisits, parent] = await Promise.all([
+        visitRepository.findWeekBySubscription(subscription._id, currentWeekStart, currentWeekEnd),
+        visitRepository.findWeekBySubscription(
+          subscription._id,
+          new Date(currentWeekStart.getTime() - 7 * 24 * 60 * 60 * 1000),
+          currentWeekStart,
+        ),
+        parentRepository.findById(subscription.parentId),
+      ]);
+      if (!parent) continue;
+      if (!currentVisits.some(isCountedWeeklyVisit)) {
+        const priorSlots = slotsFromVisits(previousVisits);
+        const futureSlots = priorSlots.filter(
+          (slot) => dateForSlot(currentWeekStart, slot.dayOfWeek, slot.time) > now,
+        );
+        if (futureSlots.length) {
+          await visitRepository.upsertScheduled(
+            futureSlots.map((slot) =>
+              scheduleRecord({
+                clientId: subscription.clientId,
+                parentId: subscription.parentId,
+                slot,
+                subscription,
+                weekStart: currentWeekStart,
+                now,
+              }),
+            ),
+          );
+          carriedForward += 1;
+        }
+      }
+      if (now >= reminderStart && currentVisits.some(isCountedWeeklyVisit)) {
+        await notifyRecipient({
+          recipientId: subscription.clientId,
+          targetId: `${subscription._id}:${currentWeekEnd.toISOString()}`,
+          type: 'weekly_reschedule_reminder',
+          values: { parentName: parent.name },
+        });
+        remindersSent += 1;
+      }
+    }
+    return { carriedForward, remindersSent };
   },
 
   async assign(_adminId, visitId, caregiverId) {

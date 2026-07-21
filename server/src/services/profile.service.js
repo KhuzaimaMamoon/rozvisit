@@ -1,6 +1,7 @@
 import { CONSENT_STATE, PARENT_STATUS, ROLES } from '../config/constants.js';
 import { parentRepository } from '../repositories/parent.repo.js';
 import { subscriptionRepository } from '../repositories/subscription.repo.js';
+import { visitRepository } from '../repositories/visit.repo.js';
 import { notifyRecipient } from '../notifications/dispatch.js';
 import { auditRepository } from '../repositories/audit.repo.js';
 import { cloudinaryMediaStorage } from '../interfaces/media.cloudinary.js';
@@ -35,6 +36,38 @@ function serializeParent(profile, subscription = null) {
             : null,
         }
       : null,
+  };
+}
+
+function startOfWeek(date) {
+  const value = new Date(date);
+  value.setHours(0, 0, 0, 0);
+  value.setDate(value.getDate() - value.getDay());
+  return value;
+}
+
+async function schedulingSummary(subscription, now = new Date()) {
+  if (!subscription || !['active', 'grace'].includes(subscription.state)) return null;
+  const currentWeekStart = startOfWeek(now);
+  const currentWeekEnd = new Date(currentWeekStart);
+  currentWeekEnd.setDate(currentWeekEnd.getDate() + 7);
+  const reminderWindowStartsAt = new Date(currentWeekEnd);
+  reminderWindowStartsAt.setDate(reminderWindowStartsAt.getDate() - 2);
+  const nextWeekEnd = new Date(currentWeekEnd);
+  nextWeekEnd.setDate(nextWeekEnd.getDate() + 7);
+  const [currentVisits, nextVisits] = await Promise.all([
+    visitRepository.findWeekBySubscription(subscription._id, currentWeekStart, currentWeekEnd),
+    visitRepository.findWeekBySubscription(subscription._id, currentWeekEnd, nextWeekEnd),
+  ]);
+  const countable = (visit) => visit.status !== 'parent_declined';
+  const currentWeekSet = currentVisits.some(countable);
+  const reminderWindowOpen = now >= reminderWindowStartsAt;
+  const nextWeekSet = nextVisits.some(countable);
+  return {
+    currentWeekEndsAt: currentWeekEnd,
+    reminderWindowOpen,
+    scheduleEnabled: currentWeekSet ? reminderWindowOpen && !nextWeekSet : !nextWeekSet,
+    targetWeekStart: currentWeekSet ? currentWeekEnd : currentWeekStart,
   };
 }
 
@@ -74,7 +107,8 @@ export const profileService = Object.freeze({
     if (actor.role !== ROLES.ADMIN && profile.clientId.toString() !== actor.sub)
       throw new ForbiddenError();
     const subscription = await subscriptionRepository.findLatestByParent(parentId);
-    return serializeParent(profile, subscription);
+    const summary = serializeParent(profile, subscription);
+    return { ...summary, schedulingSummary: await schedulingSummary(subscription) };
   },
 
   async updateParent(clientId, parentId, data) {

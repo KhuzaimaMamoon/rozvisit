@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
-function validationMessage(input) {
-  if (input.validity.valueMissing) return 'This field is required.';
+function validationMessage(input, requiredMessage) {
+  if (input.validity.valueMissing) return requiredMessage || 'This field is required.';
   if (input.validity.typeMismatch && input.type === 'email') return 'Enter a valid email address.';
   if (input.validity.tooShort) return `Use at least ${input.minLength} characters.`;
   if (input.validity.patternMismatch) return 'Enter a value in the required format.';
@@ -16,6 +16,7 @@ export default function FormInput({
   id,
   label,
   optional = false,
+  requiredMessage,
   trailingAction,
   ...props
 }) {
@@ -43,7 +44,7 @@ export default function FormInput({
           }}
           onInvalid={(event) => {
             event.preventDefault();
-            setNativeError(validationMessage(event.currentTarget));
+            setNativeError(validationMessage(event.currentTarget, requiredMessage));
             onInvalid?.(event);
           }}
         />

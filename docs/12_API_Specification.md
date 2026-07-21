@@ -329,15 +329,16 @@ Example response:
 
 ## Module: Visits
 
-### POST /visits/schedule — Set weekly recurring slots
+### POST /visits/schedule — Set one weekly visit cycle
 
 - **Role:** client
 - **Body:** `{ parentId, slots: [{ dayOfWeek: 0-6, time: "HH:mm" }], standingNote? }`
-- **Validation:** slots within service hours (08:00–20:00 *(Recommendation)*); slot count ≤ plan allowance (FR-030); active subscription required; consented or first-visit-pending parent
-- **Success `201`:** generated visits for the coming period; `{ items: [visits] }`. Repeating the
-  same parent-and-slot request is idempotent: existing visits for those exact times are returned,
-  never duplicated.
-- **Errors:** `409 ALLOWANCE_EXCEEDED` with limit and upgrade path in message; `409 CONSENT_REQUIRED` if profile paused by withdrawal; `403`
+- **Validation:** slots within service hours (08:00–20:00 *(Recommendation)*); slot count ≤ plan allowance (FR-030); active subscription required; consented or first-visit-pending parent. The server sets one week only: the current week when it is not yet set, or the following week during the two-day reminder window. Times must still be ahead in that target week.
+- **Success `201`:** `{ items: [visits], weekStart }` for exactly that weekly cycle. Once a cycle
+  is set it cannot be submitted again; individual visits retain their documented reschedule/cancel
+  actions. Two days before the boundary, the client may set the following week. If they do not,
+  the in-process scheduler carries forward the previous week’s pattern at the boundary.
+- **Errors:** `409 ALLOWANCE_EXCEEDED` with limit and upgrade path in message; `409 SCHEDULING_LOCKED` outside the reminder window; `409 SCHEDULE_ALREADY_SET` when the target week already exists; `409 CONSENT_REQUIRED` if profile paused by withdrawal; `403`
 
 ### PATCH /visits/:id/reschedule
 

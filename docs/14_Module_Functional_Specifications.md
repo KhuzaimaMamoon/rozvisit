@@ -134,7 +134,12 @@
 
 **User roles:** client (schedule, watch), caregiver (perform), admin (assign, oversee — specified in Module 7).
 
-**Main features:** weekly slot scheduling with allowance enforcement; reschedule/cancel with cutoff; the caregiver today-list (offline-capable); the tap-based checklist with consent choices shown; camera-only capture with the sync queue; completion gating; the no-fault declined path; per-visit earnings; the client proof feed with honest states; (Phase 2) GPS check-in/out and ratings.
+**Main features:** one-week scheduling cycles with allowance enforcement; a two-day next-week
+rescheduling window and automatic carry-forward when the client does not act; individual
+reschedule/cancel with cutoff; the caregiver today-list (offline-capable); the tap-based checklist
+with consent choices shown; camera-only capture with the sync queue; completion gating; the
+no-fault declined path; per-visit earnings; the client proof feed with honest states; (Phase 2)
+GPS check-in/out and ratings.
 
 **User workflows:** Journeys C5, C6, C7 (the core moment), G2 (the core caregiver journey); Saima's offline path; Tariq's declined path.
 

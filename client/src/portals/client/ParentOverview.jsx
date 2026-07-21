@@ -30,7 +30,7 @@ export default function ParentOverview() {
   const p = state.item;
   const subscription = p.subscriptionSummary;
   const subscriptionState = subscription?.state ?? null;
-  const scheduleEnabled = subscriptionState === 'active' || subscriptionState === 'grace';
+  const scheduleEnabled = p.schedulingSummary?.scheduleEnabled ?? false;
   const proofEnabled =
     scheduleEnabled || subscriptionState === 'paused' || subscriptionState === 'cancelled';
   const links = [
@@ -44,7 +44,9 @@ export default function ParentOverview() {
       'Schedule visits',
       `/app/parents/${id}/schedule`,
       scheduleEnabled,
-      'Available once your plan is active.',
+      subscriptionState === 'active' || subscriptionState === 'grace'
+        ? 'This week is already set. Scheduling opens again in the reminder window.'
+        : 'Available once your plan is active.',
     ],
     [
       'Visit proof',
