@@ -126,6 +126,19 @@ export const applicationListQuerySchema = {
   },
 };
 
+export const directoryListQuerySchema = {
+  safeParse(value) {
+    const fields = {};
+    const page = value.page === undefined ? 1 : Number(value.page);
+    const limit = value.limit === undefined ? 20 : Number(value.limit);
+    if (!Number.isInteger(page) || page < 1) fields.page = ['Enter a valid page number.'];
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      fields.limit = ['Choose a limit from 1 to 100.'];
+    }
+    return Object.keys(fields).length ? failure(fields) : { success: true, data: { limit, page } };
+  },
+};
+
 function validDate(value) {
   return typeof value === 'string' && !Number.isNaN(new Date(value).getTime());
 }

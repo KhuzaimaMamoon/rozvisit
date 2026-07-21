@@ -11,6 +11,11 @@ export const parentRepository = Object.freeze({
   findByClientId(clientId) {
     return ParentProfile.find({ clientId }).select('-addressText -careNotes -consent.recordingRef');
   },
+  findDirectoryByClientIds(clientIds) {
+    return ParentProfile.find({ clientId: { $in: clientIds } }).select(
+      'clientId name status createdAt',
+    );
+  },
   findById(id) {
     if (!mongoose.isValidObjectId(id)) return null;
     return ParentProfile.findById(id).select(sensitiveSelection);

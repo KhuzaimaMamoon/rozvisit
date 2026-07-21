@@ -64,7 +64,7 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | passwordHash | String | R | bcrypt only (SEC-001); never selected by default |
 | emailVerifiedAt | Date | O | Null until verified (FR-002) |
 | status | String enum | R | `active` \| `disabled` |
-| permissions | [String enum] | R (empty unless admin) | Admin-only scoped permissions: `applications.review`, `subscriptions.manage`, `visits.oversee`, `flags.resolve` (SEC-010) |
+| permissions | [String enum] | R (empty unless admin) | Admin-only scoped permissions: `applications.review`, `subscriptions.manage`, `visits.oversee`, `flags.resolve`, `caregivers.directory.view`, `caregivers.cnic.view`, `clients.directory.view` (SEC-010). New admin accounts receive the current permission set by default; explicitly scoped accounts may receive a narrower set. |
 | createdAt / updatedAt | Date | R | Mongoose timestamps |
 
 ### clientProfiles

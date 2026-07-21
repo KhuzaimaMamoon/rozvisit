@@ -14,6 +14,15 @@ function run(handler) {
 export const listApplications = run(async (req, res) =>
   respond.ok(res, await adminService.listApplications(req.validatedQuery)),
 );
+export const listCaregiverDirectory = run(async (req, res) =>
+  respond.ok(res, await adminService.listCaregiverDirectory(req.validatedQuery)),
+);
+export const viewCaregiverCnic = run(async (req, res) =>
+  respond.ok(res, await adminService.viewCaregiverCnic(req.auth.sub, req.params.id)),
+);
+export const listClientDirectory = run(async (req, res) =>
+  respond.ok(res, await adminService.listClientDirectory(req.validatedQuery)),
+);
 export const getApplication = run(async (req, res) =>
   respond.ok(res, await adminService.getApplication(req.auth.sub, req.params.id)),
 );

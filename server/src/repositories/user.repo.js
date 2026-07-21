@@ -1,5 +1,6 @@
 import { ClientProfile } from '../models/ClientProfile.js';
 import { User } from '../models/User.js';
+import { ROLES } from '../config/constants.js';
 
 export const userRepository = Object.freeze({
   createUser(data) {
@@ -21,7 +22,20 @@ export const userRepository = Object.freeze({
     return User.findById(id).select('role status permissions');
   },
   findAdmins() {
-    return User.find({ role: 'admin', status: 'active' }).select('name');
+    return User.find({ role: ROLES.ADMIN, status: 'active' }).select('name');
+  },
+  listClients({ limit, skip }) {
+    return User.find({ role: ROLES.CLIENT })
+      .select('name email phone createdAt')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+  },
+  countClients() {
+    return User.countDocuments({ role: ROLES.CLIENT });
+  },
+  findClientProfilesByUserIds(userIds) {
+    return ClientProfile.find({ userId: { $in: userIds } });
   },
   markEmailVerified(id, at) {
     return User.findByIdAndUpdate(id, { emailVerifiedAt: at }, { new: true });

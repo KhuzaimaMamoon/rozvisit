@@ -294,6 +294,23 @@ Routes under `/care/*`. Layout per Document 15 §30: no sidebar — a simple top
 - **Empty state:** "You do not have any assigned visits yet."
 - **APIs:** `GET /visits/mine?before=&limit=`.
 
+## S-45. Caregivers Directory
+
+- **Route:** `/admin/caregivers`
+- **Role:** admin with `caregivers.directory.view`
+- **Purpose:** Day-to-day lookup of every registered caregiver, separate from the verification workflow.
+- **Sections:** list rows with name, email, phone, service area, verification status, gate summary, application date, and verification/decision dates.
+- **CNIC:** never included in the list. An explicit `View CNIC` action requires `caregivers.cnic.view`, displays the value only after the action, and carries the microcopy “Viewing this record is logged.”
+- **APIs:** `GET /admin/caregivers`, `GET /admin/caregivers/:id/cnic`.
+
+## S-46. Clients Directory
+
+- **Route:** `/admin/clients`
+- **Role:** admin with `clients.directory.view`
+- **Purpose:** Day-to-day lookup of all registered clients, their parent profiles, and subscription state without duplicating the payment workbench.
+- **Sections:** client name, email, phone, country, currency; associated parent names/statuses; subscription plan and state summaries.
+- **APIs:** `GET /admin/clients`.
+
 ---
 
 # Part E — Clinic/Organization Interface
@@ -437,6 +454,8 @@ Screens available to authenticated users regardless of portal.
 | S-25 | Earnings | caregiver | `/care/earnings` | yes |
 | S-26 | Caregiver Account | caregiver | `/care/account` | yes |
 | S-44 | My Visits | caregiver | `/care/visits` | yes |
+| S-45 | Caregivers Directory | admin | `/admin/caregivers` | yes |
+| S-46 | Clients Directory | admin | `/admin/clients` | yes |
 | S-27 | Admin Overview | admin | `/admin` | yes |
 | S-28 | Applications Queue | admin | `/admin/applications` | yes |
 | S-29 | Application Detail | admin | `/admin/applications/:id` | yes |

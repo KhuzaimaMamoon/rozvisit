@@ -471,6 +471,24 @@ All endpoints: **Role admin**, all mutations audited automatically (FR-082).
 - **Validation:** approve refused unless all gates true — `409 STATE_INVALID` "Verification gates incomplete" (FR-081)
 - **Success:** status flips; applicant notified with next steps
 
+### GET /admin/caregivers — Caregiver directory
+
+- **Permission:** `caregivers.directory.view`
+- **Query:** `page?`, `limit?` (default 20, maximum 100)
+- **Success `200`:** `{ items, page, total }`; each item includes non-sensitive operational fields only: caregiver and user IDs, name, email, phone, service area, verification status and gate summary, application date, and gate/decision timestamps. CNIC numbers and document references are never returned in this list.
+
+### GET /admin/caregivers/:id/cnic — Explicit CNIC reveal
+
+- **Permission:** `caregivers.cnic.view`
+- **Success `200`:** `{ id, cnicNumber }`
+- **Security:** called only after an explicit admin action; writes the audited `cnic.viewed` event with source `caregiver_directory`. CNIC is not returned by any directory list response.
+
+### GET /admin/clients — Client directory
+
+- **Permission:** `clients.directory.view`
+- **Query:** `page?`, `limit?` (default 20, maximum 100)
+- **Success `200`:** `{ items, page, total }`; each item includes the client’s name, email, phone, country, currency, associated parent names/statuses, and subscription plan/state summaries. It excludes parent addresses, care notes, emergency contacts, consent recordings, and all other sensitive profile content.
+
 ### POST /admin/visits/:id/assign
 
 - **Body:** `{ caregiverId }`

@@ -115,7 +115,9 @@ Three enforcement rings (Document 09 §14; Document 13 §17):
 
 **Ownership violations return `403`, not `404`** (Document 12 §5) — deliberate honesty over obscurity, since ids are not guessable.
 
-**Admin permissions are scoped from day one** (SEC-010): even with one admin, the permission list exists (Document 13 §16), so least-privilege at team growth is data entry, not development.
+**Admin permissions are scoped from day one** (SEC-010): even with one admin, the permission list exists (Document 13 §16), so least-privilege at team growth is data entry, not development. The current permission set is `applications.review`, `subscriptions.manage`, `visits.oversee`, `flags.resolve`, `caregivers.directory.view`, `caregivers.cnic.view`, and `clients.directory.view`. New admin accounts receive this set by default; an explicitly scoped admin may be granted a narrower set.
+
+The caregiver directory requires `caregivers.directory.view` and returns only non-sensitive operational fields. CNIC is absent from all bulk responses. An explicit CNIC reveal additionally requires `caregivers.cnic.view` and writes the `cnic.viewed` audit event. The client directory requires `clients.directory.view`.
 
 ---
 
