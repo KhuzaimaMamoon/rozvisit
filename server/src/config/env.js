@@ -82,6 +82,7 @@ if (
 }
 const devLogAuthLinks = process.env.DEV_LOG_AUTH_LINKS === 'true';
 const appHost = new URL(process.env.APP_BASE_URL).hostname;
+const appOrigin = new URL(process.env.APP_BASE_URL).origin;
 if (
   devLogAuthLinks &&
   (process.env.NODE_ENV !== 'development' || !['localhost', '127.0.0.1', '::1'].includes(appHost))
@@ -130,6 +131,7 @@ export const env = Object.freeze({
     resendApiKey: process.env.RESEND_API_KEY ?? null,
   }),
   appBaseUrl: process.env.APP_BASE_URL,
+  appOrigin,
   devLogAuthLinks,
   sentryDsn: process.env.SENTRY_DSN ?? null,
   logLevel,

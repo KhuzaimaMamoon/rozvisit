@@ -8,7 +8,7 @@ const PORTAL_ROLE_HEADER = 'x-rozvisit-portal';
 const cookieOptions = Object.freeze({
   httpOnly: true,
   secure: env.nodeEnv === 'production',
-  sameSite: 'strict',
+  sameSite: env.nodeEnv === 'production' ? 'none' : 'strict',
   path: '/api/v1/auth',
 });
 

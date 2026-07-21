@@ -313,17 +313,11 @@ The following are **reserved shape**. They are not required at MVP; the app boot
 
 ## A.10 CORS
 
-**No environment variable at MVP.** The API is served from the same origin as the portals (Doc 18 §14), so no CORS configuration is needed and none is read from the environment.
+The API uses the origin of the required `APP_BASE_URL` as its one allowed browser origin. This supports separate portal/API deployments without a second configuration source. Credentialed requests are allowed only for that exact origin; wildcard origins are never used.
 
-**Phase 2 posture, if a separate static host is introduced** *(Recommendation — added if that day comes)*:
+For the current production deployment, `APP_BASE_URL=https://rozvisit-client.vercel.app` authorizes that portal to call the API. Requests from any other browser origin are refused without CORS headers.
 
-```
-CORS_ALLOWED_ORIGINS=https://app.rozvisit.com,https://staging.rozvisit.com
-```
-
-- **Sensitivity:** Public.
-- **Validation:** comma-separated list of `https://`-prefixed origins; `*` is refused (Doc 18 §14).
-- **Default:** empty → same-origin only.
+Refresh cookies are `HttpOnly`, `Secure`, and `SameSite=None` in production so the browser can send them between the separately hosted portal and API. In local development they remain `SameSite=Strict` and non-secure.
 
 ---
 
@@ -384,10 +378,10 @@ Vite exposes only variables prefixed with `VITE_` to the browser. Everything the
 | Service | Client (Vite build) |
 | Purpose | The base path for API calls made from the portals |
 | Required | Optional (has a sensible default at MVP) |
-| Development example | `VITE_API_BASE_URL=http://localhost:5000/api` |
-| Production rule | `/api` — the same-origin default at MVP (Doc 09 §8, Doc 18 §14); an absolute URL if a separate host is ever introduced |
+| Development example | `VITE_API_BASE_URL=http://localhost:5000/api/v1` |
+| Production rule | When the browser and API are deployed separately, set the absolute versioned API origin, for example `https://rozvisit-api.onrender.com/api/v1`. The backend allows the portal origin from `APP_BASE_URL` with credentialed CORS. |
 | Sensitivity | Public |
-| Default behavior | Defaults to `/api` if unset |
+| Default behavior | Defaults to `/api/v1` if unset |
 | Validation | Absolute URL or a path beginning with `/` |
 
 ## B.2 Optional Client Toggles *(Recommendation — reserved shape)*

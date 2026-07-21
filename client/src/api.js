@@ -1,5 +1,6 @@
 let accessToken = null;
 let refreshInFlight = null;
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/+$/, '');
 
 export class ApiError extends Error {
   constructor({ code, fields, message, status }) {
@@ -27,7 +28,27 @@ function portalRoleForCurrentPath() {
 }
 
 async function decode(response) {
-  const payload = await response.json();
+  const text = await response.text();
+  let payload;
+
+  try {
+    payload = text ? JSON.parse(text) : null;
+  } catch {
+    throw new ApiError({
+      code: 'INVALID_RESPONSE',
+      message: 'The service returned an invalid response. Please try again.',
+      status: response.status,
+    });
+  }
+
+  if (!payload) {
+    throw new ApiError({
+      code: 'EMPTY_RESPONSE',
+      message: 'The service returned an empty response. Please try again.',
+      status: response.status,
+    });
+  }
+
   if (!response.ok) {
     throw new ApiError({
       code: payload.error?.code,
@@ -42,7 +63,7 @@ async function decode(response) {
 export async function refreshAccessToken() {
   if (!refreshInFlight) {
     const portalRole = portalRoleForCurrentPath();
-    refreshInFlight = fetch('/api/v1/auth/refresh', {
+    refreshInFlight = fetch(`${apiBaseUrl}/auth/refresh`, {
       credentials: 'include',
       headers: portalRole ? { 'X-RozVisit-Portal': portalRole } : undefined,
       method: 'POST',
@@ -64,7 +85,7 @@ export async function api(path, { retry = true, ...options } = {}) {
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
   if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
 
-  const response = await fetch(`/api/v1${path}`, {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
     ...options,
     credentials: 'include',
     headers,

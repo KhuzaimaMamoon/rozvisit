@@ -91,6 +91,36 @@ describe('Auth API', () => {
     expect(await AuthToken.countDocuments({ type: AUTH_TOKEN_TYPES.EMAIL_VERIFICATION })).toBe(1);
   });
 
+  it('allows the configured portal origin to make credentialed CORS requests', async () => {
+    const origin = 'http://localhost:5173';
+    const preflight = await request(app)
+      .options('/api/v1/auth/register')
+      .set('Origin', origin)
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'content-type');
+    const requestFromPortal = await request(app)
+      .post('/api/v1/auth/register')
+      .set('Origin', origin)
+      .send(validRegistration);
+
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers['access-control-allow-origin']).toBe(origin);
+    expect(preflight.headers['access-control-allow-credentials']).toBe('true');
+    expect(requestFromPortal.status).toBe(201);
+    expect(requestFromPortal.headers['access-control-allow-origin']).toBe(origin);
+  });
+
+  it('refuses a browser origin other than the configured portal origin', async () => {
+    const response = await request(app)
+      .post('/api/v1/auth/register')
+      .set('Origin', 'https://untrusted.example')
+      .send(validRegistration);
+
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe('CORS_ORIGIN_NOT_ALLOWED');
+    expect(response.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
   it('rejects duplicate registration and invalid registration input', async () => {
     await request(app).post('/api/v1/auth/register').send(validRegistration);
     const duplicate = await request(app).post('/api/v1/auth/register').send(validRegistration);
