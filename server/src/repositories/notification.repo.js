@@ -28,8 +28,9 @@ export const notificationRepository = Object.freeze({
       .skip(skip)
       .limit(limit);
   },
-  async listForUser({ before, limit, userId }) {
+  async listForUser({ before, limit, types, userId }) {
     const filter = { userId };
+    if (types) filter.type = { $in: types };
     if (before) filter.createdAt = { $lt: before };
     const [items, unreadCount] = await Promise.all([
       Notification.find(filter).sort({ createdAt: -1 }).limit(limit),

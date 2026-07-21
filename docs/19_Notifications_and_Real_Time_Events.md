@@ -38,6 +38,10 @@ Design constants:
 - The bell dot is `primary` for informational unread items, `emergency` only when the list contains a live emergency (Document 15 §32). Never `emergency` for "5 new items."
 - The list uses cursor pagination (Document 12 §9), newest first.
 - APIs: `GET /notifications`, `POST /notifications/:id/read` (Document 12 §Notifications).
+- **Admin inbox scope:** admins see only operational notifications addressed to admin:
+  `admin_new_application`, `admin_payment_reconciled`, and `flag_raised`. Client and caregiver
+  care updates never appear in the admin inbox; delivery failures remain the separate admin-only
+  failures view.
 
 ## 4. Push Notifications
 
