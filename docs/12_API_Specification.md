@@ -255,10 +255,22 @@ POST /api/v1/auth/register
   pending consent.
 - **Body:** `{ byVisitId, mediaType: "audio" | "video" }`; `byVisitId` is the assigned visit
   currently recording the consent and is used for the ownership check.
-- **Success `200`:** `{ cloudName, apiKey, timestamp, signature, folder: "rozvisit/consent/<parentId>/", publicId: "<parentId>_<compact ISO timestamp>", resourceType: "auto", maxFileSize: 52428800, allowedFormats: ["mp3", "m4a", "wav", "mp4", "mov"], expiresAt }`. The permit expires after 10 minutes (AD-31).
-- **Behavior:** audio is a first-class consent option. After direct upload, the caregiver sends the returned Cloudinary `secure_url` or `public_id` as `recordingRef` to `POST /parents/:id/consent`.
+- **Success `200`:** `{ cloudName, apiKey, timestamp, signature, folder: "rozvisit/consent/<parentId>/", publicId: "<parentId>_<compact ISO timestamp>", type: "authenticated", resourceType: "auto", maxFileSize: 52428800, allowedFormats: ["mp3", "m4a", "wav", "mp4", "mov"], expiresAt }`. The permit expires after 10 minutes (AD-31).
+- **Behavior:** audio is a first-class consent option. Uploads are Cloudinary authenticated assets; after direct upload, the caregiver sends the returned `public_id` as `recordingRef` to `POST /parents/:id/consent`.
 - **Errors:** `403` unless the caregiver is assigned to that parent's pending-consent visit; `422`
   invalid media type or missing `byVisitId`.
+
+### POST /parents/:id/consent/playback — Mint consent-recording playback link
+
+- **Role:** client (owner), admin
+- **Body:** none
+- **Success `200`:** `{ url, expiresAt }`, a short-lived, Cloudinary-signed playback URL for a
+  consent recording. The URL is never persisted in the parent response.
+- **Behavior:** allowed only when consent is `given` and a recording exists. The backend re-checks
+  parent ownership or admin role before minting the link and writes the `consent.recording_played`
+  audit event without logging the recording reference.
+- **Errors:** `403` not owner or admin; `404` unknown parent; `409 STATE_INVALID` no available
+  recording.
 
 ### POST /parents/:id/consent/withdraw
 

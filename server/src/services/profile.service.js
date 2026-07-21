@@ -2,7 +2,9 @@ import { CONSENT_STATE, PARENT_STATUS, ROLES } from '../config/constants.js';
 import { parentRepository } from '../repositories/parent.repo.js';
 import { subscriptionRepository } from '../repositories/subscription.repo.js';
 import { notifyRecipient } from '../notifications/dispatch.js';
-import { ForbiddenError, NotFoundError } from '../utils/AppError.js';
+import { auditRepository } from '../repositories/audit.repo.js';
+import { cloudinaryMediaStorage } from '../interfaces/media.cloudinary.js';
+import { ConflictError, ForbiddenError, NotFoundError } from '../utils/AppError.js';
 import { decrypt, encrypt } from '../utils/crypto.js';
 
 function decryptOptional(value) {
@@ -110,5 +112,31 @@ export const profileService = Object.freeze({
       });
     }
     return serializeParent(profile);
+  },
+
+  async createConsentPlayback(actor, parentId) {
+    const profile = await parentRepository.findById(parentId);
+    if (!profile) throw new NotFoundError();
+    if (actor.role !== ROLES.ADMIN && profile.clientId.toString() !== actor.sub) {
+      throw new ForbiddenError();
+    }
+    if (profile.consent.state !== CONSENT_STATE.GIVEN || !profile.consent.recordingRef) {
+      throw new ConflictError(
+        'STATE_INVALID',
+        'A consent recording is not available for this parent.',
+      );
+    }
+    const playback = cloudinaryMediaStorage.createConsentPlaybackUrl({
+      recordingRef: decrypt(profile.consent.recordingRef),
+    });
+    await auditRepository.create({
+      actorId: actor.sub,
+      action: 'consent.recording_played',
+      targetType: 'parentProfile',
+      targetId: profile._id,
+      detail: {},
+      at: new Date(),
+    });
+    return playback;
   },
 });

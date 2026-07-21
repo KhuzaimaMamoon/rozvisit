@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
+import ConsentPlayback from '../../components/ConsentPlayback.jsx';
 import { navigateFromLink } from '../../navigation.js';
 export default function ParentOverview() {
   const id = useMemo(() => window.location.pathname.split('/').at(-1), []);
@@ -121,6 +122,11 @@ export default function ParentOverview() {
             ))}
           </div>
         </section>
+        {p.consent?.state === 'given' ? (
+          <div className="mt-6">
+            <ConsentPlayback parentId={id} />
+          </div>
+        ) : null}
       </div>
     </main>
   );

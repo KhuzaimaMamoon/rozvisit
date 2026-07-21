@@ -61,8 +61,8 @@ export default function VisitScheduling() {
         <section className="mt-6 rounded-lg border border-border bg-surface p-5 shadow-sm sm:p-6">
           <h2 className="text-lg font-semibold text-text">Weekly slots</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Set this weekly pattern once. RozVisit repeats it for each week in your current paid
-            period.
+            Choose the recurring times that work best for your family. Individual scheduled visits
+            can be rescheduled or cancelled under the documented visit rules.
           </p>
           <div className="mt-5 space-y-3">
             {slots.map((slot, index) => (

@@ -53,7 +53,7 @@ export default function Register() {
         </div>
       ) : (
         <form className="mt-7 space-y-5" onSubmit={submit}>
-          {error ? (
+          {error && Object.keys(fields).length === 0 ? (
             <p
               className="border-l-[3px] border-emergency bg-emergency-soft px-4 py-3 text-sm text-emergency"
               role="alert"

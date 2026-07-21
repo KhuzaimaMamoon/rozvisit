@@ -7,7 +7,9 @@ import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { env } from '../src/config/env.js';
 import { ParentProfile } from '../src/models/ParentProfile.js';
+import { AuditEvent } from '../src/models/AuditEvent.js';
 import { User } from '../src/models/User.js';
+import { encrypt } from '../src/utils/crypto.js';
 
 const parentData = {
   name: 'Amina Bibi',
@@ -35,7 +37,11 @@ describe('Parents API', () => {
   });
 
   beforeEach(async () => {
-    await Promise.all([User.deleteMany({}), ParentProfile.deleteMany({})]);
+    await Promise.all([
+      User.deleteMany({}),
+      ParentProfile.deleteMany({}),
+      AuditEvent.deleteMany({}),
+    ]);
     const passwordHash = await bcrypt.hash('safePass123', 10);
     [client, otherClient, admin] = await User.create([
       {
@@ -210,5 +216,37 @@ describe('Parents API', () => {
     expect(stored.consent.history).toEqual([
       expect.objectContaining({ state: 'withdrawn', at: expect.any(Date) }),
     ]);
+  });
+
+  it('mints an audited, short-lived consent playback link for the owner and admin only', async () => {
+    const parent = await ParentProfile.create({
+      clientId: client._id,
+      name: 'Amina Bibi',
+      age: 68,
+      addressText: encrypt(parentData.addressText),
+      location: { type: 'Point', coordinates: [73.0479, 33.6844] },
+      emergencyContacts: parentData.emergencyContacts,
+      consent: { state: 'given', recordingRef: encrypt('rozvisit/consent/amina_recording') },
+      status: 'active',
+    });
+
+    const allowed = await request(app)
+      .post(`/api/v1/parents/${parent._id}/consent/playback`)
+      .set(authenticated(client));
+    const adminAllowed = await request(app)
+      .post(`/api/v1/parents/${parent._id}/consent/playback`)
+      .set(authenticated(admin));
+    const denied = await request(app)
+      .post(`/api/v1/parents/${parent._id}/consent/playback`)
+      .set(authenticated(otherClient));
+
+    expect(allowed.status).toBe(200);
+    expect(allowed.body.data).toEqual({
+      url: expect.stringContaining('/download?'),
+      expiresAt: expect.any(String),
+    });
+    expect(adminAllowed.status).toBe(200);
+    expect(denied.status).toBe(403);
+    expect(await AuditEvent.countDocuments({ action: 'consent.recording_played' })).toBe(2);
   });
 });

@@ -11,6 +11,7 @@ async function uploadRecording(permit, blob, mediaType) {
   body.append('signature', permit.signature);
   body.append('folder', permit.folder);
   body.append('public_id', permit.publicId);
+  body.append('type', permit.type);
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${permit.cloudName}/${permit.resourceType}/upload`,
     { method: 'POST', body },
@@ -84,7 +85,7 @@ export default function ConsentPanel({ parentId, visitId, onResolved }) {
                 .map((value) => value.trim())
                 .filter(Boolean),
             },
-            recordingRef: uploaded.secure_url ?? uploaded.public_id,
+            recordingRef: uploaded.public_id,
             state: 'given',
           }),
           method: 'POST',
