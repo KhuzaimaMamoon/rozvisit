@@ -1194,7 +1194,7 @@ The following decisions were made across Documents 09–21 but never captured as
 
 - **Status:** Confirmed
 - **Context:** AD-7 established that media never touches the backend -- only signed permits do. The exact TTL and constraint parameters were undocumented.
-- **Decision:** 10-minute permit TTL; 50MB max file size; image/video formats only; folder-scoped and public-ID-scoped to the specific visit and client-generated ID for idempotency.
+- **Decision:** 10-minute permit TTL; 50MB max file size; image/video formats only; folder-scoped and public-ID-scoped to the specific visit and client-generated ID for idempotency. **Amendment (2026-07-21):** visit-media permits and direct uploads include `type: "authenticated"`; feed playback uses a short-lived signed URL. This replaces the previous default Cloudinary `upload` delivery type for new visit photos, providing defense in depth for sensitive in-home evidence and matching the consent-recording protection model.
 - **Alternatives considered:** Longer TTL (30+ min) -- rejected as unnecessary exposure window for a task that takes at most a few minutes in practice. Shorter TTL (2-3 min) -- rejected as too tight for genuinely slow connections in the field.
 - **Consequences:** Expired-permit retry becomes a normal, expected flow in the offline queue -- not an error path.
 - **Review trigger:** Real-world data from Phase 1 showing caregivers frequently hit the TTL limit before completing upload.

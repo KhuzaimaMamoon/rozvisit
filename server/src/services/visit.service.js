@@ -579,12 +579,19 @@ export const visitService = Object.freeze({
               concerns: visit.checklist.concerns,
             }
           : null,
-        media: visit.media.map((media) => ({
-          ref: media.ref,
-          capturedAt: media.capturedAt,
-          uploadedAt: media.uploadedAt,
-          sourceFlag: media.sourceFlag,
-        })),
+        media: visit.media.map((media) => {
+          const playback = cloudinaryMediaStorage.createVisitMediaPlaybackUrl({
+            mediaRef: media.ref,
+          });
+          return {
+            capturedAt: media.capturedAt,
+            fullUrl: playback.url,
+            sourceFlag: media.sourceFlag,
+            thumbUrl: playback.url,
+            uploadedAt: media.uploadedAt,
+            uploading: false,
+          };
+        }),
         missedReason:
           visit.status === VISIT_STATUS.MISSED
             ? (visit.statusHistory.at(-1)?.reason ?? null)

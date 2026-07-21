@@ -127,8 +127,8 @@ export default function ProofFeed({ parentId: parentIdProp = null }) {
                     <img
                       alt="Visit proof captured in RozVisit"
                       className="aspect-video w-full rounded-md border border-border object-cover"
-                      key={media.ref}
-                      src={media.ref}
+                      key={media.fullUrl}
+                      src={media.thumbUrl ?? media.fullUrl}
                     />
                   ))}
                 </div>
