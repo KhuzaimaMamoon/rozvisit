@@ -10,6 +10,14 @@ async function start() {
   try {
     await mongoose.connect(env.mongoUri);
     logger.info('database.connected');
+    logger.info('email.delivery_configured', {
+      provider:
+        env.email.gmailUser && env.email.gmailAppPassword
+          ? 'gmail_smtp'
+          : env.email.resendApiKey
+            ? 'resend'
+            : 'noop',
+    });
     const runWeeklyScheduling = () =>
       visitService.processWeeklyCycles().catch((error) => {
         logger.error('weekly_scheduling.failed', { error: error.message });

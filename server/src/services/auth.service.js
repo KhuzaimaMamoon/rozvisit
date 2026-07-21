@@ -116,6 +116,12 @@ function queueAuthEmail(message) {
   timer.unref?.();
 }
 
+function authEmailProvider() {
+  if (env.email.gmailUser && env.email.gmailAppPassword) return 'gmail_smtp';
+  if (env.email.resendApiKey) return 'resend';
+  return 'noop';
+}
+
 export async function deliverAuthEmail(
   message,
   {
@@ -128,8 +134,14 @@ export async function deliverAuthEmail(
   try {
     await channel.send(message);
     return { sent: true };
-  } catch {
-    log.error('auth.email_delivery_failed', { attempt, type: message.type });
+  } catch (error) {
+    log.error('auth.email_delivery_failed', {
+      attempt,
+      errorCode: error?.code ?? null,
+      provider: authEmailProvider(),
+      responseCode: error?.responseCode ?? null,
+      type: message.type,
+    });
     if (attempt < AUTH_EMAIL_MAX_ATTEMPTS) scheduleRetry(message, attempt);
     return { sent: false };
   }
