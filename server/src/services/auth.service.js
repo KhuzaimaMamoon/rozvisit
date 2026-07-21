@@ -109,6 +109,13 @@ function scheduleAuthEmailRetry(message, attempt) {
   timer.unref?.();
 }
 
+function queueAuthEmail(message) {
+  const timer = setImmediate(() => {
+    void deliverAuthEmail(message);
+  });
+  timer.unref?.();
+}
+
 export async function deliverAuthEmail(
   message,
   {
@@ -144,7 +151,9 @@ async function issueEmailToken(user, type) {
   });
 
   const path = type === AUTH_TOKEN_TYPES.EMAIL_VERIFICATION ? '/verify?token=' : '/reset?token=';
-  void deliverAuthEmail({ type, to: user.email, link: `${env.appBaseUrl}${path}${rawToken}` });
+  // The account/token transaction is complete before any provider work starts.
+  // A slow SMTP connection must never delay registration or password recovery.
+  queueAuthEmail({ type, to: user.email, link: `${env.appBaseUrl}${path}${rawToken}` });
 }
 
 export const authService = Object.freeze({

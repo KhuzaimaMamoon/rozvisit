@@ -110,6 +110,9 @@ export function createEmailChannel({
       ? createGmailTransport({
           service: 'gmail',
           auth: { user: gmailUser, pass: gmailAppPassword },
+          connectionTimeout: 10_000,
+          greetingTimeout: 10_000,
+          socketTimeout: 10_000,
         })
       : null;
   const client = apiKey && enableDelivery ? createClient(apiKey) : null;

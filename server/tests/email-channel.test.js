@@ -27,6 +27,9 @@ describe('Email channel', () => {
     expect(createGmailTransport).toHaveBeenCalledWith({
       service: 'gmail',
       auth: { user: 'rozvisit.testing@gmail.com', pass: 'abcdefghijklmnop' },
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 10_000,
     });
     expect(resendSend).not.toHaveBeenCalled();
     expect(sendMail).toHaveBeenCalledWith(
