@@ -330,6 +330,24 @@ export const visitService = Object.freeze({
     };
   },
 
+  async mine(caregiverId, { before, limit }) {
+    const caregiver = await caregiverRepository.findVerifiedByUserId(caregiverId);
+    if (!caregiver) throw new ForbiddenError();
+    const visits = await visitRepository.findMineByCaregiver(caregiverId, {
+      before,
+      limit: limit + 1,
+    });
+    const hasNextPage = visits.length > limit;
+    const page = hasNextPage ? visits.slice(0, limit) : visits;
+    const parents = await Promise.all(
+      page.map((visit) => parentRepository.findById(visit.parentId)),
+    );
+    return {
+      items: page.map((visit, index) => serializeCaregiverVisitBase(visit, parents[index])),
+      nextCursor: hasNextPage ? page.at(-1).scheduledAt.toISOString() : null,
+    };
+  },
+
   async getCaregiverVisit(caregiverId, visitId) {
     const visit = await getAssignedVisit(caregiverId, visitId);
     const parent = await parentRepository.findById(visit.parentId);

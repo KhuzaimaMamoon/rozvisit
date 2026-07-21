@@ -4,6 +4,7 @@ import {
   createMediaPermit,
   feed,
   getCaregiverVisit,
+  mine,
   parentDeclined,
   saveChecklist,
   scheduleVisits,
@@ -32,6 +33,7 @@ import {
   checklistSchema,
   completeVisitSchema,
   mediaPermitSchema,
+  caregiverVisitsQuerySchema,
   parentDeclinedSchema,
   scheduleVisitsSchema,
 } from '../validators/visits.schemas.js';
@@ -57,6 +59,12 @@ visitsRouter.post(
   completeVisit,
 );
 visitsRouter.get('/today', requireRole('caregiver'), today);
+visitsRouter.get(
+  '/mine',
+  requireRole('caregiver'),
+  validateQuery(caregiverVisitsQuerySchema),
+  mine,
+);
 visitsRouter.get('/:id', requireRole('caregiver'), getCaregiverVisit);
 visitsRouter.post(
   '/:id/checklist',

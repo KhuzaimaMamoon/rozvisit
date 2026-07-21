@@ -13,6 +13,7 @@ const linksByRole = Object.freeze({
   ],
   caregiver: [
     ['Today', '/care/today'],
+    ['My visits', '/care/visits'],
     ['Earnings', '/care/earnings'],
   ],
   client: [

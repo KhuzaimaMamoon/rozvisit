@@ -163,6 +163,70 @@ describe('Visit API lifecycle', () => {
     expect(blocked.status).toBe(403);
   });
 
+  it('returns only the authenticated caregiver’s assigned visits, newest first, with a cursor', async () => {
+    await ParentProfile.updateOne(
+      { _id: parent._id },
+      { $set: { addressText: encrypt('Rawalpindi') } },
+    );
+    const otherCaregiver = await User.create({
+      role: 'caregiver',
+      name: 'Other caregiver',
+      email: 'other-caregiver@visit.test',
+      phone: '+923001234570',
+      passwordHash: 'hash',
+      status: 'active',
+    });
+    const subscription = await Subscription.findOne();
+    await Visit.create([
+      {
+        clientVisitId: 'my-older-visit',
+        caregiverId: caregiver._id,
+        parentId: parent._id,
+        subscriptionId: subscription._id,
+        scheduledAt: new Date('2026-07-19T10:00:00.000Z'),
+        status: 'completed',
+        statusHistory: [{ status: 'completed', at: new Date('2026-07-19T11:00:00.000Z') }],
+      },
+      {
+        clientVisitId: 'my-newer-visit',
+        caregiverId: caregiver._id,
+        parentId: parent._id,
+        subscriptionId: subscription._id,
+        scheduledAt: new Date('2026-07-20T10:00:00.000Z'),
+        status: 'scheduled',
+        statusHistory: [{ status: 'scheduled', at: new Date('2026-07-20T10:00:00.000Z') }],
+      },
+      {
+        clientVisitId: 'other-caregiver-visit',
+        caregiverId: otherCaregiver._id,
+        parentId: parent._id,
+        subscriptionId: subscription._id,
+        scheduledAt: new Date('2026-07-21T10:00:00.000Z'),
+        status: 'scheduled',
+        statusHistory: [{ status: 'scheduled', at: new Date('2026-07-21T10:00:00.000Z') }],
+      },
+    ]);
+
+    const firstPage = await request(app).get('/api/v1/visits/mine?limit=1').set(auth(caregiver));
+
+    expect(firstPage.status).toBe(200);
+    expect(firstPage.body.data.items).toHaveLength(1);
+    expect(firstPage.body.data.items[0]).toMatchObject({
+      parentName: 'Amina Bibi',
+      status: 'scheduled',
+    });
+    expect(firstPage.body.data.nextCursor).toBe('2026-07-20T10:00:00.000Z');
+
+    const secondPage = await request(app)
+      .get(
+        `/api/v1/visits/mine?limit=1&before=${encodeURIComponent(firstPage.body.data.nextCursor)}`,
+      )
+      .set(auth(caregiver));
+    expect(secondPage.status).toBe(200);
+    expect(secondPage.body.data.items[0].status).toBe('completed');
+    expect(secondPage.body.data.nextCursor).toBeNull();
+  });
+
   it('returns caregiver-scoped S-24 context and a separate consent permit', async () => {
     await ParentProfile.updateOne(
       { _id: parent._id },

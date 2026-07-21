@@ -6,6 +6,21 @@ function validDate(value) {
   return typeof value === 'string' && !Number.isNaN(new Date(value).getTime());
 }
 
+export const caregiverVisitsQuerySchema = {
+  safeParse(value) {
+    const fields = {};
+    const before = value.before || undefined;
+    if (before && !validDate(before)) fields.before = ['Enter a valid visit cursor.'];
+    const limit = value.limit === undefined ? 20 : Number(value.limit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      fields.limit = ['Choose a whole number from 1 to 100.'];
+    }
+    return Object.keys(fields).length
+      ? failure(fields)
+      : { success: true, data: { before: before ? new Date(before) : null, limit } };
+  },
+};
+
 import { VISIT_CONCERN_CHIPS } from '../config/constants.js';
 
 export const scheduleVisitsSchema = {

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import NotificationInbox from '../../notifications/NotificationInbox.jsx';
 import Account from '../shared/Account.jsx';
 import Earnings from './Earnings.jsx';
+import MyVisits from './MyVisits.jsx';
 
 export default function CaregiverPortal() {
   const { user } = useAuth();
@@ -12,6 +13,7 @@ export default function CaregiverPortal() {
   if (user?.status && user.status !== 'verified') return <ApplicationStatus />;
   if (window.location.pathname === '/care/notifications') return <NotificationInbox />;
   if (window.location.pathname === '/care/earnings') return <Earnings />;
+  if (window.location.pathname === '/care/visits') return <MyVisits />;
   if (window.location.pathname === '/care/account') return <Account />;
   if (window.location.pathname === '/care/today') return <Today />;
   if (/^\/care\/visits\/[^/]+$/.test(window.location.pathname)) return <VisitFlow />;

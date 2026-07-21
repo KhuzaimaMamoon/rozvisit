@@ -23,6 +23,9 @@ export const assignCaregiver = run(async (req, res) =>
 export const today = run(async (req, res) =>
   respond.ok(res, await visitService.today(req.auth.sub)),
 );
+export const mine = run(async (req, res) =>
+  respond.ok(res, await visitService.mine(req.auth.sub, req.validatedQuery)),
+);
 export const getCaregiverVisit = run(async (req, res) =>
   respond.ok(res, await visitService.getCaregiverVisit(req.auth.sub, req.params.id)),
 );

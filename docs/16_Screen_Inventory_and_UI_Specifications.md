@@ -285,6 +285,15 @@ Routes under `/care/*`. Layout per Document 15 §30: no sidebar — a simple top
 - **Sections:** name, phone, service area (view-only — updates go through admin), Verified badge, availability (edit later — Phase 2), Log out.
 - **APIs:** `GET /users/me`.
 
+## S-44. My Visits
+
+- **Route:** `/care/visits`
+- **Role:** caregiver (verified)
+- **Purpose:** Review every visit assigned to the caregiver, across past and future care, without exposing any other caregiver's work.
+- **Sections:** newest-first visit rows with parent name, address, scheduled date/time, and StatusBadge; load-older control when another cursor page exists.
+- **Empty state:** "You do not have any assigned visits yet."
+- **APIs:** `GET /visits/mine?before=&limit=`.
+
 ---
 
 # Part E — Clinic/Organization Interface
@@ -427,6 +436,7 @@ Screens available to authenticated users regardless of portal.
 | S-24 | Visit Flow | caregiver | `/care/visits/:id` | yes |
 | S-25 | Earnings | caregiver | `/care/earnings` | yes |
 | S-26 | Caregiver Account | caregiver | `/care/account` | yes |
+| S-44 | My Visits | caregiver | `/care/visits` | yes |
 | S-27 | Admin Overview | admin | `/admin` | yes |
 | S-28 | Applications Queue | admin | `/admin/applications` | yes |
 | S-29 | Application Detail | admin | `/admin/applications/:id` | yes |

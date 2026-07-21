@@ -360,6 +360,13 @@ Example response:
 - **Security:** assigned visits only; address visible within the confirmed window (PRV-004)
 - **Note:** the portal caches this response for offline display; the API sets no-store on nothing here — cacheable by design
 
+### GET /visits/mine — Caregiver assigned-visit history
+
+- **Role:** caregiver
+- **Query:** `before?` (ISO scheduled-at cursor), `limit?` (default 20, maximum 100).
+- **Success `200`:** `{ items: [{ id, parentName, addressText, location, scheduledAt, standingNote, consentChoices, consentState, status }], nextCursor }`, newest first by `scheduledAt`. The list contains only visits assigned to the authenticated caregiver, across scheduled, completed, missed, and parent-declined states.
+- **Security:** caregiver-scoped; it does not grant general parent-profile access.
+
 ### GET /visits/:id — Caregiver visit context
 
 - **Role:** caregiver assigned to the visit
@@ -617,6 +624,7 @@ paths:
   /visits/{id}/reschedule: { patch }
   /visits/{id}/cancel: { post }
   /visits/today: { get }
+  /visits/mine: { get }
   /visits/{id}: { get }
   /visits/{id}/checklist: { post }
   /visits/{id}/media-permit: { post }
