@@ -1,6 +1,7 @@
 export const sensitiveFields = Object.freeze([
   'careNotes',
   'addressText',
+  'locationShareUrl',
   'addresses.text',
   'cnicNumber',
   'cnicDocumentRef',

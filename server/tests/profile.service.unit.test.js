@@ -27,7 +27,7 @@ describe('profileService', () => {
       age: 68,
       phone: null,
       addressText: '12 Care Lane',
-      location: { lng: 73.0479, lat: 33.6844 },
+      locationShareUrl: 'https://www.google.com/maps?q=33.6844,73.0479',
       careNotes: null,
       emergencyContacts: [
         { name: 'Ayesha Khan', phone: '+971501234567', relation: 'Daughter', priority: 1 },

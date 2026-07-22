@@ -5,6 +5,7 @@ import { FormValidationBanner, useFormValidation } from '../../design-system/For
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 import { navigate } from '../../navigation.js';
 import ConsentPlayback from '../../components/ConsentPlayback.jsx';
+import FormTextarea from '../../design-system/FormTextarea.jsx';
 
 export default function VisitEvidence() {
   const visitId = useMemo(() => window.location.pathname.split('/').at(-1), []);
@@ -130,6 +131,16 @@ export default function VisitEvidence() {
         </header>
         {message ? <p className="mt-4 text-sm text-success">{message}</p> : null}
         {error ? <p className="mt-4 text-sm text-emergency">{error}</p> : null}
+        {visit.location ? (
+          <a
+            className="mt-4 inline-flex min-h-11 items-center rounded-md border border-border bg-surface px-4 text-sm font-medium text-primary"
+            href={`https://www.google.com/maps/search/?api=1&query=${visit.location.lat},${visit.location.lng}`}
+            rel="noreferrer"
+            target="_blank"
+          >
+            Open parent home pin
+          </a>
+        ) : null}
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
           <section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-text">Checklist</h2>
@@ -206,23 +217,21 @@ export default function VisitEvidence() {
                 onSubmit={markMissed}
               >
                 <FormValidationBanner message={missedValidation.validationMessage} />
-                <label className="block text-sm font-medium text-text">
-                  Reason
-                  <textarea
-                    className="mt-1 w-full border border-border p-2"
-                    onChange={(event) => setMissedReason(event.target.value)}
-                    required
-                    value={missedReason}
-                  />
-                </label>
-                <label className="block text-sm font-medium text-text">
-                  Make-up plan (optional)
-                  <textarea
-                    className="mt-1 w-full border border-border p-2"
-                    onChange={(event) => setMakeUpPlan(event.target.value)}
-                    value={makeUpPlan}
-                  />
-                </label>
+                <FormTextarea
+                  id="missed-reason"
+                  label="Reason"
+                  onChange={(event) => setMissedReason(event.target.value)}
+                  required
+                  requiredMessage="Explain why the scheduled visit was missed."
+                  value={missedReason}
+                />
+                <FormTextarea
+                  id="make-up-plan"
+                  label="Make-up plan"
+                  onChange={(event) => setMakeUpPlan(event.target.value)}
+                  optional
+                  value={makeUpPlan}
+                />
                 <Button className="w-full sm:w-auto" loading={saving} type="submit">
                   Mark missed
                 </Button>
@@ -254,15 +263,14 @@ export default function VisitEvidence() {
                     onSubmit={resolveFlag}
                   >
                     <FormValidationBanner message={resolutionValidation.validationMessage} />
-                    <label className="block text-sm font-medium text-text">
-                      Resolution note
-                      <textarea
-                        className="mt-1 w-full border border-border p-2"
-                        onChange={(event) => setNote(event.target.value)}
-                        required
-                        value={note}
-                      />
-                    </label>
+                    <FormTextarea
+                      id="resolution-note"
+                      label="Resolution note"
+                      onChange={(event) => setNote(event.target.value)}
+                      required
+                      requiredMessage="Explain how the flag was investigated and resolved."
+                      value={note}
+                    />
                     <Button className="w-full sm:w-auto" loading={saving} type="submit">
                       Resolve flag
                     </Button>

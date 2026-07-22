@@ -57,6 +57,8 @@ Ranked. Higher wins when they conflict.
 
 Everything else — non-sensitive UI text, aggregate counts — is standard business data.
 
+Parent map-share URLs are classified with A1: the original `locationShareUrl` is encrypted at rest and mechanically redacted from logs. Caregiver-scoped responses receive only the parsed pin needed for an assigned visit; the UI turns that point into an outbound Google Maps directions link.
+
 ---
 
 ## 4. Trust Boundaries
@@ -284,7 +286,7 @@ Concrete rules for the file listed in Document 10 §8:
 ## 23. Logging Restrictions
 
 - **Structured JSON logs** to stdout (OBS-001) — Render captures them; Sentry captures errors (OBS-003).
-- **The sensitive-field list drives redaction mechanically** (Document 10 §7): the logger consults `sensitiveFields.js` and never emits values for those field names. This means a developer cannot log a `careNotes` value by mistake — the field is redacted by its name, wherever it appears in a log call.
+- **The sensitive-field list drives redaction mechanically** (Document 10 §7): the logger consults `sensitiveFields.js` and never emits values for those field names. This means a developer cannot log a `careNotes` or `locationShareUrl` value by mistake — the field is redacted by its name, wherever it appears in a log call.
 - **Passwords, tokens, secrets, and media contents never appear in any log line**, ever.
 - **Payment references are logged** (they are not card data) — needed for reconciliation.
 - **Consent recording references are logged only when necessary for admin diagnosis** (e.g., following up on a specific support case that mentions the consent event) — routine notification, subscription, and visit-completion logging omits them. The reference identifier alone is not sensitive content, but treating it as *"log only when needed"* keeps the honesty rule intact: consent belongs to the parent, and the audit trail (Section 24) is the appropriate primary record for consent access.

@@ -98,6 +98,8 @@ The API validation flow (Doc 12 §16): every endpoint names a schema in `validat
 
 Rules for validation error messages: written in the same warm plain English as the rest of the UI (Doc 15 §2), showing an example when the format is ambiguous, never "invalid input!" — never with an exclamation mark.
 
+Every interactive form uses the same recovery pattern. On submit, the form shows a sticky/in-view summary naming each problem field (for example, “Please fix: Phone, Password.”), highlights every invalid control, and places an actionable requirement directly beneath it. The first invalid control is scrolled into view and focused automatically. Format messages state how to correct the value (country-code phone example, 13-digit CNIC, letter-and-number password, and so on). A generic top banner is reserved for server/network failures; it does not replace field-specific guidance.
+
 Two layers, as Doc 09 §11: request validation catches shape and format; schema validation (Mongoose strict mode) catches anything that slipped past. Business rules (allowance, consent gating, completion requirements) live in services and throw `ConflictError`, not `ValidationError` — they are not shape errors.
 
 ## 6. Authentication Errors

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
+import FormInput from '../../design-system/FormInput.jsx';
+import FormSelect from '../../design-system/FormSelect.jsx';
 import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import { navigate } from '../../navigation.js';
 
@@ -33,7 +35,13 @@ export default function VisitScheduling() {
     if (saving) return;
     clearValidationNotice();
     if (!slots.length) {
-      revealFirstInvalid();
+      revealFirstInvalid(['Weekly visit slots']);
+      return;
+    }
+    if (allowance && slots.length > allowance) {
+      setMessage(
+        `Your ${planName} plan allows ${allowance} visit${allowance === 1 ? '' : 's'} each week.`,
+      );
       return;
     }
     setMessage('');
@@ -88,9 +96,11 @@ export default function VisitScheduling() {
                 className="grid gap-3 rounded-md border border-border bg-surface-sunken p-3 sm:grid-cols-[1fr_9rem_auto]"
                 key={`${slot.day}-${index}`}
               >
-                <select
+                <FormSelect
                   aria-label={`Visit day ${index + 1}`}
-                  className="h-10 rounded-sm border border-border bg-surface px-3 text-sm text-text"
+                  id={`visit-day-${index}`}
+                  label={`Visit ${index + 1} day`}
+                  requiredMessage="Choose a day for this weekly visit."
                   required
                   value={slot.day}
                   onChange={(event) =>
@@ -104,10 +114,12 @@ export default function VisitScheduling() {
                   {days.map((day) => (
                     <option key={day}>{day}</option>
                   ))}
-                </select>
-                <input
+                </FormSelect>
+                <FormInput
                   aria-label={`Visit time ${index + 1}`}
-                  className="h-10 rounded-sm border border-border bg-surface px-3 text-sm text-text"
+                  id={`visit-time-${index}`}
+                  label={`Visit ${index + 1} time`}
+                  requiredMessage="Choose a time for this weekly visit."
                   required
                   type="time"
                   value={slot.time}
@@ -137,7 +149,7 @@ export default function VisitScheduling() {
           </div>
           <Button
             className="mt-4"
-            disabled={!allowance || scheduled}
+            disabled={!allowance || scheduled || slots.length >= allowance}
             onClick={() =>
               setSlots((current) => [
                 ...current,
@@ -168,7 +180,7 @@ export default function VisitScheduling() {
         {message ? (
           <p
             aria-live="polite"
-            className="mt-5 rounded-r-md border-l-[3px] border-success bg-success-soft p-4 text-sm leading-6 text-success"
+            className={`mt-5 rounded-r-md border-l-[3px] p-4 text-sm leading-6 ${scheduled ? 'border-success bg-success-soft text-success' : 'border-emergency bg-emergency-soft text-emergency'}`}
           >
             {message}
           </p>

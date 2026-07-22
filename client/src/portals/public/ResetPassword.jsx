@@ -107,6 +107,10 @@ export default function ResetPassword() {
             id="new-password"
             error={fields.newPassword?.[0]}
             label="New password"
+            minLength="8"
+            maxLength="128"
+            pattern="(?=.*[A-Za-z])(?=.*\d).{8,128}"
+            formatMessage="Password must be 8–128 characters with at least one letter and one number."
             onChange={(event) => setNewPassword(event.target.value)}
             required
             trailingAction={
@@ -120,6 +124,7 @@ export default function ResetPassword() {
             id="confirm-password"
             error={fields.confirmPassword?.[0]}
             label="Confirm new password"
+            requiredMessage="Enter the same new password again."
             onChange={(event) => setConfirmPassword(event.target.value)}
             required
             trailingAction={

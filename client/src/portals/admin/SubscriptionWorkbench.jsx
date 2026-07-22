@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
+import FormSelect from '../../design-system/FormSelect.jsx';
 import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 
@@ -306,7 +307,8 @@ export default function SubscriptionWorkbench() {
                   error={fields.price?.[0]}
                   id="agreed-price"
                   label="Agreed price"
-                  min="0"
+                  min="0.01"
+                  formatMessage="Agreed price must be greater than zero, using digits only."
                   step="0.01"
                   type="number"
                   value={agreedPrice}
@@ -314,12 +316,9 @@ export default function SubscriptionWorkbench() {
                   required
                   requiredMessage="Enter the agreed subscription price."
                 />
-                <label className="block text-sm font-medium text-text" htmlFor="agreed-currency">
-                  Currency
-                </label>
-                <select
-                  className="h-10 w-full rounded-sm border border-border bg-surface px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/25"
+                <FormSelect
                   id="agreed-currency"
+                  label="Currency"
                   onChange={(event) => setCurrency(event.target.value)}
                   value={currency}
                 >
@@ -327,7 +326,7 @@ export default function SubscriptionWorkbench() {
                   <option>GBP</option>
                   <option>AED</option>
                   <option>SAR</option>
-                </select>
+                </FormSelect>
                 <div className="grid gap-3 border-t border-border pt-5 sm:flex sm:justify-between">
                   <Button
                     className="w-full sm:w-auto"

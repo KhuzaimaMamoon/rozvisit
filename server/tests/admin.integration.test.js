@@ -346,6 +346,7 @@ describe('Admin verification API', () => {
     expect(list.body.data.items).toHaveLength(1);
     const evidence = await request(app).get(`/api/v1/admin/visits/${flagged._id}`).set(auth(admin));
     expect(evidence.status).toBe(200);
+    expect(evidence.body.data.location).toEqual({ lng: 73, lat: 33 });
     expect(evidence.body.data.media[0].uploadedAt).toBeDefined();
     expect(await AuditEvent.countDocuments({ action: 'visit.viewed', targetId: flagged._id })).toBe(
       1,

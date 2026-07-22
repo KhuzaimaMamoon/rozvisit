@@ -13,6 +13,7 @@ export default function ClientPortal() {
   if (window.location.pathname === '/app/feed') return <FeedHome />;
   if (window.location.pathname === '/app/parents') return <Parents />;
   if (window.location.pathname === '/app/parents/new') return <ParentProfileForm />;
+  if (/^\/app\/parents\/[^/]+\/edit$/.test(window.location.pathname)) return <ParentProfileForm />;
   if (/^\/app\/parents\/[^/]+\/plan$/.test(window.location.pathname)) return <PlanSelection />;
   if (/^\/app\/parents\/[^/]+\/schedule$/.test(window.location.pathname))
     return <VisitScheduling />;

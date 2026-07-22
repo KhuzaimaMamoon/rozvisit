@@ -122,6 +122,25 @@ export default function ParentOverview() {
               </div>
             ))}
           </div>
+          <div className="mt-6 flex flex-wrap gap-3 border-t border-border pt-5">
+            <a
+              className="inline-flex min-h-11 items-center rounded-md border border-border px-4 text-sm font-medium text-primary hover:bg-primary-soft"
+              href={`/app/parents/${id}/edit`}
+              onClick={(event) => navigateFromLink(event, `/app/parents/${id}/edit`)}
+            >
+              Edit parent details
+            </a>
+            {p.location ? (
+              <a
+                className="inline-flex min-h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-white hover:bg-primary/90"
+                href={`https://www.google.com/maps/dir/?api=1&destination=${p.location.lat},${p.location.lng}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Open home pin
+              </a>
+            ) : null}
+          </div>
         </section>
         {p.consent?.state === 'given' ? (
           <div className="mt-6">

@@ -219,11 +219,11 @@ POST /api/v1/auth/register
 ### POST /parents — Create a parent profile
 
 - **Role:** client
-- **Body:** `{ name, age, phone?, addressText, location: { lng, lat }, careNotes?, emergencyContacts: [{ name, phone, relation, priority }] }`
+- **Body:** `{ name, age, phone?, addressText, locationShareUrl, careNotes?, emergencyContacts: [{ name, phone, relation, priority }] }`. `locationShareUrl` must be an HTTPS Google Maps share URL (`maps.google.com`, another `*.google.com` Maps URL, or `maps.app.goo.gl`) that resolves to an embedded coordinate pin. The server follows only allowlisted Google redirects, stores the original link encrypted, and derives the GeoJSON `location`; clients never submit raw longitude/latitude.
 - **Validation:** per the data dictionary (Doc 11); min 1 emergency contact; age 40–120 (FR-010)
 - **Success `201`:** the profile, `status: "pending_consent"`
 - **Errors:** `422`; `403` wrong role
-- **Security:** addressText and careNotes encrypted at rest (E fields)
+- **Security:** addressText, locationShareUrl, and careNotes encrypted at rest (E fields)
 
 ### GET /parents — My parents
 
@@ -235,10 +235,11 @@ POST /api/v1/auth/register
   `null` when no subscription exists, otherwise `{ id, state, planKey, visitsPerWeek }`.
   `visitsPerWeek` is present only after activation (`active` or `grace`); it is `null` while
   payment is pending. — **Errors:** `403` not owner; `404` unknown id
+- **Location response:** owner/admin detail includes `locationShareUrl` plus parsed `location: { lng, lat }`. Caregiver-scoped visit endpoints expose only parsed location and clients render a Google Maps directions link (`/maps/dir/?api=1&destination=LAT,LNG`).
 
 ### PATCH /parents/:id — Edit profile
 
-- **Role:** client (owner) — **Body:** any editable subset (not consent, not status) — audit-relevant fields keep history via updatedAt; consent has its own endpoints
+- **Role:** client (owner) — **Body:** any editable subset (not consent, not status). Updating the home pin uses `locationShareUrl` and atomically replaces the parsed GeoJSON location after successful resolution. Audit-relevant fields keep history via updatedAt; consent has its own endpoints.
 
 ### POST /parents/:id/consent — Record the first-visit consent
 

@@ -20,7 +20,7 @@ function statusLabel(status) {
 
 function mapsUrl(location) {
   if (!Number.isFinite(location?.lat) || !Number.isFinite(location?.lng)) return null;
-  return `https://www.google.com/maps?q=${encodeURIComponent(`${location.lat},${location.lng}`)}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${location.lat},${location.lng}`)}`;
 }
 
 function todayLabel() {
@@ -134,7 +134,7 @@ export default function Today() {
                     rel="noreferrer"
                     target="_blank"
                   >
-                    Open location in maps
+                    Get directions
                   </a>
                 ) : (
                   <span className="text-sm text-muted">Location unavailable</span>
