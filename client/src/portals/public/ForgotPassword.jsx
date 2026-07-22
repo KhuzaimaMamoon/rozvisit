@@ -37,7 +37,8 @@ export default function ForgotPassword() {
           className="mt-7 border-l-[3px] border-success bg-success-soft px-4 py-3 text-sm leading-6 text-success"
           role="status"
         >
-          If an account exists for that email, we&apos;ve sent reset instructions.
+          If an account exists for that email, we&apos;ve sent reset instructions. Please also check
+          your spam or junk folder.
         </div>
       ) : (
         <form {...formProps} className="mt-7 space-y-5" onSubmit={submit}>

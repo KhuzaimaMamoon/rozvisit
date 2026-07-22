@@ -1223,6 +1223,17 @@ The following decisions were made across Documents 09–21 but never captured as
 
 ---
 
+### AD-33 — Brevo HTTPS is the temporary pilot transactional-email provider
+
+- **Status:** Confirmed
+- **Context:** Resend's unverified-domain sandbox can deliver only to the account owner's verified recipient, so it cannot support real pilot registrations. Render also blocks outbound SMTP ports, making the retained Gmail transport non-viable on the active host. PR #19 reserves AD-32 for the first-party authentication proxy decision, so this decision uses AD-33.
+- **Decision:** Send verification, password-reset, and product-notification email through Brevo's transactional HTTPS API without changing the `NotificationChannel` interface, templates, retry policy, or idempotency behavior. The sender remains configurable through `EMAIL_FROM_ADDRESS` and must be verified in Brevo. Resend configuration remains dormant as a future reference rather than an active fallback.
+- **Alternatives considered:** Continue Resend sandbox — rejected because it cannot reach pilot users. Gmail SMTP — rejected on Render because both ports 465 and 587 time out. Hardcode the Brevo signup address — rejected because sender identity is deployment configuration and must not be committed.
+- **Consequences:** Pilot users can receive transactional email at arbitrary real addresses, but deliverability may be weaker and messages may reach spam or junk until RozVisit owns and verifies a custom domain with SPF/DKIM. The UI explicitly asks users to check those folders.
+- **Review trigger:** A RozVisit custom domain is available for authenticated sending, or Brevo's pilot delivery/reputation proves inadequate.
+
+---
+
 ## ADR Maintenance
 
 - **New ADRs are added** when a significant technical decision is made, in the same PR as the code that implements it.

@@ -19,6 +19,7 @@ const OPTIONAL = [
   'LOG_LEVEL',
   'SENTRY_DSN',
   'DEV_LOG_AUTH_LINKS',
+  'BREVO_API_KEY',
   'RESEND_API_KEY',
   'GMAIL_USER',
   'GMAIL_APP_PASSWORD',
@@ -156,6 +157,8 @@ export const env = Object.freeze({
   firebase: Object.freeze({ serviceAccountJson: process.env.FIREBASE_SERVICE_ACCOUNT_JSON }),
   email: Object.freeze({
     fromAddress: process.env.EMAIL_FROM_ADDRESS,
+    brevoApiKey: process.env.BREVO_API_KEY ?? null,
+    // Retained as a dormant reference until RozVisit has a verified sender domain.
     resendApiKey: process.env.RESEND_API_KEY ?? null,
     gmailUser: process.env.GMAIL_USER ?? null,
     gmailAppPassword,

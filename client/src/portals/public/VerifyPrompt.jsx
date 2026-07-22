@@ -34,15 +34,16 @@ export default function VerifyPrompt() {
   return (
     <PublicAuthLayout subtitle="Confirm your email before signing in." title="Check your inbox">
       <p className="mt-7 text-sm leading-6 text-muted">
-        We sent a verification link when you created your account. Enter your email to request
-        another link.
+        We sent a verification link when you created your account. Please check your inbox and spam
+        or junk folder. Enter your email to request another link.
       </p>
       {sent ? (
         <p
           className="mt-5 border-l-[3px] border-success bg-success-soft px-4 py-3 text-sm text-success"
           role="status"
         >
-          If an account needs verification, we have sent an email.
+          If an account needs verification, we have sent an email. Please also check your spam or
+          junk folder.
         </p>
       ) : null}
       <form {...formProps} className="mt-5 space-y-5" onSubmit={submit}>

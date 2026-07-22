@@ -51,7 +51,8 @@ export default function Register() {
           className="mt-6 border-l-[3px] border-success bg-success-soft px-4 py-3 text-sm text-success"
           role="status"
         >
-          Check your email to verify your account, then return here to sign in.
+          Check your email to verify your account (please also check your spam or junk folder), then
+          return here to sign in.
           <a className="mt-2 block font-medium underline" href="/verify-email">
             Request another verification link
           </a>

@@ -65,8 +65,8 @@ export default function Apply() {
           className="mt-7 border-l-[3px] border-success bg-success-soft px-4 py-3 text-sm leading-6 text-success"
           role="status"
         >
-          Your application has been received. Please verify your email, then sign in to see its
-          status.
+          Your application has been received. Please verify your email (and check your spam or junk
+          folder), then sign in to see its status.
           <a className="mt-2 block font-medium underline" href="/verify-email">
             Request another verification link
           </a>

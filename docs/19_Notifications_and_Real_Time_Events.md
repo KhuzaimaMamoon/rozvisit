@@ -55,6 +55,7 @@ Design constants:
 
 - Auth emails (verification, reset) — plain text plus minimal HTML.
 - Product emails (subscription activated, plan paused, missed-visit follow-up, dispute updates) — one-column HTML template using palette tokens, no images, no tracking pixels *(Recommendation — no tracking pixels adopted as policy)*.
+- **Pilot provider:** Brevo Transactional Email over its HTTPS API. `EMAIL_FROM_ADDRESS` must be a sender verified in the Brevo account. Brevo is a temporary pilot measure that can reach non-owner recipients before RozVisit has a custom sending domain; inbox placement may be weaker until SPF/DKIM is available. Resend configuration remains dormant as a future verified-domain option and is not attempted by the active channel.
 - **Sender identity**: `noreply@<domain>` for automated messages; `support@<domain>` for anything expecting a reply *(Recommendation)*.
 - Bounce handling: hard bounces disable the address after two failures within a week *(Recommendation)* and flag the user profile for admin follow-up.
 

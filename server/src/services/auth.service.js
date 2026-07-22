@@ -119,7 +119,7 @@ function queueAuthEmail(message) {
 function authEmailProvider() {
   if (env.nodeEnv !== 'production' && env.email.gmailUser && env.email.gmailAppPassword)
     return 'gmail_smtp';
-  if (env.email.resendApiKey) return 'resend';
+  if (env.email.brevoApiKey) return 'brevo';
   return 'noop';
 }
 
