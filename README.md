@@ -348,6 +348,7 @@ WHATSAPP_API_TOKEN=
 Client (client/.env):
 
 ```
+# Local-development override only; production always uses the first-party /api/v1 rewrite.
 VITE_API_BASE_URL=
 ```
 

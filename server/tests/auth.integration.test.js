@@ -238,6 +238,7 @@ describe('Auth API', () => {
       .set('X-RozVisit-Portal', 'client');
 
     expect(login.headers['set-cookie'][0]).toContain('HttpOnly');
+    expect(login.headers['set-cookie'][0]).toContain('SameSite=Strict');
     expect(login.headers['set-cookie'][0]).not.toContain('Secure');
     expect(refresh.status).toBe(200);
     expect(refresh.body.data.accessToken).toEqual(expect.any(String));

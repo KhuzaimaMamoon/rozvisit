@@ -195,9 +195,9 @@ Special validation rules:
 
 ## 14. CORS Policy
 
-- MVP: the backend serves the built portals from the same origin — CORS is not enabled for the browser traffic at all. Requests are same-origin.
+- Production browser traffic is same-origin at the portal boundary: Vercel serves the portals and rewrites `/api/v1/*` to Render. Access tokens remain memory-only and travel in `Authorization: Bearer`; the role-scoped refresh cookie remains `HttpOnly; Secure; SameSite=Strict` and path-scoped to `/api/v1/auth`.
+- Render retains an exact `APP_BASE_URL` origin allowlist as defense in depth and for controlled diagnostics. Wildcard CORS is never permitted.
 - Cloudinary uploads happen from the browser directly to Cloudinary's domain; the CORS policy needed is the one at Cloudinary's end, configured to allow the app's origin.
-- Future (Phase 2 if a separate static host is introduced): enable CORS with an explicit allowlist (production domain + staging domain), `credentials: true` for the refresh path, no wildcard origins ever.
 
 ---
 
