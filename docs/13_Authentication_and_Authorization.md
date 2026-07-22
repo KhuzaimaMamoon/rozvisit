@@ -83,7 +83,7 @@ The single most important line: **the same status, message, shape, and approxima
 |---|---|
 | Issued | On login and on each successful refresh; 15-minute expiry (SEC-002) |
 | Carried | `Authorization: Bearer <token>` on every API call |
-| Stored | Portal memory only — a JavaScript variable, never localStorage, never a cookie (Doc 09 §13). Page reload loses it by design; the refresh cookie restores it silently |
+| Stored | Portal memory only — a JavaScript variable, never localStorage, never a cookie (Doc 09 §13). Page reload loses it by design; the first-party refresh cookie restores it silently through the portal's `/api/v1` proxy |
 | Expired | API returns `401 TOKEN_EXPIRED`; the client wrapper (`api.js`) calls refresh once and retries the original request silently (Document 12 §4) |
 | Invalid | `401 UNAUTHENTICATED` → full logout to the login screen |
 
@@ -94,7 +94,7 @@ Why memory-only: localStorage is readable by any script that ever runs in the pa
 ## 5. Refresh Token Strategy
 
 - **Format:** a JWT (7-day expiry) — but its statefulness is the point: a hash of it is stored in the `refreshTokens` collection (Document 11), making every session individually revocable (FR-006).
-- **Delivery:** Production: `Set-Cookie: refreshToken_<role>=...; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`, where `<role>` is `client`, `caregiver`, or `admin`. Local HTTP development omits only `Secure` so the browser can restore an intentionally memory-only access token after a full reload; all deployed environments retain `Secure`. The `Path` scoping means the cookies are only ever sent to auth endpoints — the rest of the API never sees them. The client sends its current portal role in the `X-RozVisit-Portal` header on refresh, selecting only that role’s cookie. This permits independent client, caregiver, and admin sessions in separate tabs of the same browser.
+- **Delivery:** Production: `Set-Cookie: refreshToken_<role>=...; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`, where `<role>` is `client`, `caregiver`, or `admin`. The browser calls the Vercel portal's same-origin `/api/v1` path; Vercel rewrites that request to the Render API and passes the response headers back, so WebKit stores the cookie as first-party on the portal domain. Local HTTP development uses the Vite proxy and omits only `Secure`. The `Path` scope means the cookies are only sent to auth endpoints. The client sends its current portal role in `X-RozVisit-Portal`, allowing independent role sessions in separate tabs.
 - **On refresh:** verify signature → look up the hash → check not revoked, not expired → issue a new access token. *(Recommendation — refresh token rotation: each refresh also issues a new refresh token and revokes the old one, so a stolen refresh token dies on its first collision with the real user. Adopted as the target behavior; if it complicates the MVP build, plain non-rotating refresh is the documented fallback, revisited at Phase 2.)*
 - **TTL cleanup:** expired rows self-delete via the TTL index (Document 11).
 

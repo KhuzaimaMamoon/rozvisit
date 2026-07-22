@@ -1212,6 +1212,17 @@ The following decisions were made across Documents 09–21 but never captured as
 
 ---
 
+### AD-32 — First-party Vercel API proxy for WebKit-safe refresh sessions
+
+- **Status:** Confirmed; supersedes AD-27's single-host deployment topology while preserving its same-origin browser security goal.
+- **Context:** The deployed portals live at `rozvisit-client.vercel.app` and the API at `rozvisit-api.onrender.com`. Direct cross-site refresh cookies were unreliable on iOS because every iOS browser uses WebKit and is subject to Intelligent Tracking Prevention. The application already used a memory-only access token and `Authorization: Bearer` for protected calls; only reload restoration depended on the cross-site cookie.
+- **Decision:** Production clients call the relative `/api/v1` path. Vercel rewrites it to Render, making the role-scoped `HttpOnly; Secure; SameSite=Strict` refresh cookie first-party to the browser. Access tokens remain 15-minute, memory-only Bearer tokens. Registration remains sessionless until verification. No access-token cookie or browser-persistent JavaScript token storage is introduced.
+- **Alternatives considered:** Store access or refresh tokens in local/session storage — rejected because XSS could read them. Continue direct cross-site refresh cookies — rejected because iOS WebKit does not provide reliable persistence. Move all frontend hosting back to Render — rejected because the current Vercel deployment is established and the proxy recovers the same-origin boundary without another migration.
+- **Consequences:** Vercel becomes part of the API request path; its external rewrite passes upstream response headers, including `Set-Cookie`. The documented 120-second external-origin timeout exceeds the approximately 50-second Render cold start, but production monitoring must flag `ROUTER_EXTERNAL_TARGET_ERROR`. Direct browser calls to the Render origin are no longer the normal production path.
+- **Review trigger:** Vercel stops forwarding required response headers, proxy cold starts approach its timeout, or RozVisit adopts a custom parent domain that makes the portal and API same-site without a proxy.
+
+---
+
 ## ADR Maintenance
 
 - **New ADRs are added** when a significant technical decision is made, in the same PR as the code that implements it.

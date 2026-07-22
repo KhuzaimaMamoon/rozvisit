@@ -327,11 +327,11 @@ The following are **reserved shape**. They are not required at MVP; the app boot
 
 ## A.10 CORS
 
-The API uses the origin of the required `APP_BASE_URL` as its one allowed browser origin. This supports separate portal/API deployments without a second configuration source. Credentialed requests are allowed only for that exact origin; wildcard origins are never used.
+The API uses the origin of the required `APP_BASE_URL` as its one allowed browser origin. Production browser traffic normally reaches Render through the portal's same-origin Vercel `/api/v1` rewrite; the explicit allowlist remains defense in depth and supports controlled direct API diagnostics. Wildcard origins are never used.
 
 For the current production deployment, `APP_BASE_URL=https://rozvisit-client.vercel.app` authorizes that portal to call the API. Requests from any other browser origin are refused without CORS headers.
 
-Refresh cookies are `HttpOnly`, `Secure`, and `SameSite=None` in production so the browser can send them between the separately hosted portal and API. In local development they remain `SameSite=Strict` and non-secure.
+Refresh cookies are `HttpOnly`, `Secure`, and `SameSite=Strict` in production. The Vercel rewrite makes `/api/v1/auth` first-party to the browser, avoiding iOS WebKit's cross-site-cookie restrictions. Local development uses the same first-party path through Vite's proxy and omits only `Secure`.
 
 ---
 
@@ -393,9 +393,9 @@ Vite exposes only variables prefixed with `VITE_` to the browser. Everything the
 | Purpose | The base path for API calls made from the portals |
 | Required | Optional (has a sensible default at MVP) |
 | Development example | `VITE_API_BASE_URL=http://localhost:5000/api/v1` |
-| Production rule | When the browser and API are deployed separately, set the absolute versioned API origin, for example `https://rozvisit-api.onrender.com/api/v1`. The backend allows the portal origin from `APP_BASE_URL` with credentialed CORS. |
+| Production rule | Production builds always use the relative `/api/v1` path, which Vercel rewrites to Render. Do not set an absolute Render URL for browser traffic; any legacy Vercel value is deliberately ignored by the production client. |
 | Sensitivity | Public |
-| Default behavior | Defaults to `/api/v1` if unset |
+| Default behavior | Production always uses `/api/v1`. In local development, an explicit value may override the Vite proxy target; otherwise it also defaults to `/api/v1`. |
 | Validation | Absolute URL or a path beginning with `/` |
 
 ## B.2 Optional Client Toggles *(Recommendation — reserved shape)*

@@ -1,6 +1,11 @@
 let accessToken = null;
 let refreshInFlight = null;
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/+$/, '');
+// Production always uses the first-party Vercel rewrite. This keeps the
+// HttpOnly refresh cookie first-party on iOS WebKit while protected calls
+// continue to carry the memory-only access token as a Bearer header.
+const apiBaseUrl = (
+  import.meta.env.PROD ? '/api/v1' : (import.meta.env.VITE_API_BASE_URL ?? '/api/v1')
+).replace(/\/+$/, '');
 
 export class ApiError extends Error {
   constructor({ code, fields, message, status }) {

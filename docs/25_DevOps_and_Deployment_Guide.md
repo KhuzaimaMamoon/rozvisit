@@ -284,14 +284,14 @@ Least-privilege from day one (Doc 18 §9):
 
 ## 11. Frontend Deployment
 
-**MVP shape** (Doc 08 §26): the backend serves the built frontend files. One Render service does both. No separate frontend deployment. This is the honest smallest shape.
+**Current production shape:** Vercel serves `client/dist/`; Render serves the API. `client/vercel.json` rewrites the browser-visible `/api/v1/*` path to `https://rozvisit-api.onrender.com/api/v1/*`, preserving a first-party browser boundary for the HttpOnly refresh cookie while the access token remains a memory-only Bearer token.
 
 **Build during deployment:**
 - Vite builds `client/dist/` — hash-named static files.
-- The Express app serves `client/dist/` for non-`/api` paths (the SPA fallback route).
+- Vercel serves the SPA fallback and proxies `/api/v1` to Render before applying that fallback.
 - `Cache-Control: public, max-age=31536000, immutable` on hashed assets; `no-cache` on `index.html`.
 
-**Growth stage** (Doc 21 §14 CDN row): if measurement justifies, the built portals move to a static CDN (Vercel, Cloudflare Pages, Netlify) — Doc 09 §26 anticipates this as a deployment change, not a code change. The API stays on Render.
+The proxy's external-origin request ceiling is 120 seconds. Render's observed free-tier cold start is approximately 50 seconds, so the proxy budget is sufficient; the portal retains its honest loading state while the first request wakes the service.
 
 ## 12. Backend Deployment
 
@@ -337,9 +337,9 @@ Owned status: `rozvisit.com` and `rozvisit.pk` **not yet registered** — Doc 00
 
 Owned by Doc 18 §14. Restated for operational clarity:
 
-- **MVP:** same-origin — the backend serves the built portals from the same domain, so CORS is not enabled. The browser sends no cross-origin requests to `/api`.
+- **Production:** same-origin at the browser boundary — Vercel serves the portals and rewrites `/api/v1` to Render. Render retains an exact `APP_BASE_URL` origin allowlist as defense in depth; wildcard CORS is forbidden.
 - **Cloudinary uploads** happen browser-to-Cloudinary; the CORS configuration lives at Cloudinary's end, configured to accept our production origin only (and localhost for development).
-- **Phase 2 posture if a separate static host is introduced:** enable CORS on the API with an explicit allowlist (production + staging origins), `credentials: true` for the refresh path, `Access-Control-Allow-Origin` never wildcarded.
+- The refresh cookie is first-party and `SameSite=Strict` because the browser addresses the Vercel origin, not the external Render destination.
 
 ## 16. Docker Roadmap
 
