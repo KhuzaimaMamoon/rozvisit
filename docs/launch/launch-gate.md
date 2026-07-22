@@ -1,12 +1,24 @@
-# Phase 0 Pilot Launch-Gate Record
+# Phase 1 Launch-Gate Closeout
 
 **Recorded:** 23 July 2026  
 **Owner:** Khuzaima Mamoon  
-**Scope:** Phase 0 pilot with five families
+**Scope:** Phase 1 completion and readiness for the five-family Phase 0 pilot
 
-This record documents the four launch-gate decisions required by Document 18 §38. Because the
-restore drill and a backup incident owner are deliberately deferred, this is approval for the
-limited Phase 0 pilot only. It is not the final production-launch sign-off described by Document 18.
+## Phase 1 completion status
+
+Phase 1 is complete. RozVisit now has:
+
+- All core MVP modules implemented: authentication, parent profiles, plans and subscriptions,
+  visits and offline media, admin operations, and notifications.
+- Production deployment across Vercel (frontend), Render (backend), and MongoDB Atlas (database).
+- Real transactional email delivery through Brevo using a verified sender domain.
+- All 12 documented acceptance criteria, AC-01 through AC-12, completed with evidence recorded in
+  [Acceptance Criteria Evidence](./acceptance-criteria.md).
+
+The next operational step is the five-family Phase 0 pilot. This record documents the four
+launch-gate decisions required by Document 18 §38. The restore drill and a backup incident owner
+remain deliberately deferred, accepted risks for this limited pilot only; they must be closed
+before RozVisit advances to a broader paying-customer launch.
 
 ## Gate decisions
 
