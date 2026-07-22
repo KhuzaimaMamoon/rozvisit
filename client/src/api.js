@@ -1,5 +1,6 @@
 let accessToken = null;
-let refreshInFlight = null;
+let accessTokenGeneration = 0;
+const refreshesInFlight = new Map();
 // Production always uses the first-party Vercel rewrite. This keeps the
 // HttpOnly refresh cookie first-party on iOS WebKit while protected calls
 // continue to carry the memory-only access token as a Bearer header.
@@ -18,10 +19,12 @@ export class ApiError extends Error {
 
 export function setAccessToken(token) {
   accessToken = token;
+  accessTokenGeneration += 1;
 }
 
 export function clearAccessToken() {
   accessToken = null;
+  accessTokenGeneration += 1;
 }
 
 function portalRoleForCurrentPath() {
@@ -65,24 +68,29 @@ async function decode(response) {
   return payload.data;
 }
 
-export async function refreshAccessToken() {
-  if (!refreshInFlight) {
-    const portalRole = portalRoleForCurrentPath();
-    refreshInFlight = fetch(`${apiBaseUrl}/auth/refresh`, {
+export async function refreshAccessToken(expectedRole = portalRoleForCurrentPath()) {
+  const refreshKey = expectedRole ?? 'unscoped';
+  if (!refreshesInFlight.has(refreshKey)) {
+    const generationAtStart = accessTokenGeneration;
+    const refreshRequest = fetch(`${apiBaseUrl}/auth/refresh`, {
       credentials: 'include',
-      headers: portalRole ? { 'X-RozVisit-Portal': portalRole } : undefined,
+      headers: expectedRole ? { 'X-RozVisit-Portal': expectedRole } : undefined,
       method: 'POST',
     })
       .then(decode)
       .then((data) => {
-        setAccessToken(data.accessToken);
+        // A login/logout may finish while a slower refresh request is still in
+        // flight (especially during a Render cold start on mobile). Never let
+        // that stale response overwrite the newer authentication decision.
+        if (accessTokenGeneration === generationAtStart) setAccessToken(data.accessToken);
         return data;
       })
       .finally(() => {
-        refreshInFlight = null;
+        refreshesInFlight.delete(refreshKey);
       });
+    refreshesInFlight.set(refreshKey, refreshRequest);
   }
-  return refreshInFlight;
+  return refreshesInFlight.get(refreshKey);
 }
 
 export async function api(path, { retry = true, ...options } = {}) {

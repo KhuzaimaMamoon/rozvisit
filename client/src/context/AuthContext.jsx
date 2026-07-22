@@ -3,6 +3,14 @@ import { api, clearAccessToken, refreshAccessToken, setAccessToken } from '../ap
 
 const AuthContext = createContext(null);
 
+function roleForProtectedPath(pathname) {
+  const root = pathname.split('/')[1];
+  if (root === 'app') return 'client';
+  if (root === 'care') return 'caregiver';
+  if (root === 'admin') return 'admin';
+  return null;
+}
+
 export function roleHome(user) {
   if (user.role === 'caregiver') {
     return user.status && user.status !== 'verified' ? '/care/status' : '/care/today';
@@ -12,13 +20,20 @@ export function roleHome(user) {
 }
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState({ loading: true, user: null });
+  const bootstrapRole = useRef(roleForProtectedPath(window.location.pathname)).current;
+  const [session, setSession] = useState({ loading: Boolean(bootstrapRole), user: null });
   const sessionGeneration = useRef(0);
 
   useEffect(() => {
+    // Public authentication screens must not start a speculative refresh. On
+    // slower mobile connections that request can finish after a successful
+    // login and race the newly issued session. Protected direct URLs still do
+    // a silent, role-scoped refresh before their route guard makes a decision.
+    if (!bootstrapRole) return undefined;
+
     let active = true;
     const generation = ++sessionGeneration.current;
-    refreshAccessToken()
+    refreshAccessToken(bootstrapRole)
       .then(({ user }) => {
         if (!active || generation !== sessionGeneration.current) return;
         setSession({ loading: false, user: user ?? null });
@@ -31,7 +46,7 @@ export function AuthProvider({ children }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [bootstrapRole]);
 
   const value = useMemo(
     () => ({

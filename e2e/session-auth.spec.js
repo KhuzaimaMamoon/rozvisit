@@ -44,3 +44,22 @@ test('access stays memory-only, protected calls use Bearer, and refresh restores
   expect((await restoredProtectedRequest).headers().authorization).toMatch(/^Bearer /);
   await expect(page).toHaveURL(/\/admin$/);
 });
+
+test('mobile-safe login does not race a speculative public-page refresh', async ({ page }) => {
+  const admin = await createAdmin();
+  let refreshRequests = 0;
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().endsWith('/api/v1/auth/refresh')) {
+      refreshRequests += 1;
+    }
+  });
+
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(admin.email);
+  await page.getByRole('textbox', { name: 'Password' }).fill(password);
+  await page.getByRole('button', { name: 'Log in' }).click();
+
+  await page.waitForURL(/\/admin$/);
+  await expect(page.getByRole('heading', { name: "Today's overview" })).toBeVisible();
+  expect(refreshRequests).toBe(0);
+});
