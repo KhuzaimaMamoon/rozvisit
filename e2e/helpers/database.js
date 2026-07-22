@@ -34,6 +34,10 @@ const [
 const password = 'Password123';
 let connected = false;
 
+function uniqueEmail(prefix) {
+  return `${prefix}-${randomUUID()}@e2e.test`;
+}
+
 export {
   AuditEvent,
   AuthToken,
@@ -89,16 +93,19 @@ async function createUser({ email, name, role }) {
 }
 
 export async function createAdmin() {
-  return createUser({ email: 'admin@e2e.test', name: 'Nasreen Shah', role: 'admin' });
+  return createUser({ email: uniqueEmail('admin'), name: 'Nasreen Shah', role: 'admin' });
 }
 
-export async function createClient({ email = 'client@e2e.test', name = 'Ayesha Khan' } = {}) {
+export async function createClient({ email = uniqueEmail('client'), name = 'Ayesha Khan' } = {}) {
   const user = await createUser({ email, name, role: 'client' });
   await ClientProfile.create({ countryCode: 'AE', currency: 'AED', userId: user._id });
   return user;
 }
 
-export async function createCaregiver({ email = 'caregiver@e2e.test', status = 'verified' } = {}) {
+export async function createCaregiver({
+  email = uniqueEmail('caregiver'),
+  status = 'verified',
+} = {}) {
   const user = await createUser({ email, name: 'Bilal Ahmed', role: 'caregiver' });
   await CaregiverProfile.create({
     serviceArea: { coordinates: [73.0479, 33.6844], radiusKm: 10, type: 'Point' },

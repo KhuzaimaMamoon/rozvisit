@@ -63,6 +63,15 @@ export default function VisitScheduling() {
       setSaving(false);
     }
   }
+
+  function addSlot() {
+    if (allowance && slots.length >= allowance) {
+      setMessage(`Your plan includes ${allowance} visits per week. Upgrade to add more.`);
+      return;
+    }
+    setMessage('');
+    setSlots((current) => [...current, { day: days[current.length % days.length], time: '10:00' }]);
+  }
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-7xl">
@@ -149,13 +158,8 @@ export default function VisitScheduling() {
           </div>
           <Button
             className="mt-4"
-            disabled={!allowance || scheduled || slots.length >= allowance}
-            onClick={() =>
-              setSlots((current) => [
-                ...current,
-                { day: days[current.length % days.length], time: '10:00' },
-              ])
-            }
+            disabled={!allowance || scheduled}
+            onClick={addSlot}
             type="button"
             variant="secondary"
           >

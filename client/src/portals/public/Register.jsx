@@ -45,7 +45,7 @@ export default function Register() {
   }
 
   return (
-    <PublicAuthLayout subtitle="It takes about a minute." title="Create your account">
+    <PublicAuthLayout scrollable subtitle="It takes about a minute." title="Create your account">
       {submitted ? (
         <div
           className="mt-6 border-l-[3px] border-success bg-success-soft px-4 py-3 text-sm text-success"

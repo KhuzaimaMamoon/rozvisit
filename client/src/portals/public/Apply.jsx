@@ -56,6 +56,7 @@ export default function Apply() {
   }
   return (
     <PublicAuthLayout
+      scrollable
       subtitle="Apply to provide verified local care."
       title="Caregiver application"
       wide

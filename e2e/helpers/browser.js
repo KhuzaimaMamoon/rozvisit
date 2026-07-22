@@ -1,3 +1,5 @@
+import { expect } from '@playwright/test';
+
 export async function mockCamera(page) {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'mediaDevices', {
@@ -42,6 +44,15 @@ export async function login(page, { email, password, destination }) {
   await page.goto('/login');
   await page.getByLabel('Email').fill(email);
   await page.getByRole('textbox', { name: 'Password' }).fill(password);
+  const loginResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' && response.url().endsWith('/api/v1/auth/login'),
+  );
   await page.getByRole('button', { name: 'Log in' }).click();
+  const response = await loginResponse;
+  expect(
+    response.ok(),
+    `Login returned ${response.status()}: ${await response.text()}`,
+  ).toBeTruthy();
   await page.waitForURL(destination);
 }

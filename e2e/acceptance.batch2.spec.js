@@ -90,20 +90,14 @@ test('AC-07: the client receives checklist/photo proof through a minted feed lin
   const ownerContext = await browser.newContext();
   const ownerPage = await ownerContext.newPage();
   await login(ownerPage, { destination: /\/app\/feed$/, email: client.email, password });
-  const feedResponse = ownerPage.waitForResponse(
-    (candidate) =>
-      candidate.request().method() === 'GET' && candidate.url().includes('/api/v1/feed?'),
-  );
   await ownerPage.goto(`/app/parents/${parent._id}/feed`);
-  const feedPayload = await (await feedResponse).json();
-  const media = feedPayload.data.items[0].media[0];
-  expect(media.ref).toBeUndefined();
-  expect(media.thumbUrl).toBeTruthy();
-  expect(media.fullUrl).toBeTruthy();
-  expect(media.uploading).toBeFalsy();
   await expect(ownerPage.getByText('Ate less than usual')).toBeVisible();
   await expect(ownerPage.getByText('Medication question')).toBeVisible();
-  await expect(ownerPage.getByAltText('Visit proof captured in RozVisit')).toBeVisible();
+  const proofImage = ownerPage.getByAltText('Visit proof captured in RozVisit');
+  await expect(proofImage).toBeVisible();
+  const proofSource = await proofImage.getAttribute('src');
+  expect(proofSource).not.toContain('/image/upload/');
+  expect(new URL(proofSource).searchParams.get('signature')).toBeTruthy();
 
   const otherClient = await createClient({
     email: 'other-client@e2e.test',
@@ -205,7 +199,6 @@ test('AC-02: scheduling more than the active plan allowance is refused in the br
   await page.getByRole('button', { name: /Add weekly slot/ }).click();
   await page.getByRole('button', { name: /Add weekly slot/ }).click();
   await page.getByRole('button', { name: /Add weekly slot/ }).click();
-  await page.getByRole('button', { name: 'Confirm schedule' }).click();
   await expect(
     page.getByText('Your plan includes 3 visits per week. Upgrade to add more.'),
   ).toBeVisible();

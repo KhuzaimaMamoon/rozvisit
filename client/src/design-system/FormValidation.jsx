@@ -63,7 +63,9 @@ export function useFormValidation() {
     formProps: {
       noValidate: false,
       onInputCapture: (event) => {
-        if (typeof event.target.checkValidity === 'function' && event.target.checkValidity()) {
+        // Reading validity is side-effect free. Calling checkValidity() here would
+        // dispatch an `invalid` event during typing/autofill, before submission.
+        if (event.target.validity?.valid) {
           event.target.removeAttribute('aria-invalid');
         }
         window.requestAnimationFrame(() => {
