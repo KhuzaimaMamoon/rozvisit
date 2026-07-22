@@ -31,9 +31,11 @@ function summaryFor(form, fallbackLabels = []) {
 
 export function useFormValidation() {
   const formRef = useRef(null);
+  const validationRevealedRef = useRef(false);
   const [message, setMessage] = useState('');
 
   const revealFirstInvalid = useCallback((fallbackLabels = []) => {
+    validationRevealedRef.current = true;
     setMessage(summaryFor(formRef.current, fallbackLabels));
     window.requestAnimationFrame(() =>
       window.requestAnimationFrame(() => {
@@ -59,10 +61,16 @@ export function useFormValidation() {
   );
 
   return {
-    clearValidationNotice: () => setMessage(''),
+    clearValidationNotice: () => {
+      validationRevealedRef.current = false;
+      setMessage('');
+    },
     formProps: {
       noValidate: false,
       onInputCapture: (event) => {
+        // Initial entry should stay quiet. Once submission has revealed errors,
+        // update the summary live as the user corrects each highlighted field.
+        if (!validationRevealedRef.current) return;
         // Reading validity is side-effect free. Calling checkValidity() here would
         // dispatch an `invalid` event during typing/autofill, before submission.
         if (event.target.validity?.valid) {

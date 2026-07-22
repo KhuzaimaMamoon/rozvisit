@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 function validationMessage(input, { formatMessage, label, requiredMessage }) {
   const fieldName = label.toLowerCase();
-  if (input.validity.valueMissing) return requiredMessage || `Enter ${fieldName}.`;
+  if (input.validity.valueMissing) return requiredMessage || formatMessage || `Enter ${fieldName}.`;
   if (input.validity.typeMismatch && input.type === 'email')
     return 'Enter a valid email, like name@example.com.';
   if (input.validity.typeMismatch && input.type === 'url')
