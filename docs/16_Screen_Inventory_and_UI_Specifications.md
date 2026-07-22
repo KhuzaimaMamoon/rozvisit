@@ -168,11 +168,12 @@ Routes under `/app/*`. Layout: sidebar (desktop) / bottom tab bar (mobile 4 item
 
 - **Route:** `/app/parents/new`, `/app/parents/:id/edit`
 - **Purpose:** Create or update the parent profile (FR-010).
-- **Fields:** name, age (40–120), phone (optional), address text, map pin (adjustable, both saved), care notes (encrypted, marked "sensitive" microcopy), emergency contacts (≥1; each: name, phone, relation, priority).
-- **Validation:** per Document 11 dictionary; friendly error if map service is unreachable → manual pin.
+- **Fields:** name, age (40–120), phone (optional), address text, Google Maps share link for the exact home pin, care notes (encrypted, marked "sensitive" microcopy), emergency contacts (≥1; each: name, phone, relation, priority). Helper text tells the client to find the location in Google Maps, tap Share, and paste the copied link; raw longitude/latitude inputs are not shown.
+- **Validation:** per Document 11 dictionary; the link must resolve to an embedded coordinate pin. Short `maps.app.goo.gl` links are resolved server-side through allowlisted Google redirects; if resolution fails, the field explains how to copy a fresh/full Maps link. The original link and parsed point are both saved.
 - **Draft preservation:** local draft as the user types (ERR-005).
 - **Success:** navigation to S-14; if a plan isn't yet chosen, a gentle next-step nudge to S-16.
 - **APIs:** `POST /parents`, `PATCH /parents/:id`.
+- **Directions:** assigned caregiver visit screens render “Get directions” using the parsed point; the link opens Google Maps directions/navigation mode. Admin oversight renders a clickable view-pin link.
 - **Analytics:** `profile.parent_created/completed`.
 
 ## S-16. Plan Selection · S-17. Subscription Status

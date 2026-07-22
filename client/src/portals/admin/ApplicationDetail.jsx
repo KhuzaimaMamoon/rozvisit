@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../api.js';
 import Button from '../../design-system/Button.jsx';
 import FormInput from '../../design-system/FormInput.jsx';
-import { FormValidationBanner } from '../../design-system/FormValidation.jsx';
+import FormSelect from '../../design-system/FormSelect.jsx';
+import { FormValidationBanner, useFormValidation } from '../../design-system/FormValidation.jsx';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
 
 function GateCard({ children, title }) {
@@ -29,7 +30,8 @@ export default function ApplicationDetail() {
   const [reference, setReference] = useState({ note: '', referenceOutcome: 'unreachable' });
   const [decisionNote, setDecisionNote] = useState('');
   const [savingAction, setSavingAction] = useState('');
-  const [validationMessage, setValidationMessage] = useState('');
+  const { clearValidationNotice, formProps, revealFirstInvalid, validationMessage } =
+    useFormValidation();
 
   const loadApplication = useCallback(() => {
     api(`/admin/applications/${applicationId}`)
@@ -61,17 +63,17 @@ export default function ApplicationDetail() {
     if (savingAction) return;
     if (path === 'cnic-gate' && !body.cnicDocRef.trim()) {
       setFields({ cnicDocRef: ['Enter the CNIC document reference before recording this check.'] });
-      setValidationMessage('Please fill in the required information below.');
-      window.requestAnimationFrame(() => {
-        const field = document.getElementById('cnic-document-reference');
-        field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        field?.focus({ preventScroll: true });
-      });
+      revealFirstInvalid(['CNIC document reference']);
+      return;
+    }
+    if (path === 'reference-gate' && body.referenceOutcome !== 'positive' && !body.note.trim()) {
+      setFields({ note: ['Explain why the reference was negative or unreachable.'] });
+      revealFirstInvalid(['Reference note']);
       return;
     }
     setError('');
     setFields({});
-    setValidationMessage('');
+    clearValidationNotice();
     setMessage('');
     setSavingAction(path);
     try {
@@ -88,6 +90,7 @@ export default function ApplicationDetail() {
     } catch (requestError) {
       setError(requestError.message);
       setFields(requestError.fields ?? {});
+      if (Object.keys(requestError.fields ?? {}).length) revealFirstInvalid();
     } finally {
       setSavingAction('');
     }
@@ -160,7 +163,7 @@ export default function ApplicationDetail() {
         <div className="mt-5">
           <FormValidationBanner message={validationMessage} />
         </div>
-        <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_20rem]">
+        <div {...formProps} className="mt-6 grid gap-5 lg:grid-cols-[1fr_20rem]">
           <div className="space-y-5">
             <GateCard title="CNIC check">
               <p className="text-sm text-muted">Viewing this record is logged.</p>
@@ -176,6 +179,8 @@ export default function ApplicationDetail() {
                 error={fields.cnicDocRef?.[0]}
                 id="cnic-document-reference"
                 label="CNIC document reference"
+                required
+                requiredMessage="Enter the secure CNIC document reference before recording this gate."
                 onChange={(event) => setCnic({ ...cnic, cnicDocRef: event.target.value })}
                 value={cnic.cnicDocRef}
               />
@@ -235,23 +240,24 @@ export default function ApplicationDetail() {
               </Button>
             </GateCard>
             <GateCard title="Reference">
-              <label className="block text-sm font-medium text-text">
-                Reference outcome
-                <select
-                  className="mt-2 w-full border border-border bg-surface px-3 py-2 text-text"
-                  onChange={(event) =>
-                    setReference({ ...reference, referenceOutcome: event.target.value })
-                  }
-                  value={reference.referenceOutcome}
-                >
-                  <option value="positive">Positive</option>
-                  <option value="negative">Negative</option>
-                  <option value="unreachable">Unreachable</option>
-                </select>
-              </label>
+              <FormSelect
+                id="reference-outcome"
+                label="Reference outcome"
+                onChange={(event) =>
+                  setReference({ ...reference, referenceOutcome: event.target.value })
+                }
+                value={reference.referenceOutcome}
+              >
+                <option value="positive">Positive</option>
+                <option value="negative">Negative</option>
+                <option value="unreachable">Unreachable</option>
+              </FormSelect>
               <FormInput
+                error={fields.note?.[0]}
                 id="reference-note"
                 label="Note"
+                required={reference.referenceOutcome !== 'positive'}
+                requiredMessage="Explain why the reference was negative or unreachable."
                 onChange={(event) => setReference({ ...reference, note: event.target.value })}
                 value={reference.note}
               />

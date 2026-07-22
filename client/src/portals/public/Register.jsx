@@ -72,6 +72,7 @@ export default function Register() {
             error={fields.name?.[0]}
             id="name"
             label="Full name"
+            requiredMessage="Enter your full name."
             onChange={update('name')}
             required
             value={form.name}
@@ -81,6 +82,7 @@ export default function Register() {
             error={fields.email?.[0]}
             id="email"
             label="Email"
+            requiredMessage="Enter a valid email, like name@example.com."
             onChange={update('email')}
             required
             type="email"
@@ -92,6 +94,8 @@ export default function Register() {
               helperText="Include your country code, for example +971501234567."
               id="phone"
               label="Phone"
+              pattern="\+[1-9]\d{1,14}"
+              formatMessage="Phone must include a country code, like +971501234567."
               onChange={update('phone')}
               required
               requiredMessage="Phone number must include a country code, like +971501234567."
@@ -104,6 +108,9 @@ export default function Register() {
               id="countryCode"
               label="Country"
               maxLength="2"
+              minLength="2"
+              pattern="[A-Za-z]{2}"
+              formatMessage="Country must be a two-letter code, like AE or PK."
               onChange={update('countryCode')}
               required
               value={form.countryCode}
@@ -115,6 +122,10 @@ export default function Register() {
             helperText="At least 8 characters, with letters and numbers."
             id="password"
             label="Password"
+            minLength="8"
+            maxLength="128"
+            pattern="(?=.*[A-Za-z])(?=.*\d).{8,128}"
+            formatMessage="Password must be 8–128 characters with at least one letter and one number."
             onChange={update('password')}
             required
             requiredMessage="Password must be at least 8 characters with letters and numbers."

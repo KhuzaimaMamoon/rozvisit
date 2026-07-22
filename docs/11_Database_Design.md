@@ -88,6 +88,7 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | age | Number | R | 40–120 sanity range *(Recommendation)* |
 | phone | String | O | Parent's own phone |
 | addressText | String **(E)** | R | As written by the client |
+| locationShareUrl | String **(E)** | R for new/edited profiles | Original Google Maps share link supplied by the client; encrypted because it reveals an exact home location |
 | location | GeoJSON Point | R | `{ type: "Point", coordinates: [lng, lat] }` (DATA-002) |
 | careNotes | String **(E)** | O | Medication times, preferences (FR-010) |
 | emergencyContacts | [{ name, phone, relation, priority }] | R (min 1) | Ordered for Phase 2 escalation (FR-072); `priority` is a required positive 1-indexed integer, unique within this parent's array; lower number is contacted first |
@@ -402,6 +403,7 @@ MVP search needs are exact and small: admin lookup by name/email, visit filters 
 
 Required and designed-in (DATA-002):
 - `parentProfiles.location` and `caregiverProfiles.serviceArea` are GeoJSON Points with 2dsphere indexes from day one.
+- Parent create/edit accepts a Google Maps share link rather than exposing raw coordinate fields to a client. The server follows only allowlisted Google Maps redirects, extracts the pin, stores the encrypted original link in `locationShareUrl`, and retains the parsed GeoJSON point for distance and service-area queries. Links without a resolvable coordinate pin are rejected rather than stored ambiguously.
 - MVP uses them lightly (assignment context); Phase 2 uses them fully: geofence comparison at check-in (FR-049) computes distance between the caregiver's reported point and the parent's stored point — a flag raises past the threshold, never a rejection (SEC-011).
 - Coordinates order is always `[longitude, latitude]` (GeoJSON rule — a classic bug source, stated here so it is stated somewhere).
 

@@ -60,6 +60,7 @@ export default function VerifyPrompt() {
           autoComplete="email"
           id="email"
           label="Email"
+          requiredMessage="Enter a valid email, like name@example.com."
           onChange={(event) => setEmail(event.target.value)}
           required
           type="email"

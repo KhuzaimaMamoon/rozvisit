@@ -11,19 +11,20 @@ function text(value, field, { optional = false } = {}) {
   return normalized ? { value: normalized } : { message: `Please enter ${field}.` };
 }
 
-function location(value) {
-  const valid =
-    value &&
-    typeof value === 'object' &&
-    Number.isFinite(value.lng) &&
-    Number.isFinite(value.lat) &&
-    value.lng >= -180 &&
-    value.lng <= 180 &&
-    value.lat >= -90 &&
-    value.lat <= 90;
-  return valid
-    ? { value: { lng: value.lng, lat: value.lat } }
-    : { message: 'Please place a valid map pin.' };
+function mapLink(value, { optional = false } = {}) {
+  if (optional && value === undefined) return { value: undefined };
+  let url;
+  try {
+    url = new URL(typeof value === 'string' ? value.trim() : '');
+  } catch {
+    return { message: 'Paste a complete Google Maps share link beginning with https://.' };
+  }
+  const host = url.hostname.toLowerCase();
+  const googleHost =
+    host === 'google.com' || host.endsWith('.google.com') || host === 'maps.app.goo.gl';
+  return url.protocol === 'https:' && googleHost
+    ? { value: url.href }
+    : { message: 'Use a Google Maps share link from maps.google.com or maps.app.goo.gl.' };
 }
 
 function contacts(value) {
@@ -79,8 +80,7 @@ function parse(value, { partial = false } = {}) {
           : { message: 'Include the parent’s country code.' };
     },
     addressText: () => text(value.addressText, 'an address', { optional: partial }),
-    location: () =>
-      partial && value.location === undefined ? { value: undefined } : location(value.location),
+    locationShareUrl: () => mapLink(value.locationShareUrl, { optional: partial }),
     careNotes: () =>
       value.careNotes === undefined && partial
         ? { value: undefined }

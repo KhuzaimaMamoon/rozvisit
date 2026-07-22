@@ -5,8 +5,14 @@ import { visitRepository } from '../repositories/visit.repo.js';
 import { notifyRecipient } from '../notifications/dispatch.js';
 import { auditRepository } from '../repositories/audit.repo.js';
 import { cloudinaryMediaStorage } from '../interfaces/media.cloudinary.js';
-import { ConflictError, ForbiddenError, NotFoundError } from '../utils/AppError.js';
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from '../utils/AppError.js';
 import { decrypt, encrypt } from '../utils/crypto.js';
+import { resolveGoogleMapsShareUrl } from '../utils/googleMaps.js';
 
 function decryptOptional(value) {
   return value ? decrypt(value) : null;
@@ -21,6 +27,7 @@ function serializeParent(profile, subscription = null) {
     age: profile.age,
     phone: profile.phone,
     addressText: decrypt(profile.addressText),
+    locationShareUrl: decryptOptional(profile.locationShareUrl),
     location: { lng: profile.location.coordinates[0], lat: profile.location.coordinates[1] },
     careNotes: decryptOptional(profile.careNotes),
     emergencyContacts: profile.emergencyContacts,
@@ -76,17 +83,32 @@ function encryptFields(data) {
   if (data.addressText !== undefined) update.addressText = encrypt(data.addressText);
   if (data.careNotes !== undefined && data.careNotes !== null)
     update.careNotes = encrypt(data.careNotes);
-  if (data.location)
-    update.location = { type: 'Point', coordinates: [data.location.lng, data.location.lat] };
+  if (data.locationShareUrl !== undefined) update.locationShareUrl = encrypt(data.locationShareUrl);
   return update;
+}
+
+async function resolveLocation(data) {
+  if (data.locationShareUrl === undefined) return data;
+  try {
+    const { coordinates } = await resolveGoogleMapsShareUrl(data.locationShareUrl);
+    return {
+      ...data,
+      location: { type: 'Point', coordinates: [coordinates.lng, coordinates.lat] },
+    };
+  } catch (error) {
+    throw new ValidationError('Please fix the highlighted location.', {
+      locationShareUrl: [error.message],
+    });
+  }
 }
 
 export const profileService = Object.freeze({
   async createParent(clientId, data) {
+    const located = await resolveLocation(data);
     const profile = await parentRepository.create({
       clientId,
       linkedFamilyMembers: [],
-      ...encryptFields(data),
+      ...encryptFields(located),
       status: PARENT_STATUS.PENDING_CONSENT,
     });
     return serializeParent(profile);
@@ -116,7 +138,11 @@ export const profileService = Object.freeze({
     if (!existing) throw new NotFoundError();
     if (existing.clientId.toString() !== clientId) throw new ForbiddenError();
 
-    const profile = await parentRepository.updateOwned(parentId, clientId, encryptFields(data));
+    const profile = await parentRepository.updateOwned(
+      parentId,
+      clientId,
+      encryptFields(await resolveLocation(data)),
+    );
     return serializeParent(profile);
   },
 

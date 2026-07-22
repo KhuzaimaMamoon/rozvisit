@@ -16,7 +16,7 @@ const parentData = {
   age: 68,
   phone: '+923001234567',
   addressText: '12 Care Lane, Rawalpindi',
-  location: { lng: 73.0479, lat: 33.6844 },
+  locationShareUrl: 'https://www.google.com/maps?q=33.6844,73.0479',
   careNotes: 'Prefers morning visits.',
   emergencyContacts: [
     { name: 'Ayesha Khan', phone: '+971501234567', relation: 'Daughter', priority: 1 },
@@ -101,14 +101,16 @@ describe('Parents API', () => {
     expect(response.body.data).toMatchObject({
       name: 'Amina Bibi',
       status: 'pending_consent',
-      location: parentData.location,
+      location: { lng: 73.0479, lat: 33.6844 },
+      locationShareUrl: parentData.locationShareUrl,
       careNotes: parentData.careNotes,
     });
     expect(response.body.data.linkedFamilyMembers).toEqual([]);
     const stored = await ParentProfile.findById(response.body.data.id).select(
-      '+addressText +careNotes',
+      '+addressText +locationShareUrl +careNotes',
     );
     expect(stored.addressText).not.toBe(parentData.addressText);
+    expect(stored.locationShareUrl).not.toBe(parentData.locationShareUrl);
     expect(stored.careNotes).not.toBe(parentData.careNotes);
   });
 
@@ -133,6 +135,18 @@ describe('Parents API', () => {
       'Each emergency-contact priority must be unique.',
     ]);
     expect(forbidden.status).toBe(403);
+  });
+
+  it('rejects a non-Google location link with field-specific guidance', async () => {
+    const response = await request(app)
+      .post('/api/v1/parents')
+      .set(authenticated(client))
+      .send({ ...parentData, locationShareUrl: 'https://example.com/home' });
+
+    expect(response.status).toBe(422);
+    expect(response.body.error.fields.locationShareUrl).toEqual([
+      'Use a Google Maps share link from maps.google.com or maps.app.goo.gl.',
+    ]);
   });
 
   it('lists only the client’s parents, without sensitive profile fields', async () => {

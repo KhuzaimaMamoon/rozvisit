@@ -26,6 +26,7 @@ const parentProfileSchema = new Schema(
     age: { type: Number, required: true, min: 40, max: 120 },
     phone: { type: String, default: null },
     addressText: { type: String, required: true, select: false },
+    locationShareUrl: { type: String, default: null, select: false },
     location: {
       type: { type: String, enum: ['Point'], required: true, default: 'Point' },
       coordinates: {

@@ -331,6 +331,16 @@ export default function VisitFlow() {
                   {visit.standingNote}
                 </p>
               ) : null}
+              {visit.location ? (
+                <a
+                  className="mt-3 inline-flex min-h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-white"
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${visit.location.lat},${visit.location.lng}`}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Get directions
+                </a>
+              ) : null}
             </div>
             <div className="w-full rounded-lg border border-border bg-surface/80 p-4 text-sm leading-6 text-muted sm:max-w-sm">
               <p className="font-medium text-text">Care plan reminder</p>

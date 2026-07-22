@@ -45,6 +45,7 @@ export default function Login() {
           autoComplete="email"
           id="email"
           label="Email"
+          requiredMessage="Enter your account email, like name@example.com."
           onChange={(event) => setEmail(event.target.value)}
           required
           type="email"
@@ -54,6 +55,7 @@ export default function Login() {
           autoComplete="current-password"
           id="password"
           label="Password"
+          requiredMessage="Enter your account password."
           onChange={(event) => setPassword(event.target.value)}
           required
           trailingAction={

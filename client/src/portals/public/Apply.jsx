@@ -88,6 +88,7 @@ export default function Apply() {
             error={fields.name?.[0]}
             id="name"
             label="Full name"
+            requiredMessage="Enter your full name."
             onChange={update('name')}
             required
             value={form.name}
@@ -98,7 +99,7 @@ export default function Apply() {
             label="Email"
             onChange={update('email')}
             required
-            requiredMessage="Enter a valid email address."
+            requiredMessage="Enter a valid email, like name@example.com."
             type="email"
             value={form.email}
           />
@@ -107,6 +108,8 @@ export default function Apply() {
             helperText="Include your country code, for example +923001234567."
             id="phone"
             label="Phone"
+            pattern="\+[1-9]\d{1,14}"
+            formatMessage="Phone must include a country code, like +923001234567."
             onChange={update('phone')}
             required
             requiredMessage="Phone number must include a country code, like +923001234567."
@@ -118,6 +121,8 @@ export default function Apply() {
             helperText="13 digits, without dashes."
             id="cnic"
             label="CNIC number"
+            pattern="\d{13}"
+            formatMessage="CNIC must be exactly 13 digits, no dashes."
             onChange={update('cnicNumber')}
             required
             requiredMessage="CNIC must be exactly 13 digits."
@@ -129,6 +134,10 @@ export default function Apply() {
               helperText="At least 8 characters, with letters and numbers."
               id="password"
               label="Password"
+              minLength="8"
+              maxLength="128"
+              pattern="(?=.*[A-Za-z])(?=.*\d).{8,128}"
+              formatMessage="Password must be 8–128 characters with at least one letter and one number."
               onChange={update('password')}
               required
               requiredMessage="Password must be at least 8 characters with letters and numbers."
@@ -141,6 +150,10 @@ export default function Apply() {
               error={fields.serviceArea?.[0]}
               id="lat"
               label="Service latitude"
+              min="-90"
+              max="90"
+              step="any"
+              formatMessage="Latitude must be a number between -90 and 90."
               onChange={update('lat')}
               required
               type="number"
@@ -150,6 +163,10 @@ export default function Apply() {
               error={fields.serviceArea?.[0]}
               id="lng"
               label="Service longitude"
+              min="-180"
+              max="180"
+              step="any"
+              formatMessage="Longitude must be a number between -180 and 180."
               onChange={update('lng')}
               required
               type="number"
@@ -160,6 +177,8 @@ export default function Apply() {
               id="radius"
               label="Radius (km)"
               min="1"
+              step="any"
+              formatMessage="Service radius must be at least 1 kilometre."
               onChange={update('radiusKm')}
               required
               type="number"

@@ -204,6 +204,12 @@ function serializeVisitEvidence(visit) {
   return {
     ...base,
     addressText: visit.parentId ? decryptOptional(visit.parentId.addressText) : null,
+    location: visit.parentId?.location
+      ? {
+          lng: visit.parentId.location.coordinates[0],
+          lat: visit.parentId.location.coordinates[1],
+        }
+      : null,
     checklist: visit.checklist
       ? {
           capturedAt: visit.checklist.capturedAt,

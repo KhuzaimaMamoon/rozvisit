@@ -81,8 +81,9 @@ test('AC-01: client registers, verifies, creates a parent, selects a plan, then 
   await client.locator('#parent-name').fill('Acceptance Parent');
   await client.getByLabel('Age').fill('68');
   await client.getByLabel('Address').fill('Satellite Town, Rawalpindi');
-  await client.getByLabel('Longitude').fill('73.0479');
-  await client.getByLabel('Latitude').fill('33.6844');
+  await client
+    .getByLabel('Google Maps share link')
+    .fill('https://www.google.com/maps?q=33.6844,73.0479');
   await client.locator('#contact-name-0').fill('Ayesha Khan');
   await client.getByLabel('Relationship').fill('Daughter');
   await client.getByLabel('Phone', { exact: true }).fill('+971501234567');

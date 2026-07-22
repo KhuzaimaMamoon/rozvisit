@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ParentProfile } from '../models/ParentProfile.js';
 
 const sensitiveSelection =
-  '+addressText +careNotes +consent.recordingRef +consent.choices.preferredTimes +consent.choices.photoBoundaries +consent.choices.other';
+  '+addressText +locationShareUrl +careNotes +consent.recordingRef +consent.choices.preferredTimes +consent.choices.photoBoundaries +consent.choices.other';
 
 export const parentRepository = Object.freeze({
   create(data) {
