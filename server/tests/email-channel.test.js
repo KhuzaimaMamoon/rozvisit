@@ -109,6 +109,41 @@ describe('Email channel', () => {
     expect(send).toHaveBeenCalledTimes(1);
   });
 
+  it('preserves safe Resend rejection details for the retry logger', async () => {
+    const send = jest.fn().mockResolvedValue({
+      data: null,
+      error: {
+        code: 'validation_error',
+        message: 'The sender domain is not verified.',
+        name: 'validation_error',
+        statusCode: 403,
+      },
+    });
+    const channel = createEmailChannel({
+      apiKey: 're_test_key',
+      createClient: () => ({ emails: { send } }),
+      enableDelivery: true,
+      fromAddress: 'onboarding@resend.dev',
+      log: { info: jest.fn(), warn: jest.fn() },
+      nodeEnv: 'production',
+    });
+
+    await expect(
+      channel.send({ to: 'ayesha@example.com', type: 'email_verification' }),
+    ).rejects.toMatchObject({
+      code: 'validation_error',
+      message: 'Resend email delivery failed: The sender domain is not verified.',
+      responseCode: 403,
+      statusCode: 403,
+      providerDetails: {
+        code: 'validation_error',
+        message: 'The sender domain is not verified.',
+        name: 'validation_error',
+        statusCode: 403,
+      },
+    });
+  });
+
   it('delivers a Resend email when a dedicated API key is configured', async () => {
     const send = jest.fn().mockResolvedValue({ data: { id: 'email-1' }, error: null });
     const createClient = jest.fn(() => ({ emails: { send } }));

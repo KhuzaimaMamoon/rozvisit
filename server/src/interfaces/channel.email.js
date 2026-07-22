@@ -91,6 +91,27 @@ function messageFor({ body, link, title, type }) {
   return { html, subject, text };
 }
 
+function resendDeliveryError(error) {
+  const details = error && typeof error === 'object' ? error : {};
+  const statusCode = details.statusCode ?? details.status ?? null;
+  const message = details.message ?? 'Resend rejected the email delivery request.';
+  const wrapped = new Error(`Resend email delivery failed: ${message}`);
+
+  wrapped.name = details.name ?? 'ResendDeliveryError';
+  wrapped.code = details.code ?? null;
+  wrapped.responseCode = statusCode;
+  wrapped.statusCode = statusCode;
+  // Deliberately retain only provider diagnostics, never a recipient, token,
+  // API key, or the request payload.
+  wrapped.providerDetails = {
+    code: details.code ?? null,
+    message,
+    name: details.name ?? null,
+    statusCode,
+  };
+  return wrapped;
+}
+
 export function createEmailChannel({
   apiKey = env.email.resendApiKey,
   createClient = (key) => new Resend(key),
@@ -156,8 +177,7 @@ export function createEmailChannel({
         to: [to],
         ...messageFor({ body, link, title, type }),
       });
-      if (response.error)
-        throw new Error(`Resend email delivery failed: ${response.error.message}`);
+      if (response.error) throw resendDeliveryError(response.error);
 
       log.info('notification.email_sent', { delivery: 'resend', type });
       return response.data;

@@ -51,7 +51,22 @@ describe('authService', () => {
   it('contains provider delivery failures and schedules an internal retry', async () => {
     const scheduleRetry = jest.fn();
     const log = { error: jest.fn() };
-    const channel = { send: jest.fn().mockRejectedValue(new Error('provider rejected recipient')) };
+    const rejection = Object.assign(
+      new Error('Resend email delivery failed: sender is unverified'),
+      {
+        code: 'validation_error',
+        name: 'validation_error',
+        providerDetails: {
+          code: 'validation_error',
+          message: 'sender is unverified',
+          name: 'validation_error',
+          statusCode: 403,
+        },
+        responseCode: 403,
+        statusCode: 403,
+      },
+    );
+    const channel = { send: jest.fn().mockRejectedValue(rejection) };
 
     await expect(
       deliverAuthEmail(
@@ -63,7 +78,14 @@ describe('authService', () => {
     expect(scheduleRetry).toHaveBeenCalledWith(expect.any(Object), 1);
     expect(log.error).toHaveBeenCalledWith(
       'auth.email_delivery_failed',
-      expect.objectContaining({ type: 'email_verification' }),
+      expect.objectContaining({
+        errorCode: 'validation_error',
+        errorMessage: 'Resend email delivery failed: sender is unverified',
+        errorName: 'validation_error',
+        responseCode: 403,
+        statusCode: 403,
+        type: 'email_verification',
+      }),
     );
   });
 });

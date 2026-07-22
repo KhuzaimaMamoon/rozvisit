@@ -139,8 +139,12 @@ export async function deliverAuthEmail(
     log.error('auth.email_delivery_failed', {
       attempt,
       errorCode: error?.code ?? null,
+      errorMessage: error?.message ?? null,
+      errorName: error?.name ?? null,
       provider: authEmailProvider(),
       responseCode: error?.responseCode ?? null,
+      statusCode: error?.statusCode ?? error?.responseCode ?? null,
+      providerDetails: error?.providerDetails ?? null,
       type: message.type,
     });
     if (attempt < AUTH_EMAIL_MAX_ATTEMPTS) scheduleRetry(message, attempt);
