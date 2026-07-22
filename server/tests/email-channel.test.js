@@ -88,6 +88,27 @@ describe('Email channel', () => {
     );
   });
 
+  it('uses Resend without constructing an SMTP transport in production', async () => {
+    const createGmailTransport = jest.fn();
+    const send = jest.fn().mockResolvedValue({ data: { id: 'resend-production-1' }, error: null });
+    const channel = createEmailChannel({
+      apiKey: 're_test_key',
+      createClient: () => ({ emails: { send } }),
+      createGmailTransport,
+      enableDelivery: true,
+      fromAddress: 'onboarding@resend.dev',
+      gmailAppPassword: 'abcdefghijklmnop',
+      gmailUser: 'rozvisit.testing@gmail.com',
+      log: { info: jest.fn(), warn: jest.fn() },
+      nodeEnv: 'production',
+    });
+
+    await channel.send({ to: 'ayesha@example.com', type: 'email_verification' });
+
+    expect(createGmailTransport).not.toHaveBeenCalled();
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
   it('delivers a Resend email when a dedicated API key is configured', async () => {
     const send = jest.fn().mockResolvedValue({ data: { id: 'email-1' }, error: null });
     const createClient = jest.fn(() => ({ emails: { send } }));

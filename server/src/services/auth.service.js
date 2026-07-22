@@ -117,7 +117,8 @@ function queueAuthEmail(message) {
 }
 
 function authEmailProvider() {
-  if (env.email.gmailUser && env.email.gmailAppPassword) return 'gmail_smtp';
+  if (env.nodeEnv !== 'production' && env.email.gmailUser && env.email.gmailAppPassword)
+    return 'gmail_smtp';
   if (env.email.resendApiKey) return 'resend';
   return 'noop';
 }

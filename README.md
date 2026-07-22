@@ -326,10 +326,10 @@ CLOUDINARY_API_SECRET=
 FIREBASE_SERVICE_ACCOUNT_JSON=
 
 # Email
-# Temporary Gmail SMTP bridge for real-user testing; do not use for bulk production delivery.
+# Gmail SMTP is retained for a future SMTP-capable host; Render production uses Resend HTTPS only.
 GMAIL_USER=
 GMAIL_APP_PASSWORD=
-# 587 = STARTTLS (default after Render's port-465 timeout); set 465 for implicit TLS elsewhere.
+# Non-production SMTP only: 587 = STARTTLS (default); set 465 for implicit TLS elsewhere.
 GMAIL_SMTP_PORT=
 EMAIL_FROM_ADDRESS=
 RESEND_API_KEY=

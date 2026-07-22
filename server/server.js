@@ -10,7 +10,8 @@ async function start() {
   try {
     await mongoose.connect(env.mongoUri);
     logger.info('database.connected');
-    const gmailConfigured = env.email.gmailUser && env.email.gmailAppPassword;
+    const gmailConfigured =
+      env.nodeEnv !== 'production' && env.email.gmailUser && env.email.gmailAppPassword;
     logger.info('email.delivery_configured', {
       provider: gmailConfigured ? 'gmail_smtp' : env.email.resendApiKey ? 'resend' : 'noop',
       ...(gmailConfigured

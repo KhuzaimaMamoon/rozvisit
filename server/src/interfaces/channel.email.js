@@ -102,12 +102,13 @@ export function createEmailChannel({
   gmailSmtpPort = env.email.gmailSmtpPort,
   gmailUser = env.email.gmailUser,
   log = logger,
+  nodeEnv = env.nodeEnv,
 } = {}) {
-  // Gmail SMTP is a short-term bridge for real-user testing. It has sending
-  // limits and is not the long-term production delivery provider; Resend is
-  // retained as the fallback once its custom sender domain is verified.
+  // Render blocks Gmail's SMTP ports 465 and 587. Keep this transport for a
+  // future SMTP-capable host, but never attempt it from a production process.
+  const gmailEnabled = nodeEnv !== 'production';
   const gmailTransport =
-    gmailUser && gmailAppPassword && enableDelivery
+    gmailEnabled && gmailUser && gmailAppPassword && enableDelivery
       ? createGmailTransport({
           host: 'smtp.gmail.com',
           port: gmailSmtpPort,
@@ -158,7 +159,7 @@ export function createEmailChannel({
       if (response.error)
         throw new Error(`Resend email delivery failed: ${response.error.message}`);
 
-      log.info('notification.email_sent', { type });
+      log.info('notification.email_sent', { delivery: 'resend', type });
       return response.data;
     },
   });
