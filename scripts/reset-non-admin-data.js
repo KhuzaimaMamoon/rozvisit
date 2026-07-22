@@ -1,43 +1,47 @@
 import mongoose from 'mongoose';
 import { env } from '../server/src/config/env.js';
-import { AuditEvent } from '../server/src/models/AuditEvent.js';
-import { AuthToken } from '../server/src/models/AuthToken.js';
-import { CaregiverProfile } from '../server/src/models/CaregiverProfile.js';
-import { ClientProfile } from '../server/src/models/ClientProfile.js';
-import { Notification } from '../server/src/models/Notification.js';
-import { NotificationFailure } from '../server/src/models/NotificationFailure.js';
-import { ParentProfile } from '../server/src/models/ParentProfile.js';
-import { RefreshToken } from '../server/src/models/RefreshToken.js';
-import { Subscription } from '../server/src/models/Subscription.js';
-import { User } from '../server/src/models/User.js';
-import { Visit } from '../server/src/models/Visit.js';
+import { ADMIN_PERMISSIONS } from '../server/src/config/constants.js';
 
-if (env.nodeEnv === 'production') {
-  throw new Error('Refusing to remove data in production.');
+const CONFIRMATION = 'DELETE_ALL_NON_ADMIN_DATA';
+
+if (process.env.CONFIRM_RESET_NON_ADMIN_DATA !== CONFIRMATION) {
+  throw new Error(
+    `Refusing to reset data. Set CONFIRM_RESET_NON_ADMIN_DATA=${CONFIRMATION} deliberately.`,
+  );
 }
 
 await mongoose.connect(env.mongoUri);
 try {
-  const nonAdminUsers = await User.find({ role: { $ne: 'admin' } }).select('_id');
-  const userIds = nonAdminUsers.map((user) => user._id);
-  const parents = await ParentProfile.find({ clientId: { $in: userIds } }).select('_id');
-  const parentIds = parents.map((parent) => parent._id);
+  const collections = await mongoose.connection.db
+    .listCollections({}, { nameOnly: true })
+    .toArray();
+  const results = [];
 
-  await Promise.all([
-    Visit.deleteMany({ parentId: { $in: parentIds } }),
-    Subscription.deleteMany({ parentId: { $in: parentIds } }),
-    ParentProfile.deleteMany({ _id: { $in: parentIds } }),
-    CaregiverProfile.deleteMany({ userId: { $in: userIds } }),
-    ClientProfile.deleteMany({ userId: { $in: userIds } }),
-    Notification.deleteMany({ userId: { $in: userIds } }),
-    NotificationFailure.deleteMany({}),
-    AuthToken.deleteMany({ userId: { $in: userIds } }),
-    RefreshToken.deleteMany({ userId: { $in: userIds } }),
-    AuditEvent.deleteMany({ $or: [{ actorId: { $in: userIds } }, { targetId: { $in: userIds } }] }),
-    User.deleteMany({ _id: { $in: userIds } }),
-  ]);
+  for (const { name } of collections) {
+    if (name.startsWith('system.')) continue;
 
-  process.stdout.write(`Removed ${userIds.length} non-admin users and their related test data.\n`);
+    const collection = mongoose.connection.db.collection(name);
+    const result =
+      name === 'users'
+        ? await collection.deleteMany({ role: { $ne: 'admin' } })
+        : name === 'careplans'
+          ? { deletedCount: 0 }
+          : await collection.deleteMany({});
+    results.push({ deleted: result.deletedCount, name });
+  }
+
+  const adminCount = await mongoose.connection.db.collection('users').countDocuments({
+    role: 'admin',
+  });
+  await mongoose.connection.db
+    .collection('users')
+    .updateMany({ role: 'admin' }, { $set: { permissions: Object.values(ADMIN_PERMISSIONS) } });
+  const carePlanCount = await mongoose.connection.db.collection('careplans').countDocuments();
+  const removedCount = results.reduce((total, result) => total + result.deleted, 0);
+
+  process.stdout.write(
+    `Reset complete: removed ${removedCount} records across ${results.length} application collections; preserved ${adminCount} admin user(s) and ${carePlanCount} care plan(s).\n`,
+  );
 } finally {
   await mongoose.disconnect();
 }

@@ -384,6 +384,7 @@ Run from the repository root.
 | `npm run dev -w server` | Start only the server (nodemon) |
 | `npm run build -w client` | Build the client for production |
 | `npm run seed` | Seed the database with realistic fake data |
+| `npm run reset:non-admin-data` | Explicitly wipe all application data except admins and care plans |
 | `npm run create:admin` | Explicitly create a verified admin in development or production |
 | `npm run test` | Run Jest unit + Supertest integration tests |
 | `npm run test:watch` | Run tests in watch mode during development |
@@ -404,6 +405,14 @@ never written to the console.
 Set `MONGO_URI` and the server's other required environment variables for the intended environment,
 then provide the four temporary admin variables and run the command. Remove `ADMIN_PASSWORD` from
 the environment immediately afterward. Do not use `npm run seed` to provision production admins.
+
+### Resetting non-admin data
+
+`npm run reset:non-admin-data` is a deliberately destructive maintenance command. It preserves only
+admin users and care-plan reference documents, deletes every record from every other application
+collection (including orphaned records), and requires the exact opt-in value
+`CONFIRM_RESET_NON_ADMIN_DATA=DELETE_ALL_NON_ADMIN_DATA`. It works in production only because this
+explicit confirmation is mandatory; verify the selected `MONGO_URI` before running it.
 
 ---
 
