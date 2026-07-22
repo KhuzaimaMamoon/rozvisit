@@ -386,6 +386,7 @@ Run from the repository root.
 | `npm run seed` | Seed the database with realistic fake data |
 | `npm run reset:non-admin-data` | Explicitly wipe all application data except admins and care plans |
 | `npm run create:admin` | Explicitly create a verified admin in development or production |
+| `npm run delete:admin -- <email>` | Safely delete a specific non-last admin and write an audit event |
 | `npm run test` | Run Jest unit + Supertest integration tests |
 | `npm run test:watch` | Run tests in watch mode during development |
 | `npm run test:e2e` | Run Playwright end-to-end tests |
@@ -413,6 +414,14 @@ admin users and care-plan reference documents, deletes every record from every o
 collection (including orphaned records), and requires the exact opt-in value
 `CONFIRM_RESET_NON_ADMIN_DATA=DELETE_ALL_NON_ADMIN_DATA`. It works in production only because this
 explicit confirmation is mandatory; verify the selected `MONGO_URI` before running it.
+
+### Deleting an obsolete admin account
+
+`npm run delete:admin -- <email>` deletes only the named admin user. It refuses to delete a
+non-admin or the last remaining admin. The deletion and its `admin.deleted` audit event are
+committed atomically. If exactly one other admin remains, that account is used as the audit actor;
+when multiple admins remain, set `ACTOR_ADMIN_EMAIL` to identify the administrator performing the
+maintenance action. No related care data is deleted or modified.
 
 ---
 

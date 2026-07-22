@@ -309,6 +309,9 @@ Events written at MVP:
 - Every subscription state change — actor, from-state, to-state, paymentRef where relevant.
 - Every read of CNIC/verification documents (`cnic.viewed`, AUD-004).
 - Enable/disable of any user account.
+- Production admin removal (`admin.deleted`) — the target admin ID/email, surviving admin actor,
+  timestamp, and maintenance-script source. The operation refuses to remove the final admin and
+  commits the deletion and audit record atomically.
 - Password reset completion (no token material, ever).
 - All-session revocation with cause (reset / disable).
 
