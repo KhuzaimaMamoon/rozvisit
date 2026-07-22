@@ -32,6 +32,12 @@ const subscriptionSchema = new Schema(
     state: { type: String, enum: Object.values(SUBSCRIPTION_STATE), required: true },
     stateHistory: { type: [stateHistorySchema], required: true, default: [] },
     currentPeriodEnd: { type: Date, default: null },
+    administrativeArchive: {
+      archivedAt: { type: Date, default: null },
+      archivedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+      previousState: { type: String, enum: Object.values(SUBSCRIPTION_STATE), default: null },
+      reason: { type: String, default: null },
+    },
   },
   { strict: 'throw', timestamps: true },
 );

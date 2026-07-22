@@ -5,6 +5,23 @@ import mongoose from 'mongoose';
 const sensitiveVerificationFields =
   '+verification.cnicNumber +verification.cnicDocRef +verification.interviewRecordingRef +verification.gateRecords.cnic.note +verification.gateRecords.interview.note +verification.gateRecords.reference.note';
 
+async function countWithExistingUser(filter) {
+  const [result] = await CaregiverProfile.aggregate([
+    { $match: filter },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'userRecord',
+      },
+    },
+    { $match: { 'userRecord.0': { $exists: true } } },
+    { $count: 'total' },
+  ]);
+  return result?.total ?? 0;
+}
+
 export const caregiverRepository = Object.freeze({
   create(data) {
     return CaregiverProfile.create(data);
@@ -38,17 +55,29 @@ export const caregiverRepository = Object.freeze({
       .limit(limit);
   },
   countApplications(status) {
-    return CaregiverProfile.countDocuments(status ? { status } : {});
+    return countWithExistingUser(status ? { status } : {});
   },
-  listDirectory({ limit, skip }) {
-    return CaregiverProfile.find({})
+  listDirectory({ limit, skip, view = 'active' }) {
+    return CaregiverProfile.find(
+      view === 'active'
+        ? { status: { $ne: CAREGIVER_STATUS.DEACTIVATED } }
+        : view === 'archived'
+          ? { status: CAREGIVER_STATUS.DEACTIVATED }
+          : {},
+    )
       .populate('userId', 'name email phone')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
   },
-  countDirectory() {
-    return CaregiverProfile.countDocuments({});
+  countDirectory(view = 'active') {
+    return countWithExistingUser(
+      view === 'active'
+        ? { status: { $ne: CAREGIVER_STATUS.DEACTIVATED } }
+        : view === 'archived'
+          ? { status: CAREGIVER_STATUS.DEACTIVATED }
+          : {},
+    );
   },
   findDirectoryCnicById(id) {
     if (!mongoose.isValidObjectId(id)) return null;

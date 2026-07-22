@@ -65,6 +65,12 @@ const parentProfileSchema = new Schema(
       required: true,
       default: PARENT_STATUS.PENDING_CONSENT,
     },
+    administrativeArchive: {
+      archivedAt: { type: Date, default: null },
+      archivedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+      previousStatus: { type: String, enum: Object.values(PARENT_STATUS), default: null },
+      reason: { type: String, default: null },
+    },
   },
   { strict: 'throw', timestamps: true },
 );

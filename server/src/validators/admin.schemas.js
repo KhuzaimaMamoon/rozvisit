@@ -131,11 +131,17 @@ export const directoryListQuerySchema = {
     const fields = {};
     const page = value.page === undefined ? 1 : Number(value.page);
     const limit = value.limit === undefined ? 20 : Number(value.limit);
+    const view = value.view || 'active';
     if (!Number.isInteger(page) || page < 1) fields.page = ['Enter a valid page number.'];
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
       fields.limit = ['Choose a limit from 1 to 100.'];
     }
-    return Object.keys(fields).length ? failure(fields) : { success: true, data: { limit, page } };
+    if (!['active', 'archived', 'all'].includes(view)) {
+      fields.view = ['Choose active, archived, or all records.'];
+    }
+    return Object.keys(fields).length
+      ? failure(fields)
+      : { success: true, data: { limit, page, view } };
   },
 };
 
@@ -152,6 +158,7 @@ export const adminVisitsQuerySchema = {
     const to = value.to || undefined;
     const page = value.page === undefined ? 1 : Number(value.page);
     const limit = value.limit === undefined ? 20 : Number(value.limit);
+    const view = value.view || 'active';
     if (status && !Object.values(VISIT_STATUS).includes(status)) {
       fields.status = ['Choose a supported visit status.'];
     }
@@ -167,6 +174,9 @@ export const adminVisitsQuerySchema = {
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
       fields.limit = ['Choose a limit from 1 to 100.'];
     }
+    if (!['active', 'archived', 'all'].includes(view)) {
+      fields.view = ['Choose active, archived, or all records.'];
+    }
     return Object.keys(fields).length
       ? failure(fields)
       : {
@@ -178,8 +188,20 @@ export const adminVisitsQuerySchema = {
             page,
             status,
             to: to ? new Date(to) : undefined,
+            view,
           },
         };
+  },
+};
+
+export const archiveSchema = {
+  safeParse(value) {
+    const invalid = object(value, 'Please provide an archive reason.');
+    if (invalid) return invalid;
+    const reason = typeof value.reason === 'string' ? value.reason.trim() : '';
+    return reason && reason.length <= 500
+      ? { success: true, data: { reason } }
+      : failure({ reason: ['Explain why this record is being archived (up to 500 characters).'] });
   },
 };
 

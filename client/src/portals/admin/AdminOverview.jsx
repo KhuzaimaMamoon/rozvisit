@@ -16,7 +16,7 @@ export default function AdminOverview() {
 
   useEffect(() => {
     const { from, to } = todayRange();
-    Promise.all([
+    Promise.allSettled([
       api('/admin/applications?status=applied'),
       api('/admin/applications?status=in_review'),
       api('/admin/subscriptions?state=active'),
@@ -26,12 +26,23 @@ export default function AdminOverview() {
       api('/admin/visits?status=flagged'),
     ])
       .then(([applied, reviewing, subscriptions, completed, flags]) => {
+        const value = (result, fallback) =>
+          result.status === 'fulfilled' ? result.value : fallback;
         setCounts({
-          applications: applied.total + reviewing.total,
-          completed: completed.total,
-          flags: flags.total,
-          subscriptions: subscriptions.items.length,
+          applications: value(applied, { total: 0 }).total + value(reviewing, { total: 0 }).total,
+          completed: value(completed, { total: 0 }).total,
+          flags: value(flags, { total: 0 }).total,
+          subscriptions: value(subscriptions, { items: [] }).items.length,
         });
+        if (
+          [applied, reviewing, subscriptions, completed, flags].some(
+            (item) => item.status === 'rejected',
+          )
+        ) {
+          setError(
+            'Some overview counts are temporarily unavailable. The available sections remain usable.',
+          );
+        }
       })
       .catch((requestError) => setError(requestError.message));
   }, []);

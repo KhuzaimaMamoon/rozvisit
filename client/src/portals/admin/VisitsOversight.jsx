@@ -21,6 +21,7 @@ export default function VisitsOversight() {
   const [caregiverId, setCaregiverId] = useState(params.get('caregiverId') ?? '');
   const [visits, setVisits] = useState([]);
   const [error, setError] = useState('');
+  const [view, setView] = useState(params.get('view') ?? 'active');
 
   useEffect(() => {
     const query = new URLSearchParams();
@@ -28,10 +29,28 @@ export default function VisitsOversight() {
     if (from) query.set('from', new Date(`${from}T00:00:00`).toISOString());
     if (to) query.set('to', new Date(`${to}T23:59:59`).toISOString());
     if (caregiverId) query.set('caregiverId', caregiverId);
+    query.set('view', view);
     api(`/admin/visits?${query.toString()}`)
       .then((data) => setVisits(data.items))
       .catch((requestError) => setError(requestError.message));
-  }, [caregiverId, from, status, to]);
+  }, [caregiverId, from, status, to, view]);
+
+  async function changeArchiveState(visit) {
+    const archived = Boolean(visit.archivedAt);
+    const reason = archived
+      ? null
+      : window.prompt('Why is this visit being archived? Its care evidence will be preserved.');
+    if (!archived && !reason?.trim()) return;
+    try {
+      await api(`/admin/visits/${visit.id}/${archived ? 'reactivate' : 'archive'}`, {
+        method: 'PATCH',
+        ...(archived ? {} : { body: JSON.stringify({ reason: reason.trim() }) }),
+      });
+      setVisits((items) => items.filter((item) => item.id !== visit.id));
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
@@ -47,6 +66,17 @@ export default function VisitsOversight() {
             Review scheduled care, completed evidence, missed visits, and flags.
           </p>
         </header>
+        <div className="mt-5 flex gap-2" role="group" aria-label="Visit record view">
+          {['active', 'archived'].map((value) => (
+            <Button
+              key={value}
+              onClick={() => setView(value)}
+              variant={view === value ? 'primary' : 'secondary'}
+            >
+              {value === 'active' ? 'Active visits' : 'Archived visits'}
+            </Button>
+          ))}
+        </div>
         <section className="mt-6 grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-4">
           <label className="text-sm text-text">
             Status
@@ -123,7 +153,7 @@ export default function VisitsOversight() {
                   </td>
                   <td className="p-4">{visit.flag && !visit.flag.resolvedAt ? 'Open' : '—'}</td>
                   <td className="p-4 text-right">
-                    {visit.status === 'scheduled' && !visit.caregiver ? (
+                    {visit.status === 'scheduled' && !visit.caregiver && !visit.archivedAt ? (
                       <a
                         href={`/admin/visits/${visit.id}/assign`}
                         onClick={(event) =>
@@ -132,9 +162,14 @@ export default function VisitsOversight() {
                       >
                         <Button>Assign caregiver</Button>
                       </a>
-                    ) : (
-                      '—'
-                    )}
+                    ) : null}
+                    <Button
+                      className="ml-2"
+                      onClick={() => void changeArchiveState(visit)}
+                      variant="secondary"
+                    >
+                      {visit.archivedAt ? 'Reactivate' : 'Archive'}
+                    </Button>
                   </td>
                 </tr>
               ))}

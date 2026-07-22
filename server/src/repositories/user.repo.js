@@ -24,15 +24,29 @@ export const userRepository = Object.freeze({
   findAdmins() {
     return User.find({ role: ROLES.ADMIN, status: 'active' }).select('name');
   },
-  listClients({ limit, skip }) {
-    return User.find({ role: ROLES.CLIENT })
-      .select('name email phone createdAt')
+  listClients({ limit, skip, view = 'active' }) {
+    return User.find({
+      role: ROLES.CLIENT,
+      ...(view === 'active'
+        ? { status: 'active' }
+        : view === 'archived'
+          ? { status: 'disabled' }
+          : {}),
+    })
+      .select('name email phone status archivedAt archiveReason createdAt')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
   },
-  countClients() {
-    return User.countDocuments({ role: ROLES.CLIENT });
+  countClients(view = 'active') {
+    return User.countDocuments({
+      role: ROLES.CLIENT,
+      ...(view === 'active'
+        ? { status: 'active' }
+        : view === 'archived'
+          ? { status: 'disabled' }
+          : {}),
+    });
   },
   findClientProfilesByUserIds(userIds) {
     return ClientProfile.find({ userId: { $in: userIds } });
@@ -48,5 +62,8 @@ export const userRepository = Object.freeze({
   },
   findClientProfile(userId) {
     return ClientProfile.findOne({ userId });
+  },
+  updateUser(id, update) {
+    return User.findByIdAndUpdate(id, update, { new: true, runValidators: true });
   },
 });

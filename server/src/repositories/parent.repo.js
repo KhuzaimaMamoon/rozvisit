@@ -40,4 +40,13 @@ export const parentRepository = Object.freeze({
       sensitiveSelection,
     );
   },
+  findByClientIdForAdmin(clientId) {
+    return ParentProfile.find({ clientId });
+  },
+  updateManyByClientId(clientId, update) {
+    return ParentProfile.updateMany({ clientId }, update, { runValidators: true });
+  },
+  updateById(id, update) {
+    return ParentProfile.findByIdAndUpdate(id, update, { new: true, runValidators: true });
+  },
 });

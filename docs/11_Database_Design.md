@@ -64,7 +64,8 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | passwordHash | String | R | bcrypt only (SEC-001); never selected by default |
 | emailVerifiedAt | Date | O | Null until verified (FR-002) |
 | status | String enum | R | `active` \| `disabled` |
-| permissions | [String enum] | R (empty unless admin) | Admin-only scoped permissions: `applications.review`, `subscriptions.manage`, `visits.oversee`, `flags.resolve`, `caregivers.directory.view`, `caregivers.cnic.view`, `clients.directory.view` (SEC-010). New admin accounts receive the current permission set by default; explicitly scoped accounts may receive a narrower set. |
+| archivedAt / archivedBy / archiveReason | Date, ObjectId, String | O | Administrative client archival metadata; disabling prevents login while preserving the user and linked care history |
+| permissions | [String enum] | R (empty unless admin) | Admin-only scoped permissions: `applications.review`, `subscriptions.manage`, `visits.oversee`, `visits.archive`, `flags.resolve`, `caregivers.directory.view`, `caregivers.cnic.view`, `caregivers.manage`, `clients.directory.view`, `clients.manage` (SEC-010). New admin accounts receive the current permission set by default; explicitly scoped accounts may receive a narrower set. |
 | createdAt / updatedAt | Date | R | Mongoose timestamps |
 
 ### clientProfiles
@@ -94,6 +95,7 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | emergencyContacts | [{ name, phone, relation, priority }] | R (min 1) | Ordered for Phase 2 escalation (FR-072); `priority` is a required positive 1-indexed integer, unique within this parent's array; lower number is contacted first |
 | consent | Embedded (see below) | R | The consent record (FR-013) |
 | status | String enum | R | `pending_consent` \| `active` \| `paused` \| `archived` |
+| administrativeArchive | `{ archivedAt, archivedBy, previousStatus, reason }` | O | Preserves the status needed for an audited reactivation after client archival |
 | createdAt / updatedAt | Date | R | |
 
 **consent (embedded in parentProfiles):**
@@ -116,6 +118,7 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | availability | [{ day, startTime, endTime }] | O | |
 | rating | { average: Number, count: Number } | R (0/0) | Fed by Phase 2 ratings (BR-022) |
 | status | String enum | R | `applied` \| `in_review` \| `verified` \| `rejected` \| `deactivated` (FR-003/081) |
+| administrativeArchive | `{ archivedAt, archivedBy, previousStatus, reason }` | O | Deactivation metadata; verification history remains intact |
 | createdAt / updatedAt | Date | R | |
 
 **verification (embedded):**
@@ -170,6 +173,7 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | status | String enum | R | `scheduled` \| `in_progress` \| `completed` \| `missed` \| `parent_declined` \| `flagged` (FR-035) |
 | statusHistory | [{ status, at, byUserId, reason }] | R | Append-only (DATA-006) |
 | statusBeforeFlag | String visit-status enum | O | Captured when a visit moves to `flagged`; flag resolution restores this prior operational status and then leaves the value as evidence of the resolved flag path |
+| archivedAt / archivedBy / archiveReason | Date, ObjectId, String | O | Administrative soft archive metadata, deliberately separate from operational `status`; archived visits retain all evidence and history |
 | checklist | { medicationTaken: Boolean, mood: Number 1–5, concerns: [String], note: String **(E)**, completedAt: Date, capturedAt: Date } | O until completion | Required for `completed` (FR-045). `concerns` accepts only the approved observational enum: `appetite`, `mobility`, `medication`, `mood_change`, `home_condition`, `other`. |
 | media | [{ clientMediaId: String, ref: String, capturedAt: Date, uploadedAt: Date, sourceFlag: String }] | O until completion | `clientMediaId` is generated on-device at capture time for retry-safe direct upload; `capturedAt` is device time and `uploadedAt` is the successful upload time, kept distinct to show an honest offline gap (FR-044); min 1 for `completed` (FR-045); capture-source (SEC-012) |
 | gps | { checkIn: { point, at }, checkOut: { point, at } } | O **(P2)** | Reserved now, used at Phase 2 (FR-049) |
@@ -373,6 +377,7 @@ All enums live in `config/constants.js` (Document 10 §20) and are imported by s
 | Caregiver | status → `deactivated`; verification record remains |
 | Subscription | state → `cancelled`; history remains |
 | Visits, audit, consent | Never deleted by any user action |
+| Visit archive action | `archivedAt`, `archivedBy`, and `archiveReason` set separately from operational `status`; evidence and status history remain intact |
 | User account (privacy deletion request) | Personal fields anonymized per DATA-007; the anonymous skeleton (ids, dates, states) remains for evidence integrity. The exact field-by-field anonymization map: *(Open — written as a small addendum before Phase 1 launch, per the Doc 08 recommendation)* |
 | Refresh tokens | The one true hard delete — TTL index removes expired rows |
 

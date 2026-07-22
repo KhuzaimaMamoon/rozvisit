@@ -68,6 +68,11 @@ export default function PlanSelection() {
           aria-label="Available care plans"
           className="mt-5 grid items-stretch gap-5 md:grid-cols-3"
         >
+          {!error && !plans.length ? (
+            <p className="rounded-lg border border-border bg-surface p-5 text-sm text-muted md:col-span-3">
+              No care plans are available yet. Please check again later.
+            </p>
+          ) : null}
           {plans.map((plan) => {
             const detail = planDetails[plan.key];
             const price = `${plan.currency} ${plan.price.min}–${plan.price.max}`;

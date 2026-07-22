@@ -261,6 +261,8 @@ GPS check-in/out and ratings.
 
 **Validation:** decision enum; assignment requires verified + area match; flag resolution requires a note. Assignment suggestions put the parent's previous caregiver first when present; remaining verified, in-area caregivers sort by today's assigned `scheduled`-visit count (ascending), then caregiver name alphabetically. A flag stores the pre-flag status; resolution retains the flag evidence and restores that status with an append-only `flag_resolved` history entry.
 
+**Administrative archival:** active and archived records are separated by an explicit list filter. Client archival disables login, archives parent profiles, pauses non-terminal subscriptions, and archives open visits; reactivation restores the client/parents but leaves subscriptions paused and open visits archived for operational review. Caregiver archival disables login and changes the profile to `deactivated`, which structurally blocks assignment; reactivation restores the prior verification state. Visit archival uses separate metadata rather than changing the operational visit status, and never removes evidence. Every archive/reactivate mutation requires a reason where applicable and writes an audit event.
+
 **Data entities:** caregiverProfiles.verification, visits.flag, auditEvents; (Phase 2) disputes shape at Phase 2 design *(Open)*. **API dependencies:** Admin endpoints (Document 12).
 
 **Notifications:** applicant outcomes; reassignment fan-out; flag alerts; (Phase 2) SLA and dispute updates.

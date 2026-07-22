@@ -11,12 +11,14 @@ import {
   today,
 } from '../controllers/visits.controller.js';
 import {
+  archiveVisit,
   assignVisit,
   assignmentSuggestions,
   getVisitEvidence,
   listVisits,
   markMissed,
   resolveFlag,
+  reactivateVisit,
 } from '../controllers/admin.controller.js';
 import { ADMIN_PERMISSIONS, ROLES } from '../config/constants.js';
 import { requireAuth } from '../middleware/requireAuth.js';
@@ -24,6 +26,7 @@ import { requirePermission } from '../middleware/requirePermission.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { validate, validateQuery } from '../middleware/validate.js';
 import {
+  archiveSchema,
   adminVisitsQuerySchema,
   markMissedSchema,
   resolveFlagSchema,
@@ -86,6 +89,17 @@ adminVisitsRouter.get(
   requirePermission(ADMIN_PERMISSIONS.VISITS_OVERSEE),
   validateQuery(adminVisitsQuerySchema),
   listVisits,
+);
+adminVisitsRouter.patch(
+  '/:id/archive',
+  requirePermission(ADMIN_PERMISSIONS.VISITS_ARCHIVE),
+  validate(archiveSchema),
+  archiveVisit,
+);
+adminVisitsRouter.patch(
+  '/:id/reactivate',
+  requirePermission(ADMIN_PERMISSIONS.VISITS_ARCHIVE),
+  reactivateVisit,
 );
 adminVisitsRouter.get(
   '/:id/assignment-suggestions',

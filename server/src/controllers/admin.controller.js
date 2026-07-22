@@ -71,3 +71,24 @@ export const resolveFlag = run(async (req, res) =>
 export const markMissed = run(async (req, res) =>
   respond.ok(res, await adminService.markMissed(req.auth.sub, req.params.id, req.validatedBody)),
 );
+export const archiveClient = run(async (req, res) =>
+  respond.ok(res, await adminService.archiveClient(req.auth.sub, req.params.id, req.validatedBody)),
+);
+export const reactivateClient = run(async (req, res) =>
+  respond.ok(res, await adminService.reactivateClient(req.auth.sub, req.params.id)),
+);
+export const archiveCaregiver = run(async (req, res) =>
+  respond.ok(
+    res,
+    await adminService.archiveCaregiver(req.auth.sub, req.params.id, req.validatedBody),
+  ),
+);
+export const reactivateCaregiver = run(async (req, res) =>
+  respond.ok(res, await adminService.reactivateCaregiver(req.auth.sub, req.params.id)),
+);
+export const archiveVisit = run(async (req, res) =>
+  respond.ok(res, await adminService.archiveVisit(req.auth.sub, req.params.id, req.validatedBody)),
+);
+export const reactivateVisit = run(async (req, res) =>
+  respond.ok(res, await adminService.reactivateVisit(req.auth.sub, req.params.id)),
+);

@@ -300,17 +300,17 @@ Routes under `/care/*`. Layout per Document 15 §30: no sidebar — a simple top
 - **Route:** `/admin/caregivers`
 - **Role:** admin with `caregivers.directory.view`
 - **Purpose:** Day-to-day lookup of every registered caregiver, separate from the verification workflow.
-- **Sections:** list rows with name, email, phone, service area, verification status, gate summary, application date, and verification/decision dates.
+- **Sections:** active/archived filter; list rows with name, email, phone, service area, verification status, gate summary, application date, verification/decision dates, and Archive/Reactivate action. Archive requires a reason and never removes verification or visit history.
 - **CNIC:** never included in the list. An explicit `View CNIC` action requires `caregivers.cnic.view`, displays the value only after the action, and carries the microcopy “Viewing this record is logged.”
-- **APIs:** `GET /admin/caregivers`, `GET /admin/caregivers/:id/cnic`.
+- **APIs:** `GET /admin/caregivers`, `GET /admin/caregivers/:id/cnic`, `PATCH /admin/caregivers/:id/archive`, `PATCH /admin/caregivers/:id/reactivate`.
 
 ## S-46. Clients Directory
 
 - **Route:** `/admin/clients`
 - **Role:** admin with `clients.directory.view`
 - **Purpose:** Day-to-day lookup of all registered clients, their parent profiles, and subscription state without duplicating the payment workbench.
-- **Sections:** client name, email, phone, country, currency; associated parent names/statuses; subscription plan and state summaries.
-- **APIs:** `GET /admin/clients`.
+- **Sections:** active/archived filter; client name, email, phone, country, currency; associated parent names/statuses; subscription plan/state summaries; Archive/Reactivate action. Archived clients retain their parents, subscriptions, and evidence.
+- **APIs:** `GET /admin/clients`, `PATCH /admin/clients/:id/archive`, `PATCH /admin/clients/:id/reactivate`.
 
 ---
 
@@ -347,10 +347,10 @@ Routes under `/admin/*`. Layout: full sidebar always (Document 15 §30/31). Desi
 ## S-30. Visits Oversight · S-31. Visit Evidence (admin detail)
 
 - **Routes:** `/admin/visits`, `/admin/visits/:id`
-- **S-30 sections:** filter row (status, date range, caregiver), table (parent, caregiver, scheduledAt, StatusBadge, flag indicator).
+- **S-30 sections:** active/archived record filter; filter row (status, date range, caregiver); table (parent, caregiver, scheduledAt, StatusBadge, flag indicator, Archive/Reactivate action).
 - **S-31 sections:** full evidence — the client-side VisitCard content plus internal fields (statusHistory, upload times, flag state and note).
 - **Actions:** Resolve flag → note modal; open dispute if it becomes one.
-- **APIs:** `GET /admin/visits`, `POST /admin/flags/:id/resolve`.
+- **APIs:** `GET /admin/visits`, `PATCH /admin/visits/:id/archive`, `PATCH /admin/visits/:id/reactivate`, `POST /admin/flags/:id/resolve`.
 
 ## S-32. Assign
 

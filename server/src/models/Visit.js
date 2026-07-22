@@ -62,6 +62,9 @@ const visitSchema = new Schema(
     checklist: { type: checklistSchema, default: null },
     media: { type: [mediaSchema], default: [] },
     flag: { type: flagSchema, default: null },
+    archivedAt: { type: Date, default: null },
+    archivedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    archiveReason: { type: String, default: null },
   },
   { strict: 'throw', timestamps: true },
 );

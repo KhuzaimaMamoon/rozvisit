@@ -12,6 +12,9 @@ const userSchema = new Schema(
     passwordHash: { type: String, required: true, select: false },
     emailVerifiedAt: { type: Date, default: null },
     status: { type: String, enum: Object.values(USER_STATUS), required: true },
+    archivedAt: { type: Date, default: null },
+    archivedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    archiveReason: { type: String, default: null },
     permissions: {
       type: [{ type: String, enum: Object.values(ADMIN_PERMISSIONS) }],
       required: true,

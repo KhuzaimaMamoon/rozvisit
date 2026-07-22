@@ -156,6 +156,9 @@ function serializeCaregiverVisitContext(visit, parent) {
 async function getAssignedVisit(caregiverId, visitId) {
   const visit = await visitRepository.findById(visitId);
   if (!visit) throw new NotFoundError();
+  if (visit.archivedAt) {
+    throw new ConflictError('STATE_INVALID', 'This visit has been archived by an administrator.');
+  }
   if (!visit.caregiverId) {
     throw new ConflictError(
       'STATE_INVALID',
@@ -174,6 +177,9 @@ export const visitService = Object.freeze({
     ]);
     if (!parent) throw new NotFoundError();
     if (parent.clientId.toString() !== clientId) throw new ForbiddenError();
+    if (parent.status === PARENT_STATUS.ARCHIVED) {
+      throw new ConflictError('STATE_INVALID', 'This parent profile has been archived.');
+    }
     if (parent.status === PARENT_STATUS.PAUSED) {
       throw new ConflictError(
         'CONSENT_REQUIRED',
@@ -326,7 +332,11 @@ export const visitService = Object.freeze({
       visits.map((visit) => parentRepository.findById(visit.parentId)),
     );
     return {
-      items: visits.map((visit, index) => serializeCaregiverVisitBase(visit, parents[index])),
+      items: visits
+        .map((visit, index) =>
+          parents[index] ? serializeCaregiverVisitBase(visit, parents[index]) : null,
+        )
+        .filter(Boolean),
     };
   },
 
@@ -343,7 +353,11 @@ export const visitService = Object.freeze({
       page.map((visit) => parentRepository.findById(visit.parentId)),
     );
     return {
-      items: page.map((visit, index) => serializeCaregiverVisitBase(visit, parents[index])),
+      items: page
+        .map((visit, index) =>
+          parents[index] ? serializeCaregiverVisitBase(visit, parents[index]) : null,
+        )
+        .filter(Boolean),
       nextCursor: hasNextPage ? page.at(-1).scheduledAt.toISOString() : null,
     };
   },

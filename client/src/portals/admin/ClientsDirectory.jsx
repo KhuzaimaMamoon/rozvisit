@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api.js';
 import StatusBadge from '../../design-system/StatusBadge.jsx';
+import Button from '../../design-system/Button.jsx';
 
 function statusVariant(status) {
   return status === 'active' ? 'success' : status === 'cancelled' ? 'emergency' : 'pending';
@@ -8,12 +9,33 @@ function statusVariant(status) {
 
 export default function ClientsDirectory() {
   const [state, setState] = useState({ error: '', items: [], loading: true });
+  const [view, setView] = useState('active');
 
   useEffect(() => {
-    api('/admin/clients?limit=100')
+    api(`/admin/clients?limit=100&view=${view}`)
       .then(({ items }) => setState({ error: '', items, loading: false }))
       .catch((error) => setState({ error: error.message, items: [], loading: false }));
-  }, []);
+  }, [view]);
+
+  async function changeArchiveState(client) {
+    const archived = client.status === 'disabled';
+    const reason = archived
+      ? null
+      : window.prompt('Why is this client being archived? This note is audit-logged.');
+    if (!archived && !reason?.trim()) return;
+    try {
+      await api(`/admin/clients/${client.id}/${archived ? 'reactivate' : 'archive'}`, {
+        method: 'PATCH',
+        ...(archived ? {} : { body: JSON.stringify({ reason: reason.trim() }) }),
+      });
+      setState((current) => ({
+        ...current,
+        items: current.items.filter((item) => item.id !== client.id),
+      }));
+    } catch (error) {
+      setState((current) => ({ ...current, error: error.message }));
+    }
+  }
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
@@ -29,6 +51,17 @@ export default function ClientsDirectory() {
             Review client contact details, their parents, and subscription status at a glance.
           </p>
         </header>
+        <div className="mt-5 flex gap-2" role="group" aria-label="Client record view">
+          {['active', 'archived'].map((value) => (
+            <Button
+              key={value}
+              onClick={() => setView(value)}
+              variant={view === value ? 'primary' : 'secondary'}
+            >
+              {value === 'active' ? 'Active clients' : 'Archived clients'}
+            </Button>
+          ))}
+        </div>
         <section className="mt-6 rounded-lg border border-border bg-surface shadow-sm">
           {state.loading ? <p className="p-5 text-sm text-muted">Loading clients…</p> : null}
           {state.error ? <p className="p-5 text-sm text-emergency">{state.error}</p> : null}
@@ -42,6 +75,11 @@ export default function ClientsDirectory() {
                 {client.email} · {client.phone} · {client.countryCode ?? 'Country unavailable'} ·{' '}
                 {client.currency ?? 'Currency unavailable'}
               </p>
+              <div className="mt-3">
+                <Button onClick={() => void changeArchiveState(client)} variant="secondary">
+                  {client.status === 'disabled' ? 'Reactivate' : 'Archive'}
+                </Button>
+              </div>
               <div className="mt-4 grid gap-4 lg:grid-cols-2">
                 <section>
                   <h3 className="text-sm font-medium text-text">Parents</h3>

@@ -30,13 +30,18 @@ export const visitRepository = Object.freeze({
     return Visit.findOne({ parentId }).sort({ scheduledAt: 1 });
   },
   findTodayByCaregiver(caregiverId, start, end) {
-    return Visit.find({ caregiverId, scheduledAt: { $gte: start, $lt: end } }).sort({
+    return Visit.find({
+      caregiverId,
+      archivedAt: null,
+      scheduledAt: { $gte: start, $lt: end },
+    }).sort({
       scheduledAt: 1,
     });
   },
   findMineByCaregiver(caregiverId, { before, limit }) {
     return Visit.find({
       caregiverId,
+      archivedAt: null,
       ...(before ? { scheduledAt: { $lt: before } } : {}),
     })
       .sort({ scheduledAt: -1 })
@@ -51,7 +56,7 @@ export const visitRepository = Object.freeze({
     );
   },
   findFeedByParent(parentId, limit) {
-    return Visit.find({ parentId }).sort({ scheduledAt: -1 }).limit(limit);
+    return Visit.find({ parentId, archivedAt: null }).sort({ scheduledAt: -1 }).limit(limit);
   },
   findMostRecentAssignedCaregiverForParent(parentId, before) {
     return Visit.findOne({
@@ -74,8 +79,13 @@ export const visitRepository = Object.freeze({
       { $group: { _id: '$caregiverId', count: { $sum: 1 } } },
     ]);
   },
-  findForAdmin({ caregiverId, from, limit, skip, status, to }) {
+  findForAdmin({ caregiverId, from, limit, skip, status, to, view = 'active' }) {
     const filter = {
+      ...(view === 'active'
+        ? { archivedAt: null }
+        : view === 'archived'
+          ? { archivedAt: { $ne: null } }
+          : {}),
       ...(status ? { status } : {}),
       ...(caregiverId ? { caregiverId } : {}),
       ...(from || to
@@ -89,14 +99,33 @@ export const visitRepository = Object.freeze({
       .skip(skip)
       .limit(limit);
   },
-  countForAdmin({ caregiverId, from, status, to }) {
-    return Visit.countDocuments({
+  async countForAdmin({ caregiverId, from, status, to, view = 'active' }) {
+    const filter = {
+      ...(view === 'active'
+        ? { archivedAt: null }
+        : view === 'archived'
+          ? { archivedAt: { $ne: null } }
+          : {}),
       ...(status ? { status } : {}),
       ...(caregiverId ? { caregiverId } : {}),
       ...(from || to
         ? { scheduledAt: { ...(from ? { $gte: from } : {}), ...(to ? { $lte: to } : {}) } }
         : {}),
-    });
+    };
+    const [result] = await Visit.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'parentprofiles',
+          localField: 'parentId',
+          foreignField: '_id',
+          as: 'parentRecord',
+        },
+      },
+      { $match: { 'parentRecord.0': { $exists: true } } },
+      { $count: 'total' },
+    ]);
+    return result?.total ?? 0;
   },
   findByIdForAdmin(id) {
     return mongoose.isValidObjectId(id)
@@ -109,6 +138,17 @@ export const visitRepository = Object.freeze({
   update(id, update) {
     return Visit.findByIdAndUpdate(id, update, { new: true, runValidators: true }).select(
       '+checklist.note',
+    );
+  },
+  archiveOpenByParentIds(parentIds, { actorId, at, reason }) {
+    return Visit.updateMany(
+      {
+        parentId: { $in: parentIds },
+        archivedAt: null,
+        status: { $in: ['scheduled', 'in_progress'] },
+      },
+      { $set: { archivedAt: at, archivedBy: actorId, archiveReason: reason } },
+      { runValidators: true },
     );
   },
 });

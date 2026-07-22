@@ -56,6 +56,12 @@ const caregiverProfileSchema = new Schema(
       required: true,
       default: CAREGIVER_STATUS.APPLIED,
     },
+    administrativeArchive: {
+      archivedAt: { type: Date, default: null },
+      archivedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+      previousStatus: { type: String, enum: Object.values(CAREGIVER_STATUS), default: null },
+      reason: { type: String, default: null },
+    },
   },
   { strict: 'throw', timestamps: true },
 );

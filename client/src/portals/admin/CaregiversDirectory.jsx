@@ -25,12 +25,33 @@ export default function CaregiversDirectory() {
   const [state, setState] = useState({ error: '', items: [], loading: true });
   const [revealed, setRevealed] = useState({});
   const [revealingId, setRevealingId] = useState('');
+  const [view, setView] = useState('active');
 
   useEffect(() => {
-    api('/admin/caregivers?limit=100')
+    api(`/admin/caregivers?limit=100&view=${view}`)
       .then(({ items }) => setState({ error: '', items, loading: false }))
       .catch((error) => setState({ error: error.message, items: [], loading: false }));
-  }, []);
+  }, [view]);
+
+  async function changeArchiveState(caregiver) {
+    const archived = caregiver.status === 'deactivated';
+    const reason = archived
+      ? null
+      : window.prompt('Why is this caregiver being archived? This note is audit-logged.');
+    if (!archived && !reason?.trim()) return;
+    try {
+      await api(`/admin/caregivers/${caregiver.id}/${archived ? 'reactivate' : 'archive'}`, {
+        method: 'PATCH',
+        ...(archived ? {} : { body: JSON.stringify({ reason: reason.trim() }) }),
+      });
+      setState((current) => ({
+        ...current,
+        items: current.items.filter((item) => item.id !== caregiver.id),
+      }));
+    } catch (error) {
+      setState((current) => ({ ...current, error: error.message }));
+    }
+  }
 
   async function toggleCnic(caregiver) {
     if (revealed[caregiver.id]) {
@@ -66,6 +87,17 @@ export default function CaregiversDirectory() {
             Find registered caregivers, their verification progress, and service areas.
           </p>
         </header>
+        <div className="mt-5 flex gap-2" role="group" aria-label="Caregiver record view">
+          {['active', 'archived'].map((value) => (
+            <Button
+              key={value}
+              onClick={() => setView(value)}
+              variant={view === value ? 'primary' : 'secondary'}
+            >
+              {value === 'active' ? 'Active caregivers' : 'Archived caregivers'}
+            </Button>
+          ))}
+        </div>
         <section className="mt-6 rounded-lg border border-border bg-surface shadow-sm">
           {state.loading ? <p className="p-5 text-sm text-muted">Loading caregivers…</p> : null}
           {state.error ? <p className="p-5 text-sm text-emergency">{state.error}</p> : null}
@@ -115,6 +147,9 @@ export default function CaregiversDirectory() {
                     {revealed[caregiver.id]}
                   </p>
                 ) : null}
+                <Button onClick={() => void changeArchiveState(caregiver)} variant="secondary">
+                  {caregiver.status === 'deactivated' ? 'Reactivate' : 'Archive'}
+                </Button>
               </div>
             </article>
           ))}

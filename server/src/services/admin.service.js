@@ -1,7 +1,11 @@
 import {
   APPLICATION_DECISIONS,
   CAREGIVER_STATUS,
+  PARENT_STATUS,
   REFERENCE_OUTCOMES,
+  ROLES,
+  SUBSCRIPTION_STATE,
+  USER_STATUS,
   VISIT_STATUS,
 } from '../config/constants.js';
 import { auditRepository } from '../repositories/audit.repo.js';
@@ -28,6 +32,7 @@ function gateRecord(record = {}) {
 
 function serializeApplication(profile, { includeSensitive = false } = {}) {
   const applicant = profile.userId;
+  if (!applicant) return null;
   const base = {
     id: profile._id.toString(),
     applicant: { id: applicant._id.toString(), name: applicant.name },
@@ -62,6 +67,7 @@ function serializeApplication(profile, { includeSensitive = false } = {}) {
 
 function serializeCaregiverDirectory(profile) {
   const user = profile.userId;
+  if (!user) return null;
   return {
     id: profile._id.toString(),
     user: {
@@ -76,6 +82,7 @@ function serializeCaregiverDirectory(profile) {
       radiusKm: profile.serviceArea.radiusKm,
     },
     status: profile.status,
+    archivedAt: profile.administrativeArchive?.archivedAt ?? null,
     gates: profile.verification.gates,
     applicationCreatedAt: profile.createdAt,
     verification: {
@@ -96,6 +103,8 @@ function serializeClientDirectory({ client, profile, parents, subscriptions }) {
     countryCode: profile?.countryCode ?? null,
     currency: profile?.currency ?? null,
     createdAt: client.createdAt,
+    status: client.status,
+    archivedAt: client.archivedAt,
     parents: parents.map((parent) => ({
       id: parent._id.toString(),
       name: parent.name,
@@ -115,7 +124,7 @@ function serializeClientDirectory({ client, profile, parents, subscriptions }) {
 
 async function applicationOrThrow(applicationId) {
   const application = await caregiverRepository.findApplicationById(applicationId);
-  if (!application) throw new NotFoundError();
+  if (!application || !application.userId) throw new NotFoundError();
   return application;
 }
 
@@ -128,6 +137,10 @@ async function audit(actorId, action, applicationId, detail) {
     targetId: applicationId,
     targetType: 'caregiverProfile',
   });
+}
+
+async function auditEntity(actorId, action, targetType, targetId, detail) {
+  await auditRepository.create({ actorId, action, at: new Date(), detail, targetId, targetType });
 }
 
 function gateUpdate({ actorId, gate, note, passed }) {
@@ -196,6 +209,8 @@ function serializeOversightVisit(visit) {
     scheduledAt: visit.scheduledAt,
     makeUpPlan: visit.makeUpPlan,
     status: visit.status,
+    archivedAt: visit.archivedAt,
+    archiveReason: visit.archiveReason,
   };
 }
 
@@ -256,13 +271,13 @@ function serializeSuggestion({ caregiver, continuity, inArea, todayScheduledCoun
 }
 
 export const adminService = Object.freeze({
-  async listCaregiverDirectory({ limit = 20, page = 1 }) {
+  async listCaregiverDirectory({ limit = 20, page = 1, view = 'active' }) {
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
-      caregiverRepository.listDirectory({ limit, skip }),
-      caregiverRepository.countDirectory(),
+      caregiverRepository.listDirectory({ limit, skip, view }),
+      caregiverRepository.countDirectory(view),
     ]);
-    return { items: items.map(serializeCaregiverDirectory), page, total };
+    return { items: items.map(serializeCaregiverDirectory).filter(Boolean), page, total };
   },
 
   async viewCaregiverCnic(actorId, caregiverId) {
@@ -272,11 +287,61 @@ export const adminService = Object.freeze({
     return { id: profile._id.toString(), cnicNumber: decrypt(profile.verification.cnicNumber) };
   },
 
-  async listClientDirectory({ limit = 20, page = 1 }) {
+  async archiveCaregiver(actorId, caregiverId, { reason }) {
+    const profile = await applicationOrThrow(caregiverId);
+    if (!profile.userId) throw new NotFoundError();
+    if (profile.status === CAREGIVER_STATUS.DEACTIVATED) {
+      throw new ConflictError('STATE_INVALID', 'This caregiver is already archived.');
+    }
+    const now = new Date();
+    const previousStatus = profile.status;
+    const updated = await caregiverRepository.updateApplication(profile._id, {
+      $set: {
+        status: CAREGIVER_STATUS.DEACTIVATED,
+        administrativeArchive: { archivedAt: now, archivedBy: actorId, previousStatus, reason },
+      },
+    });
+    await userRepository.updateUser(profile.userId._id, {
+      $set: {
+        status: USER_STATUS.DISABLED,
+        archivedAt: now,
+        archivedBy: actorId,
+        archiveReason: reason,
+      },
+    });
+    await auditEntity(actorId, 'caregiver.archived', 'caregiverProfile', profile._id, { reason });
+    return serializeCaregiverDirectory(updated);
+  },
+
+  async reactivateCaregiver(actorId, caregiverId) {
+    const profile = await applicationOrThrow(caregiverId);
+    if (!profile.userId) throw new NotFoundError();
+    if (profile.status !== CAREGIVER_STATUS.DEACTIVATED) {
+      throw new ConflictError('STATE_INVALID', 'This caregiver is not archived.');
+    }
+    const restoredStatus = profile.administrativeArchive?.previousStatus;
+    if (!restoredStatus || restoredStatus === CAREGIVER_STATUS.DEACTIVATED) {
+      throw new ConflictError('STATE_INVALID', 'This caregiver has no restorable prior status.');
+    }
+    const updated = await caregiverRepository.updateApplication(profile._id, {
+      $set: { status: restoredStatus },
+      $unset: { administrativeArchive: 1 },
+    });
+    await userRepository.updateUser(profile.userId._id, {
+      $set: { status: USER_STATUS.ACTIVE },
+      $unset: { archivedAt: 1, archivedBy: 1, archiveReason: 1 },
+    });
+    await auditEntity(actorId, 'caregiver.reactivated', 'caregiverProfile', profile._id, {
+      restoredStatus,
+    });
+    return serializeCaregiverDirectory(updated);
+  },
+
+  async listClientDirectory({ limit = 20, page = 1, view = 'active' }) {
     const skip = (page - 1) * limit;
     const [clients, total] = await Promise.all([
-      userRepository.listClients({ limit, skip }),
-      userRepository.countClients(),
+      userRepository.listClients({ limit, skip, view }),
+      userRepository.countClients(view),
     ]);
     const clientIds = clients.map((client) => client._id);
     const [profiles, parents, subscriptions] = await Promise.all([
@@ -312,13 +377,131 @@ export const adminService = Object.freeze({
     };
   },
 
+  async archiveClient(actorId, clientId, { reason }) {
+    const client = await userRepository.findById(clientId);
+    if (!client || client.role !== ROLES.CLIENT) throw new NotFoundError();
+    if (client.status === USER_STATUS.DISABLED) {
+      throw new ConflictError('STATE_INVALID', 'This client is already archived.');
+    }
+    const now = new Date();
+    const [parents, subscriptions] = await Promise.all([
+      parentRepository.findByClientIdForAdmin(client._id),
+      subscriptionRepository.findByClientId(client._id),
+    ]);
+    const archivedVisits = await visitRepository.archiveOpenByParentIds(
+      parents.map((parent) => parent._id),
+      { actorId, at: now, reason: `Client archived: ${reason}` },
+    );
+    await Promise.all([
+      userRepository.updateUser(client._id, {
+        $set: {
+          status: USER_STATUS.DISABLED,
+          archivedAt: now,
+          archivedBy: actorId,
+          archiveReason: reason,
+        },
+      }),
+      ...parents.map((parent) =>
+        parentRepository.updateById(parent._id, {
+          $set: {
+            status: PARENT_STATUS.ARCHIVED,
+            administrativeArchive: {
+              archivedAt: now,
+              archivedBy: actorId,
+              previousStatus: parent.status,
+              reason,
+            },
+          },
+        }),
+      ),
+      ...subscriptions.map((subscription) =>
+        subscriptionRepository.update(subscription._id, {
+          $set: {
+            ...(subscription.state !== SUBSCRIPTION_STATE.CANCELLED
+              ? { state: SUBSCRIPTION_STATE.PAUSED }
+              : {}),
+            administrativeArchive: {
+              archivedAt: now,
+              archivedBy: actorId,
+              previousState: subscription.state,
+              reason,
+            },
+          },
+          ...(subscription.state !== SUBSCRIPTION_STATE.CANCELLED &&
+          subscription.state !== SUBSCRIPTION_STATE.PAUSED
+            ? {
+                $push: {
+                  stateHistory: {
+                    state: SUBSCRIPTION_STATE.PAUSED,
+                    at: now,
+                    byUserId: actorId,
+                  },
+                },
+              }
+            : {}),
+        }),
+      ),
+    ]);
+    await auditEntity(actorId, 'client.archived', 'user', client._id, {
+      parentCount: parents.length,
+      reason,
+      subscriptionCount: subscriptions.length,
+      openVisitCount: archivedVisits.modifiedCount,
+    });
+    return { id: client._id.toString(), status: USER_STATUS.DISABLED };
+  },
+
+  async reactivateClient(actorId, clientId) {
+    const client = await userRepository.findById(clientId);
+    if (!client || client.role !== ROLES.CLIENT) throw new NotFoundError();
+    if (client.status !== USER_STATUS.DISABLED || !client.archivedAt) {
+      throw new ConflictError('STATE_INVALID', 'This client is not archived.');
+    }
+    const [parents, subscriptions] = await Promise.all([
+      parentRepository.findByClientIdForAdmin(client._id),
+      subscriptionRepository.findByClientId(client._id),
+    ]);
+    await Promise.all([
+      userRepository.updateUser(client._id, {
+        $set: { status: USER_STATUS.ACTIVE },
+        $unset: { archivedAt: 1, archivedBy: 1, archiveReason: 1 },
+      }),
+      ...parents
+        .filter((parent) => parent.administrativeArchive?.archivedAt)
+        .map((parent) =>
+          parentRepository.updateById(parent._id, {
+            $set: {
+              status:
+                parent.administrativeArchive.previousStatus === PARENT_STATUS.ARCHIVED
+                  ? PARENT_STATUS.PENDING_CONSENT
+                  : parent.administrativeArchive.previousStatus,
+            },
+            $unset: { administrativeArchive: 1 },
+          }),
+        ),
+      ...subscriptions.map((subscription) =>
+        subscriptionRepository.update(subscription._id, {
+          $unset: { administrativeArchive: 1 },
+        }),
+      ),
+    ]);
+    await auditEntity(actorId, 'client.reactivated', 'user', client._id, {
+      subscriptionReviewRequired: true,
+    });
+    return { id: client._id.toString(), status: USER_STATUS.ACTIVE };
+  },
+
   async listApplications({ limit = 20, page = 1, status }) {
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
       caregiverRepository.listApplications({ limit, skip, status }),
       caregiverRepository.countApplications(status),
     ]);
-    return { items: items.map((application) => serializeApplication(application)), page, total };
+    return {
+      items: items.map((application) => serializeApplication(application)).filter(Boolean),
+      page,
+      total,
+    };
   },
 
   async getApplication(actorId, applicationId) {
@@ -396,6 +579,9 @@ export const adminService = Object.freeze({
   async assignmentSuggestions(visitId, now = new Date()) {
     const visit = await visitRepository.findById(visitId);
     if (!visit) throw new NotFoundError();
+    if (visit.archivedAt) {
+      throw new ConflictError('STATE_INVALID', 'An archived visit cannot be assigned.');
+    }
     const [parent, previous] = await Promise.all([
       parentRepository.findById(visit.parentId),
       visitRepository.findMostRecentAssignedCaregiverForParent(visit.parentId, visit.scheduledAt),
@@ -458,6 +644,9 @@ export const adminService = Object.freeze({
       caregiverRepository.findByUserIds([caregiverId]),
     ]);
     if (!visit) throw new NotFoundError();
+    if (visit.archivedAt) {
+      throw new ConflictError('STATE_INVALID', 'An archived visit cannot be assigned.');
+    }
     const profile = caregiver[0];
     if (!profile || profile.status !== CAREGIVER_STATUS.VERIFIED) {
       throw new ConflictError('STATE_INVALID', 'The caregiver must be verified before assignment.');
@@ -494,7 +683,43 @@ export const adminService = Object.freeze({
       visitRepository.findForAdmin({ ...filters, limit, skip }),
       visitRepository.countForAdmin(filters),
     ]);
-    return { items: items.map(serializeOversightVisit), page, total };
+    return {
+      items: items.filter((visit) => visit.parentId).map(serializeOversightVisit),
+      page,
+      total,
+    };
+  },
+
+  async archiveVisit(actorId, visitId, { reason }) {
+    const visit = await visitRepository.findByIdForAdmin(visitId);
+    if (!visit) throw new NotFoundError();
+    if (visit.archivedAt) {
+      throw new ConflictError('STATE_INVALID', 'This visit is already archived.');
+    }
+    const now = new Date();
+    const updated = await visitRepository.update(visit._id, {
+      $set: { archivedAt: now, archivedBy: actorId, archiveReason: reason },
+    });
+    await auditEntity(actorId, 'visit.archived', 'visit', visit._id, {
+      operationalStatus: visit.status,
+      reason,
+    });
+    return serializeOversightVisit(await visitRepository.findByIdForAdmin(updated._id));
+  },
+
+  async reactivateVisit(actorId, visitId) {
+    const visit = await visitRepository.findByIdForAdmin(visitId);
+    if (!visit) throw new NotFoundError();
+    if (!visit.archivedAt) {
+      throw new ConflictError('STATE_INVALID', 'This visit is not archived.');
+    }
+    const updated = await visitRepository.update(visit._id, {
+      $unset: { archivedAt: 1, archivedBy: 1, archiveReason: 1 },
+    });
+    await auditEntity(actorId, 'visit.reactivated', 'visit', visit._id, {
+      operationalStatus: visit.status,
+    });
+    return serializeOversightVisit(await visitRepository.findByIdForAdmin(updated._id));
   },
 
   async getVisitEvidence(actorId, visitId) {
@@ -507,6 +732,9 @@ export const adminService = Object.freeze({
   async resolveFlag(actorId, visitId, { note }) {
     const visit = await visitRepository.findByIdForAdmin(visitId);
     if (!visit) throw new NotFoundError();
+    if (visit.archivedAt) {
+      throw new ConflictError('STATE_INVALID', 'An archived visit cannot be changed.');
+    }
     if (!visit.flag || visit.flag.resolvedAt || visit.status !== VISIT_STATUS.FLAGGED) {
       throw new ConflictError('STATE_INVALID', 'This visit does not have an open flag to resolve.');
     }
@@ -538,6 +766,9 @@ export const adminService = Object.freeze({
   async markMissed(actorId, visitId, { makeUpPlan, reason }) {
     const visit = await visitRepository.findByIdForAdmin(visitId);
     if (!visit) throw new NotFoundError();
+    if (visit.archivedAt) {
+      throw new ConflictError('STATE_INVALID', 'An archived visit cannot be changed.');
+    }
     if (visit.status !== VISIT_STATUS.SCHEDULED) {
       throw new ConflictError('STATE_INVALID', 'Only a scheduled visit can be marked missed.');
     }

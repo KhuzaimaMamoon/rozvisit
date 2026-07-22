@@ -218,19 +218,22 @@ export const subscriptionService = Object.freeze({
       });
     }
     const subscriptions = await subscriptionRepository.findByState(state);
-    const items = await Promise.all(
-      subscriptions.map(async (subscription) => {
-        const [client, parent] = await Promise.all([
-          userRepository.findById(subscription.clientId),
-          parentRepository.findById(subscription.parentId),
-        ]);
-        return {
-          ...serializeSubscription(subscription),
-          clientName: client?.name ?? 'Unknown client',
-          parentName: parent?.name ?? 'Unknown parent',
-        };
-      }),
-    );
+    const items = (
+      await Promise.all(
+        subscriptions.map(async (subscription) => {
+          const [client, parent] = await Promise.all([
+            userRepository.findById(subscription.clientId),
+            parentRepository.findById(subscription.parentId),
+          ]);
+          if (!client || !parent) return null;
+          return {
+            ...serializeSubscription(subscription),
+            clientName: client.name,
+            parentName: parent.name,
+          };
+        }),
+      )
+    ).filter(Boolean);
     return { items };
   },
 

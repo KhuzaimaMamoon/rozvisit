@@ -24,7 +24,10 @@ export const subscriptionRepository = Object.freeze({
     return Subscription.findByIdAndUpdate(id, update, { new: true, runValidators: true });
   },
   findByState(state) {
-    return Subscription.find(state ? { state } : {}).sort({ updatedAt: -1 });
+    return Subscription.find({
+      'administrativeArchive.archivedAt': null,
+      ...(state ? { state } : {}),
+    }).sort({ updatedAt: -1 });
   },
   findDirectoryByClientIds(clientIds) {
     return Subscription.find({ clientId: { $in: clientIds } }).select(
@@ -41,5 +44,11 @@ export const subscriptionRepository = Object.freeze({
     return Subscription.find({
       state: { $in: [SUBSCRIPTION_STATE.ACTIVE, SUBSCRIPTION_STATE.GRACE] },
     });
+  },
+  findByClientId(clientId) {
+    return Subscription.find({ clientId });
+  },
+  updateManyByClientId(clientId, update) {
+    return Subscription.updateMany({ clientId }, update, { runValidators: true });
   },
 });

@@ -8,10 +8,13 @@ export const ADMIN_PERMISSIONS = Object.freeze({
   APPLICATIONS_REVIEW: 'applications.review',
   CAREGIVERS_DIRECTORY_VIEW: 'caregivers.directory.view',
   CAREGIVERS_CNIC_VIEW: 'caregivers.cnic.view',
+  CAREGIVERS_MANAGE: 'caregivers.manage',
   CLIENTS_DIRECTORY_VIEW: 'clients.directory.view',
+  CLIENTS_MANAGE: 'clients.manage',
   FLAGS_RESOLVE: 'flags.resolve',
   SUBSCRIPTIONS_MANAGE: 'subscriptions.manage',
   VISITS_OVERSEE: 'visits.oversee',
+  VISITS_ARCHIVE: 'visits.archive',
 });
 
 export const APPLICATION_DECISIONS = Object.freeze({

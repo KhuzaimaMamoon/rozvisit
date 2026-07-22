@@ -208,7 +208,9 @@ Inside the admin role, permissions are a scoped list per admin account from day 
 
 ```
 admin.permissions: ["applications.review", "subscriptions.manage",
-                    "visits.oversee", "flags.resolve"]
+                    "visits.oversee", "visits.archive", "flags.resolve",
+                    "caregivers.directory.view", "caregivers.cnic.view",
+                    "caregivers.manage", "clients.directory.view", "clients.manage"]
 ```
 
 At MVP the seed admin holds all of them; the middleware checks them (`requirePermission("applications.review")` on the decision endpoint). When the team grows, least-privilege is data entry (a new admin gets a subset), not development. The ownership ring (clients → own family, caregivers → assigned visits, PRV-004) is enforced in services as before — permissions govern admin breadth, ownership governs user depth.

@@ -475,7 +475,7 @@ All endpoints: **Role admin**, all mutations audited automatically (FR-082).
 ### GET /admin/caregivers — Caregiver directory
 
 - **Permission:** `caregivers.directory.view`
-- **Query:** `page?`, `limit?` (default 20, maximum 100)
+- **Query:** `page?`, `limit?` (default 20, maximum 100), `view=active|archived|all` (default `active`)
 - **Success `200`:** `{ items, page, total }`; each item includes non-sensitive operational fields only: caregiver and user IDs, name, email, phone, service area, verification status and gate summary, application date, and gate/decision timestamps. CNIC numbers and document references are never returned in this list.
 
 ### GET /admin/caregivers/:id/cnic — Explicit CNIC reveal
@@ -484,11 +484,21 @@ All endpoints: **Role admin**, all mutations audited automatically (FR-082).
 - **Success `200`:** `{ id, cnicNumber }`
 - **Security:** called only after an explicit admin action; writes the audited `cnic.viewed` event with source `caregiver_directory`. CNIC is not returned by any directory list response.
 
+### PATCH /admin/caregivers/:id/archive and /reactivate
+
+- **Permission:** `caregivers.manage` — archive body `{ reason }` (required, up to 500 characters).
+- **Behavior:** archive disables the login and changes the caregiver profile to `deactivated`, preventing new assignments while retaining verification and past visits. Reactivation restores the pre-archive caregiver status. Both actions are audited.
+
 ### GET /admin/clients — Client directory
 
 - **Permission:** `clients.directory.view`
-- **Query:** `page?`, `limit?` (default 20, maximum 100)
+- **Query:** `page?`, `limit?` (default 20, maximum 100), `view=active|archived|all` (default `active`)
 - **Success `200`:** `{ items, page, total }`; each item includes the client’s name, email, phone, country, currency, associated parent names/statuses, and subscription plan/state summaries. It excludes parent addresses, care notes, emergency contacts, consent recordings, and all other sensitive profile content.
+
+### PATCH /admin/clients/:id/archive and /reactivate
+
+- **Permission:** `clients.manage` — archive body `{ reason }` (required, up to 500 characters).
+- **Behavior:** archive disables the client, archives owned parents, administratively pauses non-terminal subscriptions, and archives open scheduled/in-progress visits without deleting any evidence. Reactivation restores the client and parent states; subscriptions remain paused for explicit payment review and open visits remain archived for deliberate operational review. Both actions are audited.
 
 ### POST /admin/visits/:id/assign
 
@@ -512,7 +522,12 @@ All endpoints: **Role admin**, all mutations audited automatically (FR-082).
 
 ### GET /admin/visits — Oversight list
 
-- **Query:** `status?`, `from?`, `to?`, `caregiverId?`, `page?`, `limit?` (FR-083)
+- **Query:** `status?`, `from?`, `to?`, `caregiverId?`, `page?`, `limit?`, `view=active|archived|all` (default `active`) (FR-083)
+
+### PATCH /admin/visits/:id/archive and /reactivate
+
+- **Permission:** `visits.archive` — archive body `{ reason }` (required, up to 500 characters).
+- **Behavior:** archival is metadata separate from `VISIT_STATUS`; it hides the visit from active/client/caregiver lists and blocks caregiver actions while preserving status, checklist, consent context, media, and history. Both actions are audited and archived visits remain available through the archived admin filter.
 
 ### GET /admin/visits/:id — Visit evidence
 

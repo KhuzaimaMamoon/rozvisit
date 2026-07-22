@@ -514,4 +514,167 @@ describe('Admin verification API', () => {
       .set(auth(limitedAdmin));
     expect(forbiddenClients.status).toBe(403);
   });
+
+  it('skips orphaned admin-list records and returns clean empty collections', async () => {
+    await Promise.all([
+      User.deleteMany({ role: { $ne: ROLES.ADMIN } }),
+      CaregiverProfile.deleteMany({}),
+      ClientProfile.deleteMany({}),
+      ParentProfile.deleteMany({}),
+      Subscription.deleteMany({}),
+      Visit.deleteMany({}),
+    ]);
+    const missingUserId = new mongoose.Types.ObjectId();
+    const missingParentId = new mongoose.Types.ObjectId();
+    const missingSubscriptionId = new mongoose.Types.ObjectId();
+    await CaregiverProfile.create({
+      userId: missingUserId,
+      verification: { cnicNumber: encrypt('3520212345671'), gates: {} },
+      serviceArea: { type: 'Point', coordinates: [73, 33], radiusKm: 10 },
+    });
+    await Subscription.create({
+      clientId: missingUserId,
+      parentId: missingParentId,
+      planKey: 'Basic',
+      planSnapshot: { visitsPerWeek: 1 },
+      state: 'selected',
+      stateHistory: [{ state: 'selected', at: new Date() }],
+    });
+    await Visit.create({
+      clientVisitId: 'orphan-admin-list-visit',
+      parentId: missingParentId,
+      subscriptionId: missingSubscriptionId,
+      scheduledAt: new Date(),
+      status: 'scheduled',
+      statusHistory: [{ status: 'scheduled', at: new Date() }],
+    });
+
+    const [applications, caregivers, clients, visits, subscriptions] = await Promise.all([
+      request(app).get('/api/v1/admin/applications').set(auth(admin)),
+      request(app).get('/api/v1/admin/caregivers').set(auth(admin)),
+      request(app).get('/api/v1/admin/clients').set(auth(admin)),
+      request(app).get('/api/v1/admin/visits').set(auth(admin)),
+      request(app).get('/api/v1/admin/subscriptions').set(auth(admin)),
+    ]);
+
+    for (const response of [applications, caregivers, clients, visits, subscriptions]) {
+      expect(response.status).toBe(200);
+      expect(response.body.data.items).toEqual([]);
+    }
+  });
+
+  it('archives and reactivates clients, caregivers, and visits without deleting evidence', async () => {
+    const client = await User.create({
+      email: 'archive-client@admin.test',
+      name: 'Archive Client',
+      passwordHash: 'hash',
+      phone: '+971501234560',
+      role: ROLES.CLIENT,
+      status: USER_STATUS.ACTIVE,
+    });
+    await ClientProfile.create({ userId: client._id, countryCode: 'AE', currency: 'AED' });
+    const parent = await ParentProfile.create({
+      clientId: client._id,
+      name: 'Archive Parent',
+      age: 68,
+      addressText: encrypt('Rawalpindi'),
+      location: { type: 'Point', coordinates: [73, 33] },
+      emergencyContacts: [
+        { name: 'Family', phone: '+971501234560', relation: 'Daughter', priority: 1 },
+      ],
+    });
+    const subscription = await Subscription.create({
+      clientId: client._id,
+      parentId: parent._id,
+      planKey: 'Basic',
+      planSnapshot: { visitsPerWeek: 1, price: 100, currency: 'AED' },
+      state: 'active',
+      stateHistory: [{ state: 'active', at: new Date() }],
+    });
+    const visit = await Visit.create({
+      clientVisitId: 'archive-evidence-visit',
+      parentId: parent._id,
+      subscriptionId: subscription._id,
+      scheduledAt: new Date(),
+      status: 'completed',
+      statusHistory: [{ status: 'completed', at: new Date() }],
+      checklist: {
+        medicationTaken: true,
+        mood: 4,
+        concerns: ['mobility'],
+        capturedAt: new Date(),
+        completedAt: new Date(),
+      },
+    });
+    const openVisit = await Visit.create({
+      clientVisitId: 'archive-open-visit',
+      parentId: parent._id,
+      subscriptionId: subscription._id,
+      scheduledAt: new Date(Date.now() + 86_400_000),
+      status: 'scheduled',
+      statusHistory: [{ status: 'scheduled', at: new Date() }],
+    });
+
+    expect(
+      (
+        await request(app)
+          .patch(`/api/v1/admin/caregivers/${application._id}/archive`)
+          .set(auth(admin))
+          .send({ reason: 'Temporarily unavailable.' })
+      ).status,
+    ).toBe(200);
+    expect(
+      (await request(app).get('/api/v1/admin/caregivers').set(auth(admin))).body.data.items,
+    ).toEqual([]);
+    expect(
+      (await request(app).get('/api/v1/admin/caregivers?view=archived').set(auth(admin))).body.data
+        .items[0].status,
+    ).toBe('deactivated');
+
+    expect(
+      (
+        await request(app)
+          .patch(`/api/v1/admin/clients/${client._id}/archive`)
+          .set(auth(admin))
+          .send({ reason: 'Client requested an account pause.' })
+      ).status,
+    ).toBe(200);
+    expect((await User.findById(client._id)).status).toBe(USER_STATUS.DISABLED);
+    expect((await ParentProfile.findById(parent._id)).status).toBe('archived');
+    expect((await Subscription.findById(subscription._id)).state).toBe('paused');
+    expect((await Visit.findById(openVisit._id)).archivedAt).toBeInstanceOf(Date);
+
+    expect(
+      (
+        await request(app)
+          .patch(`/api/v1/admin/visits/${visit._id}/archive`)
+          .set(auth(admin))
+          .send({ reason: 'Hidden from active operations after review.' })
+      ).status,
+    ).toBe(200);
+    expect(
+      (await request(app).get('/api/v1/admin/visits').set(auth(admin))).body.data.items,
+    ).toEqual([]);
+    const archivedVisits = await request(app)
+      .get('/api/v1/admin/visits?view=archived')
+      .set(auth(admin));
+    expect(
+      archivedVisits.body.data.items.find((item) => item.id === visit._id.toString()),
+    ).toMatchObject({
+      id: visit._id.toString(),
+      status: 'completed',
+    });
+    expect((await Visit.findById(visit._id)).checklist.concerns).toEqual(['mobility']);
+
+    await request(app)
+      .patch(`/api/v1/admin/caregivers/${application._id}/reactivate`)
+      .set(auth(admin));
+    await request(app).patch(`/api/v1/admin/clients/${client._id}/reactivate`).set(auth(admin));
+    await request(app).patch(`/api/v1/admin/visits/${visit._id}/reactivate`).set(auth(admin));
+
+    expect(await AuditEvent.countDocuments({ action: /\.(archived|reactivated)$/ })).toBe(6);
+    expect((await Visit.findById(visit._id)).archivedAt).toBeNull();
+    expect((await User.findById(client._id)).status).toBe(USER_STATUS.ACTIVE);
+    expect((await Subscription.findById(subscription._id)).state).toBe('paused');
+  });
 });
