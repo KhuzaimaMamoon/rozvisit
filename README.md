@@ -384,6 +384,7 @@ Run from the repository root.
 | `npm run dev -w server` | Start only the server (nodemon) |
 | `npm run build -w client` | Build the client for production |
 | `npm run seed` | Seed the database with realistic fake data |
+| `npm run create:admin` | Explicitly create a verified admin in development or production |
 | `npm run test` | Run Jest unit + Supertest integration tests |
 | `npm run test:watch` | Run tests in watch mode during development |
 | `npm run test:e2e` | Run Playwright end-to-end tests |
@@ -391,6 +392,18 @@ Run from the repository root.
 | `npm run format` | Run Prettier over the whole tree |
 | `npm run format:check` | Prettier check without writing (used by CI) |
 | `npm audit` | Dependency vulnerability check |
+
+### Creating a real admin account
+
+`npm run create:admin` is an explicitly invoked, production-safe operation. It reads the target
+database from `MONGO_URI` and requires `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PHONE`, and
+`ADMIN_PASSWORD`. It creates an active, email-verified admin with every canonical admin permission
+and refuses to overwrite any existing account with the same email. The password is hashed and is
+never written to the console.
+
+Set `MONGO_URI` and the server's other required environment variables for the intended environment,
+then provide the four temporary admin variables and run the command. Remove `ADMIN_PASSWORD` from
+the environment immediately afterward. Do not use `npm run seed` to provision production admins.
 
 ---
 
