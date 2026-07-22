@@ -326,12 +326,14 @@ CLOUDINARY_API_SECRET=
 FIREBASE_SERVICE_ACCOUNT_JSON=
 
 # Email
-# Gmail SMTP is retained for a future SMTP-capable host; Render production uses Resend HTTPS only.
+# Gmail SMTP is retained for a future SMTP-capable host; Render production uses Brevo HTTPS.
 GMAIL_USER=
 GMAIL_APP_PASSWORD=
 # Non-production SMTP only: 587 = STARTTLS (default); set 465 for implicit TLS elsewhere.
 GMAIL_SMTP_PORT=
 EMAIL_FROM_ADDRESS=
+BREVO_API_KEY=
+# Dormant fallback reference until a custom sender domain is verified.
 RESEND_API_KEY=
 
 # Optional

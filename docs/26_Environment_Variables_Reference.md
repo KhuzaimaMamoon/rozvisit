@@ -209,27 +209,39 @@ Every variable is specified with the 9 fields from the prompt:
 |---|---|
 | Variables | `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `GMAIL_SMTP_PORT` |
 | Service | Gmail SMTP bridge |
-| Purpose | Keeps a Gmail SMTP transport available for a future SMTP-capable host such as a VPS. It is never attempted in production, where Resend's HTTPS API is the only active provider. |
+| Purpose | Keeps a Gmail SMTP transport available for a future SMTP-capable host such as a VPS. It is never attempted in production, where Brevo's HTTPS API is the active pilot provider. |
 | Required | Optional; they must be set together. |
 | Development example | `GMAIL_USER=your-gmail-address`, `GMAIL_APP_PASSWORD=16-character-app-password` **(never commit either value)** |
-| Production rule | **Confirmed non-viable on Render:** outbound Gmail SMTP ports `465` and `587` were both tested and timed out. The production email channel never attempts Gmail SMTP, even if these variables are present. Gmail also has sending limits and automated/bulk usage can trigger account restrictions. Use Resend's HTTPS API on Render; after a custom sender domain is verified, Resend can deliver to all recipients. |
+| Production rule | **Confirmed non-viable on Render:** outbound Gmail SMTP ports `465` and `587` were both tested and timed out. The production email channel never attempts Gmail SMTP, even if these variables are present. Gmail also has sending limits and automated/bulk usage can trigger account restrictions. Use Brevo's HTTPS API during the pilot. |
 | Sensitivity | Secret (both values) |
-| Default behavior | For a non-production SMTP-capable host, `GMAIL_SMTP_PORT` defaults to `587` with STARTTLS; set `465` to use implicit TLS. Production ignores these values and uses configured Resend. If no active provider is configured, local/CI stays no-op. |
+| Default behavior | For a non-production SMTP-capable host, `GMAIL_SMTP_PORT` defaults to `587` with STARTTLS; set `465` to use implicit TLS. Production ignores these values and uses configured Brevo. If no active provider is configured, local/CI stays no-op. |
 | Validation | `GMAIL_USER` is an email address; `GMAIL_APP_PASSWORD` is exactly 16 characters after removing display spaces; `GMAIL_SMTP_PORT` is either `465` or `587`. |
+
+### `BREVO_API_KEY`
+
+| Field | Value |
+|---|---|
+| Variable | `BREVO_API_KEY` |
+| Service | Brevo Transactional Email |
+| Purpose | The active pilot channel on Render for verification, password-reset, and product notification emails. It uses HTTPS, so it is not affected by Render's SMTP port blocking, and the pilot account can address non-owner recipients before RozVisit has a verified custom domain. |
+| Required | Optional — when unset, the email channel deliberately uses its local/CI no-op delivery mode. |
+| Development example | `BREVO_API_KEY=xkeysib-...` **(never commit a real key)** |
+| Production rule | Store the Brevo API key only in Render. `EMAIL_FROM_ADDRESS` must exactly match a sender verified in the Brevo account. Brevo is temporary until a custom domain can provide stronger SPF/DKIM deliverability. |
+| Sensitivity | Secret |
+| Default behavior | Used for every production email send. With no Brevo key configured, delivery is no-op and `DEV_LOG_AUTH_LINKS` remains available only under its existing localhost-development guard. |
+| Validation | Non-empty when set. |
 
 ### `RESEND_API_KEY`
 
 | Field | Value |
 |---|---|
 | Variable | `RESEND_API_KEY` |
-| Service | Resend transactional email |
-| Purpose | The only active production channel on Render for verification, password-reset, and product notification emails. It uses HTTPS, so it is not affected by Render's SMTP port blocking. Resend sandbox accounts deliver only to the account owner's verified recipient until a custom sender domain is verified. |
-| Required | Optional — when unset, the email channel deliberately uses its local/CI no-op delivery mode. |
-| Development example | `RESEND_API_KEY=re_...` **(never commit a real key)** |
-| Production rule | Set from the Resend dashboard only after the configured sender domain/address is verified. |
+| Service | Resend transactional email (dormant reference) |
+| Purpose | Retained in environment configuration for a future verified-custom-domain option. The active email channel does not attempt Resend. |
+| Required | No |
+| Production rule | Do not rely on the sandbox for pilot users; it only delivers to the account owner's verified recipient without a custom domain. |
 | Sensitivity | Secret |
-| Default behavior | Used for every production email send. With no Resend key configured, delivery is no-op and `DEV_LOG_AUTH_LINKS` remains available only under its existing localhost-development guard. |
-| Validation | Non-empty when set. |
+| Default behavior | Unused by the active channel. |
 
 ### `EMAIL_FROM_ADDRESS`
 
@@ -239,8 +251,8 @@ Every variable is specified with the 9 fields from the prompt:
 | Service | Email provider |
 | Purpose | The `From:` address on outgoing mail |
 | Required | Required |
-| Development example | `EMAIL_FROM_ADDRESS=onboarding@resend.dev` **(Resend test sender; delivery is limited by Resend until a production domain is verified)** |
-| Production rule | `noreply@<rozvisit-domain>` for automated messages; `support@<rozvisit-domain>` reserved for reply-expected mail (Doc 19 §5) |
+| Development example | `EMAIL_FROM_ADDRESS=the-sender-verified-in-brevo@example.com` **(shape only; use the actual Brevo-verified sender outside source control)** |
+| Production rule | During the pilot, use the email address registered and verified as a Brevo sender. After a RozVisit domain is verified, use `noreply@<rozvisit-domain>` for automated messages and reserve `support@<rozvisit-domain>` for reply-expected mail (Doc 19 §5). |
 | Sensitivity | Public |
 | Default behavior | Boot refused |
 | Validation | Valid email format |
@@ -439,12 +451,14 @@ CLOUDINARY_API_SECRET=
 # Push notifications (Firebase service account JSON, single-line)
 FIREBASE_SERVICE_ACCOUNT_JSON=
 
-# Email (Gmail is a temporary bridge; Resend is the long-term provider after sender-domain verification)
+# Email (Brevo HTTPS is the active pilot provider)
 GMAIL_USER=
 GMAIL_APP_PASSWORD=
-# 587 = STARTTLS (default after Render's port-465 timeout); set 465 for implicit TLS elsewhere.
+# Non-production SMTP reference only: 587 = STARTTLS; 465 = implicit TLS.
 GMAIL_SMTP_PORT=
-EMAIL_FROM_ADDRESS=onboarding@resend.dev
+EMAIL_FROM_ADDRESS=
+BREVO_API_KEY=
+# Dormant reference until a custom sender domain is verified.
 RESEND_API_KEY=
 
 # Error tracking (optional at MVP)
@@ -527,7 +541,11 @@ The order is fixed:
 | `CLOUDINARY_API_KEY` | File storage | Required | Sensitive |
 | `CLOUDINARY_API_SECRET` | File storage | Required | Secret |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Push | Required | Secret |
-| `EMAIL_PROVIDER_API_KEY` | Email | Required (prod/test) | Secret |
+| `BREVO_API_KEY` | Email | Required for real pilot delivery | Secret |
+| `RESEND_API_KEY` | Email (dormant reference) | Optional | Secret |
+| `GMAIL_USER` | Email (non-production SMTP reference) | Optional | Secret |
+| `GMAIL_APP_PASSWORD` | Email (non-production SMTP reference) | Optional | Secret |
+| `GMAIL_SMTP_PORT` | Email (non-production SMTP reference) | Optional | Public |
 | `EMAIL_FROM_ADDRESS` | Email | Required | Public |
 | `SENTRY_DSN` | Monitoring | Optional | Sensitive |
 | `LOG_LEVEL` | Server runtime | Optional | Public |

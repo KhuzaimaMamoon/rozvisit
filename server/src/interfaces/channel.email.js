@@ -1,4 +1,3 @@
-import { Resend } from 'resend';
 import nodemailer from 'nodemailer';
 import { logger } from '../utils/logger.js';
 import { env } from '../config/env.js';
@@ -91,30 +90,37 @@ function messageFor({ body, link, title, type }) {
   return { html, subject, text };
 }
 
-function resendDeliveryError(error) {
+function brevoDeliveryError(error, statusCode = null) {
   const details = error && typeof error === 'object' ? error : {};
-  const statusCode = details.statusCode ?? details.status ?? null;
-  const message = details.message ?? 'Resend rejected the email delivery request.';
-  const wrapped = new Error(`Resend email delivery failed: ${message}`);
+  const responseCode = statusCode ?? details.statusCode ?? details.status ?? null;
+  const message = details.message ?? 'Brevo rejected the email delivery request.';
+  const wrapped = new Error(`Brevo email delivery failed: ${message}`);
 
-  wrapped.name = details.name ?? 'ResendDeliveryError';
+  wrapped.name = details.name ?? 'BrevoDeliveryError';
   wrapped.code = details.code ?? null;
-  wrapped.responseCode = statusCode;
-  wrapped.statusCode = statusCode;
+  wrapped.responseCode = responseCode;
+  wrapped.statusCode = responseCode;
   // Deliberately retain only provider diagnostics, never a recipient, token,
   // API key, or the request payload.
   wrapped.providerDetails = {
     code: details.code ?? null,
     message,
     name: details.name ?? null,
-    statusCode,
+    statusCode: responseCode,
   };
   return wrapped;
 }
 
+async function parseBrevoResponse(response) {
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
+}
+
 export function createEmailChannel({
-  apiKey = env.email.resendApiKey,
-  createClient = (key) => new Resend(key),
+  apiKey = env.email.brevoApiKey,
   createGmailTransport = (options) => nodemailer.createTransport(options),
   devLogAuthLinks = env.devLogAuthLinks,
   enableDelivery = !process.env.JEST_WORKER_ID,
@@ -124,6 +130,7 @@ export function createEmailChannel({
   gmailUser = env.email.gmailUser,
   log = logger,
   nodeEnv = env.nodeEnv,
+  sendRequest = globalThis.fetch,
 } = {}) {
   // Render blocks Gmail's SMTP ports 465 and 587. Keep this transport for a
   // future SMTP-capable host, but never attempt it from a production process.
@@ -141,7 +148,7 @@ export function createEmailChannel({
           socketTimeout: 15_000,
         })
       : null;
-  const client = apiKey && enableDelivery ? createClient(apiKey) : null;
+  const brevoEnabled = Boolean(apiKey && enableDelivery);
   return assertNotificationChannel({
     async send({ body, link, title, to, type }) {
       if (devLogAuthLinks && link) {
@@ -151,7 +158,7 @@ export function createEmailChannel({
           type,
         });
       }
-      if ((gmailTransport || client) && !to) {
+      if ((gmailTransport || brevoEnabled) && !to) {
         throw new Error('Email delivery requires a recipient address.');
       }
       if (gmailTransport) {
@@ -164,23 +171,35 @@ export function createEmailChannel({
           log.info('notification.email_sent', { delivery: 'gmail_smtp', type });
           return response;
         } catch (error) {
-          if (!client) throw error;
+          if (!brevoEnabled) throw error;
           log.warn('notification.gmail_smtp_failed', { type, error: error.message });
         }
       }
-      if (!client) {
+      if (!brevoEnabled) {
         log.info('notification.email_queued', { delivery: 'noop', type });
         return { delivery: 'noop' };
       }
-      const response = await client.emails.send({
-        from: fromAddress,
-        to: [to],
-        ...messageFor({ body, link, title, type }),
+      const message = messageFor({ body, link, title, type });
+      const response = await sendRequest('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'api-key': apiKey,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { email: fromAddress, name: 'RozVisit' },
+          to: [{ email: to }],
+          subject: message.subject,
+          htmlContent: message.html,
+          textContent: message.text,
+        }),
       });
-      if (response.error) throw resendDeliveryError(response.error);
+      const responseBody = await parseBrevoResponse(response);
+      if (!response.ok) throw brevoDeliveryError(responseBody, response.status);
 
-      log.info('notification.email_sent', { delivery: 'resend', type });
-      return response.data;
+      log.info('notification.email_sent', { delivery: 'brevo', provider: 'brevo', type });
+      return responseBody;
     },
   });
 }

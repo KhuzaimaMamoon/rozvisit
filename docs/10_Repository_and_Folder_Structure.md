@@ -380,8 +380,9 @@ CLOUDINARY_API_SECRET=
 FIREBASE_SERVICE_ACCOUNT_JSON=
 
 # Email
-EMAIL_PROVIDER_API_KEY=
+BREVO_API_KEY=
 EMAIL_FROM_ADDRESS=
+RESEND_API_KEY=
 ```
 
 Rules: `env.js` refuses boot if a required variable is missing (loud failure at deploy, not quiet failure at first login — Doc 09 §13). Production values live only in Render's environment settings. The client has no secrets at all — anything the browser receives is public by definition; the client's only config is the API base URL, and in the single-service deployment even that is just `/api`.

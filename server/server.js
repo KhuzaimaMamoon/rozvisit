@@ -13,7 +13,7 @@ async function start() {
     const gmailConfigured =
       env.nodeEnv !== 'production' && env.email.gmailUser && env.email.gmailAppPassword;
     logger.info('email.delivery_configured', {
-      provider: gmailConfigured ? 'gmail_smtp' : env.email.resendApiKey ? 'resend' : 'noop',
+      provider: gmailConfigured ? 'gmail_smtp' : env.email.brevoApiKey ? 'brevo' : 'noop',
       ...(gmailConfigured
         ? {
             smtpPort: env.email.gmailSmtpPort,

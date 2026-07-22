@@ -258,7 +258,7 @@ Concrete rules for the file listed in Document 10 §8:
 - `MONGO_URI` — secret; never logged; connection error messages redact its password portion.
 - `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` — two separate secrets; a leaked access secret must not forge refresh tokens.
 - `FIELD_ENCRYPTION_KEY` — 32-byte random key material, base64-encoded; used only via `crypto.js`.
-- `CLOUDINARY_*`, `FIREBASE_SERVICE_ACCOUNT_JSON`, `EMAIL_PROVIDER_API_KEY` — vendor credentials; scoped to the least privileges needed.
+- `CLOUDINARY_*`, `FIREBASE_SERVICE_ACCOUNT_JSON`, `BREVO_API_KEY` — active vendor credentials; scoped to the least privileges needed. `RESEND_API_KEY` remains a dormant secret reference and receives the same handling.
 - **No secret appears in URLs, in error messages, in analytics events, or in support tickets.** The logger's redaction list (see §23) includes every secret name mechanically.
 
 ---

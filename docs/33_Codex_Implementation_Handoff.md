@@ -687,8 +687,9 @@ CLOUDINARY_API_SECRET=
 FIREBASE_SERVICE_ACCOUNT_JSON=
 
 # Email
-EMAIL_PROVIDER_API_KEY=
+BREVO_API_KEY=
 EMAIL_FROM_ADDRESS=
+RESEND_API_KEY=
 
 # Optional
 SENTRY_DSN=
@@ -1050,7 +1051,7 @@ const REQUIRED = [
   'CLOUDINARY_API_KEY',
   'CLOUDINARY_API_SECRET',
   'FIREBASE_SERVICE_ACCOUNT_JSON',
-  'EMAIL_PROVIDER_API_KEY',
+  'BREVO_API_KEY',
   'EMAIL_FROM_ADDRESS',
 ];
 
@@ -1089,7 +1090,7 @@ export const env = Object.freeze({
     apiSecret: process.env.CLOUDINARY_API_SECRET,
   },
   firebase: { serviceAccountJson: process.env.FIREBASE_SERVICE_ACCOUNT_JSON },
-  email: { apiKey: process.env.EMAIL_PROVIDER_API_KEY, fromAddress: process.env.EMAIL_FROM_ADDRESS },
+  email: { apiKey: process.env.BREVO_API_KEY, fromAddress: process.env.EMAIL_FROM_ADDRESS },
   sentryDsn: process.env.SENTRY_DSN ?? null,
   logLevel: process.env.LOG_LEVEL ?? (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
 });

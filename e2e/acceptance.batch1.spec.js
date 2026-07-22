@@ -64,7 +64,11 @@ test('AC-01: client registers, verifies, creates a parent, selects a plan, then 
   await client.getByLabel('Country').fill('AE');
   await client.getByLabel('Password').fill(password);
   await client.getByRole('button', { name: 'Create account' }).click();
-  await expect(client.getByText('Check your email to verify your account')).toBeVisible();
+  await expect(
+    client.getByText(
+      'Check your email to verify your account (please also check your spam or junk folder), then return here to sign in.',
+    ),
+  ).toBeVisible();
 
   const registered = await User.findOne({ email });
   const token = await createVerificationToken(registered._id);

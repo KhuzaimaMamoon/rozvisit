@@ -174,9 +174,11 @@ CLOUDINARY_API_SECRET=
 # Push notifications (Firebase service account JSON, single-line)
 FIREBASE_SERVICE_ACCOUNT_JSON=
 
-# Email (provider chosen at build — Recommendation)
-EMAIL_PROVIDER_API_KEY=
+# Email (Brevo HTTPS is the active pilot provider)
+BREVO_API_KEY=
 EMAIL_FROM_ADDRESS=
+# Dormant reference until a custom sender domain is verified
+RESEND_API_KEY=
 
 # Error tracking (Recommendation — added at build)
 SENTRY_DSN=

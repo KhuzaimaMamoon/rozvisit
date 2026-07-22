@@ -2,21 +2,26 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { createEmailChannel } from '../src/interfaces/channel.email.js';
 
 describe('Email channel', () => {
-  it('uses Gmail SMTP ahead of Resend when both delivery options are configured', async () => {
+  const brevoResponse = (body = { messageId: 'brevo-1' }, status = 201) => ({
+    json: jest.fn().mockResolvedValue(body),
+    ok: status >= 200 && status < 300,
+    status,
+  });
+
+  it('uses Gmail SMTP ahead of Brevo when both delivery options are configured', async () => {
     const sendMail = jest.fn().mockResolvedValue({ messageId: 'gmail-1' });
     const createGmailTransport = jest.fn(() => ({ sendMail }));
-    const resendSend = jest.fn();
-    const createClient = jest.fn(() => ({ emails: { send: resendSend } }));
+    const sendRequest = jest.fn();
     const channel = createEmailChannel({
-      apiKey: 're_test_key',
-      createClient,
+      apiKey: 'brevo-test-key',
       createGmailTransport,
       enableDelivery: true,
-      fromAddress: 'noreply@verified-resend.example',
+      fromAddress: 'noreply@verified-brevo.example',
       gmailAppPassword: 'abcdefghijklmnop',
       gmailSmtpPort: 465,
       gmailUser: 'rozvisit.testing@gmail.com',
       log: { info: jest.fn(), warn: jest.fn() },
+      sendRequest,
     });
 
     await channel.send({
@@ -35,7 +40,7 @@ describe('Email channel', () => {
       greetingTimeout: 15_000,
       socketTimeout: 15_000,
     });
-    expect(resendSend).not.toHaveBeenCalled();
+    expect(sendRequest).not.toHaveBeenCalled();
     expect(sendMail).toHaveBeenCalledWith(
       expect.objectContaining({
         from: 'rozvisit.testing@gmail.com',
@@ -44,24 +49,24 @@ describe('Email channel', () => {
     );
   });
 
-  it('falls back to Resend when configured Gmail SMTP cannot deliver', async () => {
+  it('falls back to Brevo when configured Gmail SMTP cannot deliver', async () => {
     const sendMail = jest.fn().mockRejectedValue(new Error('SMTP unavailable'));
-    const send = jest.fn().mockResolvedValue({ data: { id: 'resend-1' }, error: null });
+    const sendRequest = jest.fn().mockResolvedValue(brevoResponse());
     const channel = createEmailChannel({
-      apiKey: 're_test_key',
-      createClient: () => ({ emails: { send } }),
+      apiKey: 'brevo-test-key',
       createGmailTransport: () => ({ sendMail }),
       enableDelivery: true,
-      fromAddress: 'noreply@verified-resend.example',
+      fromAddress: 'noreply@verified-brevo.example',
       gmailAppPassword: 'abcdefghijklmnop',
       gmailUser: 'rozvisit.testing@gmail.com',
       log: { info: jest.fn(), warn: jest.fn() },
+      sendRequest,
     });
 
     await channel.send({ to: 'ayesha@example.com', type: 'password_reset' });
 
     expect(sendMail).toHaveBeenCalledTimes(1);
-    expect(send).toHaveBeenCalledTimes(1);
+    expect(sendRequest).toHaveBeenCalledTimes(1);
   });
 
   it('uses STARTTLS on port 587 when that transport mode is configured', async () => {
@@ -88,71 +93,71 @@ describe('Email channel', () => {
     );
   });
 
-  it('uses Resend without constructing an SMTP transport in production', async () => {
+  it('uses Brevo without constructing an SMTP transport in production', async () => {
     const createGmailTransport = jest.fn();
-    const send = jest.fn().mockResolvedValue({ data: { id: 'resend-production-1' }, error: null });
+    const sendRequest = jest.fn().mockResolvedValue(brevoResponse());
     const channel = createEmailChannel({
-      apiKey: 're_test_key',
-      createClient: () => ({ emails: { send } }),
+      apiKey: 'brevo-test-key',
       createGmailTransport,
       enableDelivery: true,
-      fromAddress: 'onboarding@resend.dev',
+      fromAddress: 'verified-sender@example.com',
       gmailAppPassword: 'abcdefghijklmnop',
       gmailUser: 'rozvisit.testing@gmail.com',
       log: { info: jest.fn(), warn: jest.fn() },
       nodeEnv: 'production',
+      sendRequest,
     });
 
     await channel.send({ to: 'ayesha@example.com', type: 'email_verification' });
 
     expect(createGmailTransport).not.toHaveBeenCalled();
-    expect(send).toHaveBeenCalledTimes(1);
+    expect(sendRequest).toHaveBeenCalledTimes(1);
   });
 
-  it('preserves safe Resend rejection details for the retry logger', async () => {
-    const send = jest.fn().mockResolvedValue({
-      data: null,
-      error: {
-        code: 'validation_error',
-        message: 'The sender domain is not verified.',
-        name: 'validation_error',
-        statusCode: 403,
-      },
-    });
+  it('preserves safe Brevo rejection details for the retry logger', async () => {
+    const sendRequest = jest
+      .fn()
+      .mockResolvedValue(
+        brevoResponse(
+          { code: 'unauthorized', message: 'Key not found', name: 'unauthorized' },
+          401,
+        ),
+      );
     const channel = createEmailChannel({
-      apiKey: 're_test_key',
-      createClient: () => ({ emails: { send } }),
+      apiKey: 'brevo-test-key',
       enableDelivery: true,
-      fromAddress: 'onboarding@resend.dev',
+      fromAddress: 'verified-sender@example.com',
       log: { info: jest.fn(), warn: jest.fn() },
       nodeEnv: 'production',
+      sendRequest,
     });
 
     await expect(
       channel.send({ to: 'ayesha@example.com', type: 'email_verification' }),
     ).rejects.toMatchObject({
-      code: 'validation_error',
-      message: 'Resend email delivery failed: The sender domain is not verified.',
-      responseCode: 403,
-      statusCode: 403,
+      code: 'unauthorized',
+      message: 'Brevo email delivery failed: Key not found',
+      responseCode: 401,
+      statusCode: 401,
       providerDetails: {
-        code: 'validation_error',
-        message: 'The sender domain is not verified.',
-        name: 'validation_error',
-        statusCode: 403,
+        code: 'unauthorized',
+        message: 'Key not found',
+        name: 'unauthorized',
+        statusCode: 401,
       },
     });
   });
 
-  it('delivers a Resend email when a dedicated API key is configured', async () => {
-    const send = jest.fn().mockResolvedValue({ data: { id: 'email-1' }, error: null });
-    const createClient = jest.fn(() => ({ emails: { send } }));
+  it('delivers a Brevo email when a dedicated API key is configured', async () => {
+    const log = { info: jest.fn(), warn: jest.fn() };
+    const sendRequest = jest.fn().mockResolvedValue(brevoResponse({ messageId: 'email-1' }));
     const channel = createEmailChannel({
-      apiKey: 're_test_key',
-      createClient,
+      apiKey: 'brevo-test-key',
       enableDelivery: true,
       fromAddress: 'noreply@example.com',
-      log: { info: jest.fn(), warn: jest.fn() },
+      log,
+      nodeEnv: 'production',
+      sendRequest,
     });
 
     await channel.send({
@@ -162,27 +167,36 @@ describe('Email channel', () => {
       type: 'subscription_active',
     });
 
-    expect(createClient).toHaveBeenCalledWith('re_test_key');
-    expect(send).toHaveBeenCalledWith(
+    expect(sendRequest).toHaveBeenCalledWith(
+      'https://api.brevo.com/v3/smtp/email',
       expect.objectContaining({
-        from: 'noreply@example.com',
-        html: expect.stringContaining('RozVisit'),
-        subject: 'Your plan is active',
-        text: 'Your Standard plan is active.',
-        to: ['ayesha@example.com'],
+        method: 'POST',
+        headers: expect.objectContaining({ 'api-key': 'brevo-test-key' }),
       }),
     );
-    expect(send.mock.calls[0][0].html).toContain('Your Standard plan is active.');
+    const payload = JSON.parse(sendRequest.mock.calls[0][1].body);
+    expect(payload).toMatchObject({
+      sender: { email: 'noreply@example.com', name: 'RozVisit' },
+      subject: 'Your plan is active',
+      textContent: 'Your Standard plan is active.',
+      to: [{ email: 'ayesha@example.com' }],
+    });
+    expect(payload.htmlContent).toContain('Your Standard plan is active.');
+    expect(log.info).toHaveBeenCalledWith('notification.email_sent', {
+      delivery: 'brevo',
+      provider: 'brevo',
+      type: 'subscription_active',
+    });
   });
 
-  it('uses no-op delivery without a Resend key while retaining the development auth-link log', async () => {
+  it('uses no-op delivery without a Brevo key while retaining the development auth-link log', async () => {
     const log = { info: jest.fn(), warn: jest.fn() };
-    const createClient = jest.fn();
+    const sendRequest = jest.fn();
     const channel = createEmailChannel({
       apiKey: null,
-      createClient,
       devLogAuthLinks: true,
       log,
+      sendRequest,
     });
 
     await expect(
@@ -193,7 +207,7 @@ describe('Email channel', () => {
       }),
     ).resolves.toEqual({ delivery: 'noop' });
 
-    expect(createClient).not.toHaveBeenCalled();
+    expect(sendRequest).not.toHaveBeenCalled();
     expect(log.warn).toHaveBeenCalledWith(
       'dev.auth_link',
       expect.objectContaining({ type: 'password_reset' }),

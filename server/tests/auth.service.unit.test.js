@@ -52,7 +52,7 @@ describe('authService', () => {
     const scheduleRetry = jest.fn();
     const log = { error: jest.fn() };
     const rejection = Object.assign(
-      new Error('Resend email delivery failed: sender is unverified'),
+      new Error('Brevo email delivery failed: sender is unverified'),
       {
         code: 'validation_error',
         name: 'validation_error',
@@ -80,8 +80,9 @@ describe('authService', () => {
       'auth.email_delivery_failed',
       expect.objectContaining({
         errorCode: 'validation_error',
-        errorMessage: 'Resend email delivery failed: sender is unverified',
+        errorMessage: 'Brevo email delivery failed: sender is unverified',
         errorName: 'validation_error',
+        provider: 'brevo',
         responseCode: 403,
         statusCode: 403,
         type: 'email_verification',
