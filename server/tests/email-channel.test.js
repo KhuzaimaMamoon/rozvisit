@@ -14,6 +14,7 @@ describe('Email channel', () => {
       enableDelivery: true,
       fromAddress: 'noreply@verified-resend.example',
       gmailAppPassword: 'abcdefghijklmnop',
+      gmailSmtpPort: 465,
       gmailUser: 'rozvisit.testing@gmail.com',
       log: { info: jest.fn(), warn: jest.fn() },
     });
@@ -25,11 +26,14 @@ describe('Email channel', () => {
     });
 
     expect(createGmailTransport).toHaveBeenCalledWith({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      requireTLS: false,
       auth: { user: 'rozvisit.testing@gmail.com', pass: 'abcdefghijklmnop' },
-      connectionTimeout: 10_000,
-      greetingTimeout: 10_000,
-      socketTimeout: 10_000,
+      connectionTimeout: 15_000,
+      greetingTimeout: 15_000,
+      socketTimeout: 15_000,
     });
     expect(resendSend).not.toHaveBeenCalled();
     expect(sendMail).toHaveBeenCalledWith(
@@ -58,6 +62,30 @@ describe('Email channel', () => {
 
     expect(sendMail).toHaveBeenCalledTimes(1);
     expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses STARTTLS on port 587 when that transport mode is configured', async () => {
+    const sendMail = jest.fn().mockResolvedValue({ messageId: 'gmail-587' });
+    const createGmailTransport = jest.fn(() => ({ sendMail }));
+    const channel = createEmailChannel({
+      createGmailTransport,
+      enableDelivery: true,
+      gmailAppPassword: 'abcdefghijklmnop',
+      gmailSmtpPort: 587,
+      gmailUser: 'rozvisit.testing@gmail.com',
+      log: { info: jest.fn(), warn: jest.fn() },
+    });
+
+    await channel.send({ to: 'ayesha@example.com', type: 'password_reset' });
+
+    expect(createGmailTransport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        host: 'smtp.gmail.com',
+        port: 587,
+        requireTLS: true,
+        secure: false,
+      }),
+    );
   });
 
   it('delivers a Resend email when a dedicated API key is configured', async () => {

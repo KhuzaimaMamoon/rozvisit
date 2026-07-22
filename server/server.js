@@ -10,13 +10,15 @@ async function start() {
   try {
     await mongoose.connect(env.mongoUri);
     logger.info('database.connected');
+    const gmailConfigured = env.email.gmailUser && env.email.gmailAppPassword;
     logger.info('email.delivery_configured', {
-      provider:
-        env.email.gmailUser && env.email.gmailAppPassword
-          ? 'gmail_smtp'
-          : env.email.resendApiKey
-            ? 'resend'
-            : 'noop',
+      provider: gmailConfigured ? 'gmail_smtp' : env.email.resendApiKey ? 'resend' : 'noop',
+      ...(gmailConfigured
+        ? {
+            smtpPort: env.email.gmailSmtpPort,
+            smtpSecurity: env.email.gmailSmtpPort === 465 ? 'implicit_tls' : 'starttls',
+          }
+        : {}),
     });
     const runWeeklyScheduling = () =>
       visitService.processWeeklyCycles().catch((error) => {

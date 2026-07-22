@@ -22,6 +22,7 @@ const OPTIONAL = [
   'RESEND_API_KEY',
   'GMAIL_USER',
   'GMAIL_APP_PASSWORD',
+  'GMAIL_SMTP_PORT',
 ];
 const VALID_NODE_ENVS = new Set(['development', 'test', 'production']);
 const VALID_LOG_LEVELS = new Set(['error', 'warn', 'info', 'debug']);
@@ -88,6 +89,12 @@ const gmailAppPassword = process.env.GMAIL_APP_PASSWORD?.replaceAll(/\s/g, '') ?
 if (hasGmailAppPassword && (!gmailAppPassword || gmailAppPassword.length !== 16)) {
   fail('GMAIL_APP_PASSWORD must be a 16-character Gmail app password');
 }
+// Gmail's implicit-TLS port 465 timed out on Render. Default to the alternate
+// STARTTLS route while retaining an explicit 465 override for other hosts.
+const gmailSmtpPort = Number(process.env.GMAIL_SMTP_PORT ?? 587);
+if (!Number.isInteger(gmailSmtpPort) || ![465, 587].includes(gmailSmtpPort)) {
+  fail('GMAIL_SMTP_PORT must be 465 or 587 when set');
+}
 
 try {
   new URL(process.env.APP_BASE_URL);
@@ -152,6 +159,7 @@ export const env = Object.freeze({
     resendApiKey: process.env.RESEND_API_KEY ?? null,
     gmailUser: process.env.GMAIL_USER ?? null,
     gmailAppPassword,
+    gmailSmtpPort,
   }),
   appBaseUrl: process.env.APP_BASE_URL,
   appOrigin,

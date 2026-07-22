@@ -203,19 +203,19 @@ Every variable is specified with the 9 fields from the prompt:
 
 ## A.7 Email
 
-### `GMAIL_USER` and `GMAIL_APP_PASSWORD`
+### `GMAIL_USER`, `GMAIL_APP_PASSWORD`, and `GMAIL_SMTP_PORT`
 
 | Field | Value |
 |---|---|
-| Variables | `GMAIL_USER`, `GMAIL_APP_PASSWORD` |
+| Variables | `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `GMAIL_SMTP_PORT` |
 | Service | Gmail SMTP bridge |
-| Purpose | Sends real transactional email to any recipient while the Resend account remains limited to its sandbox audience. When both are set, Gmail SMTP takes priority over Resend. |
+| Purpose | Sends real transactional email to any recipient while the Resend account remains limited to its sandbox audience. When both providers are set, Gmail SMTP is tried first and Resend is the fallback if SMTP fails. |
 | Required | Optional; they must be set together. |
 | Development example | `GMAIL_USER=your-gmail-address`, `GMAIL_APP_PASSWORD=16-character-app-password` **(never commit either value)** |
-| Production rule | Temporary bridge only. Gmail has sending limits and automated/bulk usage can trigger account restrictions; replace this with Resend after verifying a custom sender domain. |
+| Production rule | Temporary bridge only. Gmail has sending limits and automated/bulk usage can trigger account restrictions; replace this with Resend after verifying a custom sender domain. Render has shown a timeout on Gmail port 465, so the app now tries port 587 before treating SMTP as unavailable on that host. If both ports time out, do not keep Gmail configured on Render: use Resend until a verified sender domain is available. |
 | Sensitivity | Secret (both values) |
-| Default behavior | If both are unset, the channel uses configured Resend. If neither provider is configured, local/CI stays no-op. |
-| Validation | `GMAIL_USER` is an email address; `GMAIL_APP_PASSWORD` is exactly 16 characters after removing display spaces. |
+| Default behavior | `GMAIL_SMTP_PORT` defaults to `587` with STARTTLS. Set `465` to use implicit TLS. If the user/password are unset, the channel uses configured Resend. If neither provider is configured, local/CI stays no-op. |
+| Validation | `GMAIL_USER` is an email address; `GMAIL_APP_PASSWORD` is exactly 16 characters after removing display spaces; `GMAIL_SMTP_PORT` is either `465` or `587`. |
 
 ### `RESEND_API_KEY`
 
@@ -223,7 +223,7 @@ Every variable is specified with the 9 fields from the prompt:
 |---|---|
 | Variable | `RESEND_API_KEY` |
 | Service | Resend transactional email |
-| Purpose | Enables real delivery for verification, password-reset, and product notification emails through the Resend-backed email channel when the temporary Gmail SMTP bridge is not configured. |
+| Purpose | Enables real delivery for verification, password-reset, and product notification emails through the Resend-backed email channel when Gmail SMTP is not configured or its delivery attempt fails. Resend sandbox accounts deliver only to the account owner's verified recipient until a custom sender domain is verified. |
 | Required | Optional — when unset, the email channel deliberately uses its local/CI no-op delivery mode. |
 | Development example | `RESEND_API_KEY=re_...` **(never commit a real key)** |
 | Production rule | Set from the Resend dashboard only after the configured sender domain/address is verified. |
@@ -442,6 +442,8 @@ FIREBASE_SERVICE_ACCOUNT_JSON=
 # Email (Gmail is a temporary bridge; Resend is the long-term provider after sender-domain verification)
 GMAIL_USER=
 GMAIL_APP_PASSWORD=
+# 587 = STARTTLS (default after Render's port-465 timeout); set 465 for implicit TLS elsewhere.
+GMAIL_SMTP_PORT=
 EMAIL_FROM_ADDRESS=onboarding@resend.dev
 RESEND_API_KEY=
 

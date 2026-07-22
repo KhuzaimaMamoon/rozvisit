@@ -99,6 +99,7 @@ export function createEmailChannel({
   enableDelivery = !process.env.JEST_WORKER_ID,
   fromAddress = env.email.fromAddress,
   gmailAppPassword = env.email.gmailAppPassword,
+  gmailSmtpPort = env.email.gmailSmtpPort,
   gmailUser = env.email.gmailUser,
   log = logger,
 } = {}) {
@@ -108,11 +109,14 @@ export function createEmailChannel({
   const gmailTransport =
     gmailUser && gmailAppPassword && enableDelivery
       ? createGmailTransport({
-          service: 'gmail',
+          host: 'smtp.gmail.com',
+          port: gmailSmtpPort,
+          secure: gmailSmtpPort === 465,
+          requireTLS: gmailSmtpPort === 587,
           auth: { user: gmailUser, pass: gmailAppPassword },
-          connectionTimeout: 10_000,
-          greetingTimeout: 10_000,
-          socketTimeout: 10_000,
+          connectionTimeout: 15_000,
+          greetingTimeout: 15_000,
+          socketTimeout: 15_000,
         })
       : null;
   const client = apiKey && enableDelivery ? createClient(apiKey) : null;
