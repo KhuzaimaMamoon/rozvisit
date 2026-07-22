@@ -1,4 +1,5 @@
 import BrandMark from '../../design-system/BrandMark.jsx';
+import AppFooter from '../../design-system/AppFooter.jsx';
 
 const trustPoints = Object.freeze([
   'Caregivers are checked: CNIC, interview, and references.',
@@ -14,59 +15,65 @@ export default function PublicAuthLayout({
   wide = false,
 }) {
   const mainClass = scrollable
-    ? 'min-h-dvh overflow-x-hidden bg-surface sm:bg-background sm:p-5 lg:p-6'
-    : 'min-h-dvh overflow-x-hidden bg-surface sm:bg-background sm:p-5 lg:h-dvh lg:overflow-y-hidden lg:p-6';
+    ? 'min-h-0 grow shrink-0 bg-surface sm:bg-background sm:p-5 lg:p-6'
+    : 'min-h-0 grow shrink-0 bg-surface sm:bg-background sm:p-5 lg:overflow-y-hidden lg:p-6';
   const shellClass = scrollable
-    ? 'mx-auto grid min-h-dvh max-w-6xl bg-surface sm:min-h-[calc(100dvh-40px)] sm:overflow-hidden sm:rounded-lg sm:border sm:border-border sm:shadow-sm lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]'
-    : 'mx-auto grid min-h-dvh max-w-6xl bg-surface sm:min-h-[calc(100dvh-40px)] sm:overflow-hidden sm:rounded-lg sm:border sm:border-border sm:shadow-sm lg:h-[calc(100dvh-48px)] lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]';
+    ? 'mx-auto grid min-h-full max-w-6xl bg-surface sm:overflow-hidden sm:rounded-lg sm:border sm:border-border sm:shadow-sm lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]'
+    : 'mx-auto grid min-h-full max-w-6xl bg-surface sm:overflow-hidden sm:rounded-lg sm:border sm:border-border sm:shadow-sm lg:h-full lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]';
   const formColumnClass = scrollable
     ? 'min-h-0 lg:flex lg:items-start lg:justify-center lg:px-12 lg:py-12'
     : 'min-h-0 lg:flex lg:items-center lg:justify-center lg:px-12';
 
   return (
-    <main className={mainClass}>
-      <div className={shellClass}>
-        <aside className="hidden flex-col justify-between bg-primary-soft p-8 lg:flex xl:p-12">
-          <div>
-            <BrandMark />
-            <p className="mt-8 text-sm font-medium text-primary">
-              Care coordination for families abroad
-            </p>
-            <h2 className="mt-4 max-w-sm text-3xl font-semibold tracking-tight text-text">
-              Care that stays clear and accountable.
-            </h2>
-            <p className="mt-4 max-w-sm text-base leading-6 text-muted">
-              Follow the care that matters, without carrying the practical details alone.
-            </p>
-          </div>
-          <ul className="space-y-5" aria-label="RozVisit commitments">
-            {trustPoints.map((point) => (
-              <li className="flex items-start gap-3 text-sm leading-6 text-muted" key={point}>
-                <span aria-hidden="true" className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent" />
-                <span>{point}</span>
-              </li>
-            ))}
-          </ul>
-        </aside>
-        <section className={`${formColumnClass} min-w-0`}>
-          <div className={`min-w-0 w-full ${wide ? 'max-w-2xl' : 'max-w-md'} lg:mx-auto`}>
-            <div className="flex h-16 items-center border-b border-border bg-primary-soft px-5 sm:px-8 lg:hidden">
+    <div className="flex min-h-dvh flex-col overflow-x-hidden bg-surface sm:bg-background">
+      <main className={mainClass}>
+        <div className={shellClass}>
+          <aside className="hidden flex-col justify-between bg-primary-soft p-8 lg:flex xl:p-12">
+            <div>
               <BrandMark />
+              <p className="mt-8 text-sm font-medium text-primary">
+                Care coordination for families abroad
+              </p>
+              <h2 className="mt-4 max-w-sm text-3xl font-semibold tracking-tight text-text">
+                Care that stays clear and accountable.
+              </h2>
+              <p className="mt-4 max-w-sm text-base leading-6 text-muted">
+                Follow the care that matters, without carrying the practical details alone.
+              </p>
             </div>
-            <div className="px-5 py-7 sm:px-8 sm:py-8 lg:px-0 lg:py-0">
-              <div className="lg:hidden">
-                <h1 className="text-2xl font-semibold tracking-tight text-text">{title}</h1>
-                <p className="mt-2 text-sm leading-6 text-muted">{subtitle}</p>
+            <ul className="space-y-5" aria-label="RozVisit commitments">
+              {trustPoints.map((point) => (
+                <li className="flex items-start gap-3 text-sm leading-6 text-muted" key={point}>
+                  <span
+                    aria-hidden="true"
+                    className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent"
+                  />
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </aside>
+          <section className={`${formColumnClass} min-w-0`}>
+            <div className={`min-w-0 w-full ${wide ? 'max-w-2xl' : 'max-w-md'} lg:mx-auto`}>
+              <div className="flex h-16 items-center border-b border-border bg-primary-soft px-5 sm:px-8 lg:hidden">
+                <BrandMark />
               </div>
-              <div className="hidden lg:block">
-                <h1 className="text-3xl font-semibold tracking-tight text-text">{title}</h1>
-                <p className="mt-2 text-sm leading-6 text-muted">{subtitle}</p>
+              <div className="px-5 py-7 sm:px-8 sm:py-8 lg:px-0 lg:py-0">
+                <div className="lg:hidden">
+                  <h1 className="text-2xl font-semibold tracking-tight text-text">{title}</h1>
+                  <p className="mt-2 text-sm leading-6 text-muted">{subtitle}</p>
+                </div>
+                <div className="hidden lg:block">
+                  <h1 className="text-3xl font-semibold tracking-tight text-text">{title}</h1>
+                  <p className="mt-2 text-sm leading-6 text-muted">{subtitle}</p>
+                </div>
+                {children}
               </div>
-              {children}
             </div>
-          </div>
-        </section>
-      </div>
-    </main>
+          </section>
+        </div>
+      </main>
+      <AppFooter />
+    </div>
   );
 }

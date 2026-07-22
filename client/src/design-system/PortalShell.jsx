@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
 import { roleHome, useAuth } from '../context/AuthContext.jsx';
 import { navigate, navigateFromLink } from '../navigation.js';
+import AppFooter from './AppFooter.jsx';
 import BrandMark from './BrandMark.jsx';
 
 const linksByRole = Object.freeze({
@@ -97,13 +98,13 @@ export default function PortalShell({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-text">
+    <div className="flex min-h-dvh flex-col bg-background text-text">
       <header className="sticky top-0 z-20 border-b border-border bg-surface">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <a href={roleHome(user)} onClick={(event) => navigateFromLink(event, roleHome(user))}>
             <BrandMark />
           </a>
-          <nav aria-label="Portal navigation" className="hidden flex-1 gap-1 sm:flex">
+          <nav aria-label="Portal navigation" className="hidden flex-1 gap-1 lg:flex">
             {links.map(([label, href]) => (
               <a
                 aria-current={isActive(pathname, href) ? 'page' : undefined}
@@ -118,7 +119,7 @@ export default function PortalShell({ children }) {
           </nav>
           <a
             aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
-            className="relative hidden rounded-sm px-3 py-2 text-sm font-medium text-primary hover:bg-primary-soft sm:block"
+            className="relative hidden rounded-sm px-3 py-2 text-sm font-medium text-primary hover:bg-primary-soft lg:block"
             href={notificationsPath}
             onClick={(event) => navigateFromLink(event, notificationsPath)}
           >
@@ -130,14 +131,14 @@ export default function PortalShell({ children }) {
             ) : null}
           </a>
           <a
-            className="hidden rounded-sm px-3 py-2 text-sm font-medium text-primary hover:bg-primary-soft sm:block"
+            className="hidden rounded-sm px-3 py-2 text-sm font-medium text-primary hover:bg-primary-soft lg:block"
             href={accountPath}
             onClick={(event) => navigateFromLink(event, accountPath)}
           >
             Account
           </a>
           <button
-            className="hidden rounded-sm px-3 py-2 text-sm font-medium text-primary hover:bg-primary-soft sm:block"
+            className="hidden rounded-sm px-3 py-2 text-sm font-medium text-primary hover:bg-primary-soft lg:block"
             onClick={() => void signOut()}
             type="button"
           >
@@ -146,7 +147,7 @@ export default function PortalShell({ children }) {
           <button
             aria-controls="portal-mobile-menu"
             aria-expanded={menuOpen}
-            className="inline-flex min-h-10 items-center justify-center rounded-md border border-border bg-surface px-4 text-sm font-medium text-primary hover:bg-primary-soft sm:hidden"
+            className="inline-flex min-h-10 items-center justify-center rounded-md border border-border bg-surface px-4 text-sm font-medium text-primary hover:bg-primary-soft lg:hidden"
             onClick={() => setMenuOpen(true)}
             type="button"
           >
@@ -155,7 +156,7 @@ export default function PortalShell({ children }) {
         </div>
       </header>
       {menuOpen ? (
-        <div className="fixed inset-0 z-40 sm:hidden">
+        <div className="fixed inset-0 z-40 lg:hidden">
           <button
             aria-label="Close navigation menu"
             className="absolute inset-0 h-full w-full bg-text/40"
@@ -221,39 +222,21 @@ export default function PortalShell({ children }) {
           </aside>
         </div>
       ) : null}
-      {back ? (
-        <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6">
-          <a
-            className="text-sm font-medium text-primary underline"
-            href={back[1]}
-            onClick={(event) => navigateFromLink(event, back[1])}
-          >
-            {back[0]}
-          </a>
-        </div>
-      ) : null}
-      {children}
-      <footer className="border-t border-border bg-surface px-4 py-6 sm:px-6">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 text-sm text-muted">
-          <p>RozVisit · Clear, accountable care coordination.</p>
-          <div className="flex gap-4">
+      <div className="portal-shell-content flex min-h-0 flex-1 flex-col">
+        {back ? (
+          <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6">
             <a
-              className="font-medium text-primary underline"
-              href="/privacy"
-              onClick={(event) => navigateFromLink(event, '/privacy')}
+              className="text-sm font-medium text-primary underline"
+              href={back[1]}
+              onClick={(event) => navigateFromLink(event, back[1])}
             >
-              Privacy
-            </a>
-            <a
-              className="font-medium text-primary underline"
-              href="/terms"
-              onClick={(event) => navigateFromLink(event, '/terms')}
-            >
-              Terms
+              {back[0]}
             </a>
           </div>
-        </div>
-      </footer>
+        ) : null}
+        {children}
+      </div>
+      <AppFooter />
     </div>
   );
 }

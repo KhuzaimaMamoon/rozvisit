@@ -15,3 +15,14 @@ body {
   min-height: 100vh;
   place-items: center;
 }
+
+/*
+ * Portal pages historically declared min-h-screen themselves. Inside the shared
+ * header/footer shell that made an otherwise empty page taller than the viewport.
+ * Let each route fill only the shell's remaining space; content taller than that
+ * still grows naturally and keeps the footer after the content.
+ */
+.portal-shell-content > main {
+  flex: 1 0 auto;
+  min-height: 0;
+}

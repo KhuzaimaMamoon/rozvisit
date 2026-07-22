@@ -1,4 +1,5 @@
 import BrandMark from '../../design-system/BrandMark.jsx';
+import AppFooter from '../../design-system/AppFooter.jsx';
 import { navigate } from '../../navigation.js';
 
 const pageContent = Object.freeze({
@@ -63,35 +64,40 @@ const pageContent = Object.freeze({
 export default function StaticPage({ kind }) {
   const content = pageContent[kind];
   return (
-    <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-4xl">
-        <header className="rounded-lg border border-border bg-primary-soft p-6 shadow-sm">
-          <BrandMark />
-          <p className="mt-5 text-sm font-medium uppercase tracking-wide text-primary">
-            {content.eyebrow}
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text">{content.title}</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">{content.intro}</p>
-        </header>
-        <section className="mt-6 space-y-4">
-          {content.sections.map(([title, detail]) => (
-            <article
-              className="rounded-lg border border-border bg-surface p-5 shadow-sm"
-              key={title}
-            >
-              <h2 className="text-lg font-semibold text-text">{title}</h2>
-              <p className="mt-2 text-sm leading-6 text-muted">{detail}</p>
-            </article>
-          ))}
-        </section>
-        <button
-          className="mt-6 text-sm font-medium text-primary underline"
-          onClick={() => (window.history.length > 1 ? window.history.back() : navigate('/login'))}
-          type="button"
-        >
-          Back to previous page
-        </button>
-      </div>
-    </main>
+    <div className="flex min-h-dvh flex-col bg-background">
+      <main className="min-h-0 grow shrink-0 px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mx-auto max-w-4xl">
+          <header className="rounded-lg border border-border bg-primary-soft p-6 shadow-sm">
+            <BrandMark />
+            <p className="mt-5 text-sm font-medium uppercase tracking-wide text-primary">
+              {content.eyebrow}
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text">
+              {content.title}
+            </h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">{content.intro}</p>
+          </header>
+          <section className="mt-6 space-y-4">
+            {content.sections.map(([title, detail]) => (
+              <article
+                className="rounded-lg border border-border bg-surface p-5 shadow-sm"
+                key={title}
+              >
+                <h2 className="text-lg font-semibold text-text">{title}</h2>
+                <p className="mt-2 text-sm leading-6 text-muted">{detail}</p>
+              </article>
+            ))}
+          </section>
+          <button
+            className="mt-6 text-sm font-medium text-primary underline"
+            onClick={() => (window.history.length > 1 ? window.history.back() : navigate('/login'))}
+            type="button"
+          >
+            Back to previous page
+          </button>
+        </div>
+      </main>
+      <AppFooter />
+    </div>
   );
 }
