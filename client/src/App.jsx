@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
 import BrandMark from './design-system/BrandMark.jsx';
-import AppFooter from './design-system/AppFooter.jsx';
 import ErrorBoundary from './design-system/ErrorBoundary.jsx';
 import PortalShell from './design-system/PortalShell.jsx';
 import Apply from './portals/public/Apply.jsx';
@@ -56,21 +55,18 @@ function NotFound() {
         : '/app/feed'
     : '/login';
   return (
-    <div className="flex min-h-dvh flex-col bg-background">
-      <main className="portal-placeholder min-h-0 flex-1 px-4">
-        <section className="w-full max-w-md rounded-lg border border-border bg-surface p-6 text-center shadow-sm">
-          <BrandMark className="justify-center" />
-          <h1 className="mt-6 text-2xl font-semibold text-text">This page doesn&apos;t exist</h1>
-          <a
-            className="mt-5 inline-block text-sm font-medium text-primary underline"
-            href={destination}
-          >
-            Go to your home
-          </a>
-        </section>
-      </main>
-      <AppFooter />
-    </div>
+    <main className="portal-placeholder bg-background px-4">
+      <section className="w-full max-w-md rounded-lg border border-border bg-surface p-6 text-center shadow-sm">
+        <BrandMark className="justify-center" />
+        <h1 className="mt-6 text-2xl font-semibold text-text">This page doesn&apos;t exist</h1>
+        <a
+          className="mt-5 inline-block text-sm font-medium text-primary underline"
+          href={destination}
+        >
+          Go to your home
+        </a>
+      </section>
+    </main>
   );
 }
 

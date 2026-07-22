@@ -124,7 +124,7 @@ test('admin routes share correct short and long footer behavior', async ({ page 
   }
 });
 
-test('public routes share correct short and long footer behavior', async ({ page }) => {
+test('public routes intentionally omit the authenticated portal footer', async ({ page }) => {
   for (const path of [
     '/login',
     '/register',
@@ -137,6 +137,11 @@ test('public routes share correct short and long footer behavior', async ({ page
     '/terms',
     '/not-a-real-route',
   ]) {
-    await expectCorrectFooterFlow(page, path);
+    await page.goto(path);
+    await expect(page.locator('footer')).toHaveCount(0);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      `${path} has horizontal overflow`,
+    ).toBeTruthy();
   }
 });
