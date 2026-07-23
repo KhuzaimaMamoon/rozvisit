@@ -21,6 +21,13 @@ async function start() {
           }
         : {}),
     });
+    logger.info('auth.cookie_configured', {
+      domain: env.authCookieDomain ?? '(host-only)',
+      httpOnly: true,
+      path: '/api/v1/auth',
+      sameSite: 'lax',
+      secure: env.nodeEnv === 'production',
+    });
     const runWeeklyScheduling = () =>
       visitService.processWeeklyCycles().catch((error) => {
         logger.error('weekly_scheduling.failed', { error: error.message });

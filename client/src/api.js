@@ -1,11 +1,9 @@
 let accessToken = null;
 let accessTokenGeneration = 0;
 const refreshesInFlight = new Map();
-const apiBaseUrl = (
-  import.meta.env.PROD
-    ? 'https://api.rozvisit.com/api/v1'
-    : (import.meta.env.VITE_API_BASE_URL ?? '/api/v1')
-).replace(/\/+$/, '');
+// Production also uses the relative path. Vercel proxies it to the custom
+// Render API so refresh cookies remain strictly first-party on iOS WebKit.
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/+$/, '');
 
 export class ApiError extends Error {
   constructor({ code, fields, message, status }) {

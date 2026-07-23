@@ -1,8 +1,11 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
 import BrandMark from './design-system/BrandMark.jsx';
 import ErrorBoundary from './design-system/ErrorBoundary.jsx';
 import PortalShell from './design-system/PortalShell.jsx';
+import AdminPortal from './portals/admin/AdminPortal.jsx';
+import CaregiverPortal from './portals/caregiver/CaregiverPortal.jsx';
+import ClientPortal from './portals/client/ClientPortal.jsx';
 import Apply from './portals/public/Apply.jsx';
 import ForgotPassword from './portals/public/ForgotPassword.jsx';
 import Login from './portals/public/Login.jsx';
@@ -13,9 +16,9 @@ import VerifyEmail from './portals/public/VerifyEmail.jsx';
 import VerifyPrompt from './portals/public/VerifyPrompt.jsx';
 
 const portals = {
-  client: lazy(() => import('./portals/client/ClientPortal.jsx')),
-  caregiver: lazy(() => import('./portals/caregiver/CaregiverPortal.jsx')),
-  admin: lazy(() => import('./portals/admin/AdminPortal.jsx')),
+  client: ClientPortal,
+  caregiver: CaregiverPortal,
+  admin: AdminPortal,
 };
 
 function resolvePortal(pathname) {
@@ -98,18 +101,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <Suspense
-        fallback={
-          <main className="portal-placeholder bg-background text-center">
-            <div className="rounded-md border border-border bg-surface px-6 py-5 shadow-sm">
-              <BrandMark className="mx-auto" />
-              <p className="mt-2 text-sm text-muted">Waking up — just a moment</p>
-            </div>
-          </main>
-        }
-      >
-        <ProtectedPortal pathname={pathname} Portal={Portal} />
-      </Suspense>
+      <ProtectedPortal pathname={pathname} Portal={Portal} />
     </ErrorBoundary>
   );
 }

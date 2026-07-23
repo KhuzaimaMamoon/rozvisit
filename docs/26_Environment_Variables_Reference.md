@@ -353,11 +353,11 @@ The following are **reserved shape**. They are not required at MVP; the app boot
 
 ## A.10 CORS
 
-The API uses the origin of the required `APP_BASE_URL` as its one allowed browser origin. The production portal calls the custom API origin directly, so credentialed CORS is required. Wildcard origins are never used.
+The API uses the origin of the required `APP_BASE_URL` as its one allowed browser origin. Normal production browser calls use Vercel's first-party `/api/v1/*` proxy, while exact credentialed CORS remains enabled for direct custom-API diagnostics. Wildcard origins are never used.
 
 For the current production deployment, `APP_BASE_URL=https://rozvisit.com` authorizes that portal to call `https://api.rozvisit.com`. Requests from any other browser origin are refused without CORS headers.
 
-Refresh cookies are `Domain=.rozvisit.com`, `HttpOnly`, `Secure`, and `SameSite=Lax` in production. The portal and API are different origins but the same HTTPS site, so WebKit does not treat the cookie as third-party. Local development uses Vite's proxy and omits the production domain and `Secure` attributes.
+Refresh cookies are `Domain=.rozvisit.com`, `HttpOnly`, `Secure`, and `SameSite=Lax` in production. The browser receives and returns them through `https://rozvisit.com/api/v1/auth/*`; Vercel forwards the request to Render. This removes cross-origin-cookie handling from the WebKit session path. Local development uses Vite's proxy and omits the production domain and `Secure` attributes.
 
 ---
 
@@ -419,9 +419,9 @@ Vite exposes only variables prefixed with `VITE_` to the browser. Everything the
 | Purpose | The base URL for API calls made from the portals |
 | Required | Optional (has a sensible default at MVP) |
 | Development example | `VITE_API_BASE_URL=http://localhost:5000/api/v1` |
-| Production rule | Production code always uses `https://api.rozvisit.com/api/v1`; this local-development override is ignored in production. |
+| Production rule | Leave unset so production uses the first-party `/api/v1` path through Vercel. |
 | Sensitivity | Public |
-| Default behavior | Production uses `https://api.rozvisit.com/api/v1`. Local development uses `/api/v1` through Vite unless explicitly overridden. |
+| Default behavior | Production uses `/api/v1` through Vercel; local development uses `/api/v1` through Vite unless explicitly overridden. |
 | Validation | Absolute URL or a path beginning with `/` |
 
 ## B.2 Optional Client Toggles *(Recommendation — reserved shape)*

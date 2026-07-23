@@ -199,7 +199,7 @@ Special validation rules:
 
 ## 14. CORS Policy
 
-- Production browser traffic is cross-origin but same-site: Vercel serves `https://rozvisit.com`, while Render serves `https://api.rozvisit.com`. Access tokens remain memory-only and travel in `Authorization: Bearer`; the role-scoped refresh cookie is `Domain=.rozvisit.com; HttpOnly; Secure; SameSite=Lax` and path-scoped to `/api/v1/auth`.
+- Production browser traffic is first-party: Vercel serves `https://rozvisit.com` and proxies `/api/v1/*` to `https://api.rozvisit.com`. Access tokens remain memory-only and travel in `Authorization: Bearer`; the role-scoped refresh cookie is `Domain=.rozvisit.com; HttpOnly; Secure; SameSite=Lax` and path-scoped to `/api/v1/auth`.
 - Render permits the exact `APP_BASE_URL=https://rozvisit.com` origin with credentialed CORS. Wildcard CORS is never permitted.
 - Cloudinary uploads happen from the browser directly to Cloudinary's domain; the CORS policy needed is the one at Cloudinary's end, configured to allow the app's origin.
 

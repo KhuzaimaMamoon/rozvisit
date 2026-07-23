@@ -1,4 +1,4 @@
-const CACHE = 'rozvisit-caregiver-shell-v2';
+const CACHE = 'rozvisit-caregiver-shell-v3';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());

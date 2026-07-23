@@ -287,11 +287,11 @@ Least-privilege from day one (Doc 18 §9):
 
 ## 11. Frontend Deployment
 
-**Current production shape:** Vercel serves `client/dist/` at `https://rozvisit.com`; Render serves the API at `https://api.rozvisit.com`. Both hosts share the same HTTPS site. The browser calls the API custom domain directly while the access token remains a memory-only Bearer token.
+**Current production shape:** Vercel serves `client/dist/` at `https://rozvisit.com`; Render serves the API at `https://api.rozvisit.com`. Browser API traffic uses the first-party `/api/v1/*` path on the portal, which Vercel proxies to the Render custom API. The access token remains a memory-only Bearer token.
 
 **Build during deployment:**
 - Vite builds `client/dist/` — hash-named static files.
-- Vercel serves the SPA fallback; API calls use the Render custom domain directly.
+- Vercel evaluates the `/api/v1/:path*` rewrite before the SPA fallback and forwards those calls to the Render custom API.
 - `Cache-Control: public, max-age=31536000, immutable` on hashed assets; `no-cache` on `index.html`.
 
 The portal retains its honest loading state while the first API request wakes a free-tier Render instance.
@@ -332,7 +332,7 @@ Owned status: `rozvisit.com` is live for the pilot. Vercel serves the portals fr
 
 Owned by Doc 18 §14. Restated for operational clarity:
 
-- **Production:** cross-origin but same-site — `https://rozvisit.com` calls `https://api.rozvisit.com`. Render allows the exact `APP_BASE_URL` origin with credentials; wildcard CORS is forbidden.
+- **Production:** browser calls are same-origin at `https://rozvisit.com/api/v1/*` and Vercel forwards them to `https://api.rozvisit.com`. Render still allows only the exact `APP_BASE_URL` origin for direct browser/API diagnostics; wildcard CORS is forbidden.
 - **Cloudinary uploads** happen browser-to-Cloudinary; the CORS configuration lives at Cloudinary's end, configured to accept our production origin only (and localhost for development).
 - The refresh cookie uses `Domain=.rozvisit.com; Secure; HttpOnly; SameSite=Lax; Path=/api/v1/auth`, so it remains same-site across the portal and API hosts without relying on third-party cookies.
 

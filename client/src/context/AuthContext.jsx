@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { api, clearAccessToken, refreshAccessToken, setAccessToken } from '../api.js';
 
 const AuthContext = createContext(null);
@@ -60,7 +61,10 @@ export function AuthProvider({ children }) {
         sessionGeneration.current += 1;
         setAccessToken(data.accessToken);
         const user = { ...data.user, email };
-        setSession({ loading: false, user });
+        // WebKit can process the history navigation before an ordinary batched
+        // state update commits. Commit the authenticated user first so the
+        // protected-route guard cannot observe a transient logged-out state.
+        flushSync(() => setSession({ loading: false, user }));
         return user;
       },
       async logout() {

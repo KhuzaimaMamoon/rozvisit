@@ -24,6 +24,11 @@ export default defineConfig({
       name: 'mobile',
       use: { ...devices['Pixel 5'], viewport: { width: 360, height: 740 } },
     },
+    {
+      name: 'mobile-webkit',
+      testMatch: /session-auth\.spec\.js/,
+      use: { ...devices['iPhone 13'], viewport: { width: 360, height: 740 } },
+    },
   ],
   webServer: {
     command: 'node e2e/test-server.mjs',
