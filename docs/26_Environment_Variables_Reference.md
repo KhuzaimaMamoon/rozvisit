@@ -419,7 +419,7 @@ Vite exposes only variables prefixed with `VITE_` to the browser. Everything the
 | Purpose | The base URL for API calls made from the portals |
 | Required | Optional (has a sensible default at MVP) |
 | Development example | `VITE_API_BASE_URL=http://localhost:5000/api/v1` |
-| Production rule | Leave unset so production uses the first-party `/api/v1` path through Vercel. |
+| Production rule | Production code always uses the first-party `/api/v1` path through Vercel and ignores this variable, including any legacy Vercel value. |
 | Sensitivity | Public |
 | Default behavior | Production uses `/api/v1` through Vercel; local development uses `/api/v1` through Vite unless explicitly overridden. |
 | Validation | Absolute URL or a path beginning with `/` |

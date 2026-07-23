@@ -1,9 +1,12 @@
 let accessToken = null;
 let accessTokenGeneration = 0;
 const refreshesInFlight = new Map();
-// Production also uses the relative path. Vercel proxies it to the custom
-// Render API so refresh cookies remain strictly first-party on iOS WebKit.
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/+$/, '');
+// Production always uses the relative path. Ignore any legacy Vercel
+// VITE_API_BASE_URL value so the browser cannot accidentally bypass the
+// first-party proxy and reintroduce WebKit's cross-origin cookie path.
+const apiBaseUrl = (
+  import.meta.env.PROD ? '/api/v1' : (import.meta.env.VITE_API_BASE_URL ?? '/api/v1')
+).replace(/\/+$/, '');
 
 export class ApiError extends Error {
   constructor({ code, fields, message, status }) {
