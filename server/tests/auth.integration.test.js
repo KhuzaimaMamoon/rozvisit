@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
+import { refreshCookieOptions } from '../src/controllers/auth.controller.js';
 import { AUTH_TOKEN_TYPES, AuthToken } from '../src/models/AuthToken.js';
 import { CaregiverProfile } from '../src/models/CaregiverProfile.js';
 import { ClientProfile } from '../src/models/ClientProfile.js';
@@ -48,6 +49,18 @@ describe('Auth API', () => {
       AuthToken.deleteMany({}),
       RefreshToken.deleteMany({}),
     ]);
+  });
+
+  it('uses the secure shared-domain Lax cookie contract in production', () => {
+    expect(
+      refreshCookieOptions({ authCookieDomain: '.rozvisit.com', nodeEnv: 'production' }),
+    ).toEqual({
+      domain: '.rozvisit.com',
+      httpOnly: true,
+      path: '/api/v1/auth',
+      sameSite: 'lax',
+      secure: true,
+    });
   });
 
   afterAll(async () => {
@@ -238,7 +251,7 @@ describe('Auth API', () => {
       .set('X-RozVisit-Portal', 'client');
 
     expect(login.headers['set-cookie'][0]).toContain('HttpOnly');
-    expect(login.headers['set-cookie'][0]).toContain('SameSite=Strict');
+    expect(login.headers['set-cookie'][0]).toContain('SameSite=Lax');
     expect(login.headers['set-cookie'][0]).not.toContain('Secure');
     expect(refresh.status).toBe(200);
     expect(refresh.body.data.accessToken).toEqual(expect.any(String));

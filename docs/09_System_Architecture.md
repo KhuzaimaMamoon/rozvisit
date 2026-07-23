@@ -220,7 +220,7 @@ The route surface is defined in Document 08 Section 18. Rules that live at this 
 2. Every route names its middleware chain inline, so a security review reads one file per area.
 3. Pagination enforced by the validation schemas: list endpoints reject requests without sane limits (default 20, max 100).
 4. Responses pass through one formatter so the shape `{ success, data }` / `{ success: false, error }` cannot drift between endpoints.
-5. Vercel serves the built frontend and rewrites the browser-visible `/api/v1` path to the Render backend (AD-32). The browser therefore retains a same-origin security boundary even though static assets and API compute use separate hosts.
+5. Vercel serves the built frontend at `https://rozvisit.com`; the browser calls the Render API at `https://api.rozvisit.com` (AD-32). The origins are distinct but remain in one HTTPS site, with exact credentialed CORS and a shared-domain refresh cookie.
 
 ---
 

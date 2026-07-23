@@ -83,7 +83,7 @@ The single most important line: **the same status, message, shape, and approxima
 |---|---|
 | Issued | On login and on each successful refresh; 15-minute expiry (SEC-002) |
 | Carried | `Authorization: Bearer <token>` on every API call |
-| Stored | Portal memory only — a JavaScript variable, never localStorage, never a cookie (Doc 09 §13). Page reload loses it by design; the first-party refresh cookie restores it silently through the portal's `/api/v1` proxy |
+| Stored | Portal memory only — a JavaScript variable, never localStorage, never a cookie (Doc 09 §13). Page reload loses it by design; the same-site refresh cookie restores it silently through `https://api.rozvisit.com/api/v1/auth/refresh` |
 | Expired | API returns `401 TOKEN_EXPIRED`; the client wrapper (`api.js`) calls refresh once and retries the original request silently (Document 12 §4) |
 | Invalid | `401 UNAUTHENTICATED` → full logout to the login screen |
 
@@ -94,7 +94,7 @@ Why memory-only: localStorage is readable by any script that ever runs in the pa
 ## 5. Refresh Token Strategy
 
 - **Format:** a JWT (7-day expiry) — but its statefulness is the point: a hash of it is stored in the `refreshTokens` collection (Document 11), making every session individually revocable (FR-006).
-- **Delivery:** Production: `Set-Cookie: refreshToken_<role>=...; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`, where `<role>` is `client`, `caregiver`, or `admin`. The browser calls the Vercel portal's same-origin `/api/v1` path; Vercel rewrites that request to the Render API and passes the response headers back, so WebKit stores the cookie as first-party on the portal domain. Local HTTP development uses the Vite proxy and omits only `Secure`. The `Path` scope means the cookies are only sent to auth endpoints. The client sends its current portal role in `X-RozVisit-Portal`, allowing independent role sessions in separate tabs.
+- **Delivery:** Production: `Set-Cookie: refreshToken_<role>=...; Domain=.rozvisit.com; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth`, where `<role>` is `client`, `caregiver`, or `admin`. The portal (`https://rozvisit.com`) and API (`https://api.rozvisit.com`) are different origins but the same HTTPS site, so `Lax` cookies are available to credentialed API requests without using third-party-cookie behavior. Local HTTP development omits `Secure` and the shared `Domain`. The `Path` scope means the cookies are only sent to auth endpoints. The client sends its current portal role in `X-RozVisit-Portal`, allowing independent role sessions in separate tabs.
 - **Bootstrap rule:** Silent refresh runs only when the browser initially opens a protected portal URL. Public authentication routes such as `/login` never start a speculative refresh alongside an explicit login. Refresh responses are generation-guarded so an older, slower response cannot overwrite a newer login or logout decision.
 - **On refresh:** verify signature → look up the hash → check not revoked, not expired → issue a new access token. *(Recommendation — refresh token rotation: each refresh also issues a new refresh token and revokes the old one, so a stolen refresh token dies on its first collision with the real user. Adopted as the target behavior; if it complicates the MVP build, plain non-rotating refresh is the documented fallback, revisited at Phase 2.)*
 - **TTL cleanup:** expired rows self-delete via the TTL index (Document 11).
@@ -106,7 +106,7 @@ Why memory-only: localStorage is readable by any script that ever runs in the pa
 | Token | Client side | Server side |
 |---|---|---|
 | Access | Memory only | Nowhere (stateless) |
-| Refresh | httpOnly Secure SameSite=Strict role-scoped cookie, path-scoped | Hash in `refreshTokens` with userId, expiry, revokedAt |
+| Refresh | httpOnly Secure SameSite=Lax role-scoped cookie, scoped to `.rozvisit.com` and `/api/v1/auth` | Hash in `refreshTokens` with userId, expiry, revokedAt |
 | Verification / reset | Never stored client-side (they live in the email link) | Hash + expiry + usedAt |
 
 Raw tokens are never stored anywhere server-side — only hashes. A database leak yields no usable tokens.
@@ -333,10 +333,10 @@ The auth-specific risk table (system-wide risks: Document 08 §28):
 |---|---|
 | Credential stuffing | Rate limits + progressive delay + common-password screen + same-message responses |
 | XSS token theft | Access token in memory only; refresh in httpOnly; strict input sanitization (SEC-007); no third-party scripts in portals *(Recommendation — a build rule)* |
-| Refresh cookie theft | Secure + SameSite=Strict + path-scoping + rotation *(Recommendation)* + revocation on anomaly |
+| Refresh cookie theft | Secure + SameSite=Lax + domain/path scoping + rotation *(Recommendation)* + revocation on anomaly |
 | Enumeration | Uniform responses and timing on login, forgot, resend |
 | Phishing | Emails never ask for passwords; links go only to the canonical domain; the policy is stated in onboarding copy *(Recommendation)* |
-| CSRF | SameSite=Strict on the only cookie; state-changing endpoints require the Bearer header (which cross-site forms cannot set) |
+| CSRF | SameSite=Lax on the only cookie; state-changing endpoints require the Bearer header (which cross-site forms cannot set) |
 | Insider misuse | Permission scoping (Section 16), audited sensitive reads (AUD-004), impersonation disallowed (Section 24) |
 | Link interception | Single-use, short-expiry tokens; reset revokes all sessions; verification grants no session by itself |
 | Suspected compromise (any) | The one lever that always works: revoke all refresh tokens + force reset — a documented operations action *(Recommendation — added to the ops runbook at launch)* |

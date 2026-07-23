@@ -357,7 +357,7 @@ Each risk uses two 3-point scales — deliberately coarse, so the register produ
 | Impact | Medium |
 | Score | 2 |
 | Early warning sign | Unusual refresh patterns from geos different from the account's usual; user reports of "someone else was logged in" |
-| Mitigation | `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth` cookie (Doc 13 §5); server-side revocation store; token rotation (Recommendation, Doc 13 §5) |
+| Mitigation | `Domain=.rozvisit.com; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth` cookie (Doc 13 §5); server-side revocation store; token rotation (Recommendation, Doc 13 §5) |
 | Contingency | Session revocation for the user; force reset |
 | Owner | Founder |
 | Review | Semi-annually |
@@ -809,7 +809,7 @@ Each ADR uses the seven-field format from the prompt:
 
 - **Status:** Confirmed (Doc 13 §3)
 - **Context:** Session storage adds complexity and coupling; horizontal scaling wants stateless.
-- **Decision:** JWT access tokens (15 minutes, HS256, memory-only on client) + revocable refresh tokens (7 days, hashed in `refreshTokens` collection, httpOnly SameSite=Strict cookie).
+- **Decision:** JWT access tokens (15 minutes, HS256, memory-only on client) + revocable refresh tokens (7 days, hashed in `refreshTokens` collection, httpOnly SameSite=Lax cookie scoped to the RozVisit domain in production).
 - **Alternatives:**
   - Server-side sessions (express-session with a store) — rejected: adds a dependency, complicates horizontal scaling.
   - Single long-lived JWT — rejected: no revocation, no fresh role/state.
@@ -1212,14 +1212,14 @@ The following decisions were made across Documents 09–21 but never captured as
 
 ---
 
-### AD-32 — First-party Vercel API proxy for WebKit-safe refresh sessions
+### AD-32 — Same-site custom domains for WebKit-safe refresh sessions
 
-- **Status:** Confirmed; supersedes AD-27's single-host deployment topology while preserving its same-origin browser security goal.
-- **Context:** The deployed portals live at `rozvisit-client.vercel.app` and the API at `rozvisit-api.onrender.com`. Direct cross-site refresh cookies were unreliable on iOS because every iOS browser uses WebKit and is subject to Intelligent Tracking Prevention. The application already used a memory-only access token and `Authorization: Bearer` for protected calls; only reload restoration depended on the cross-site cookie.
-- **Decision:** Production clients call the relative `/api/v1` path. Vercel rewrites it to Render, making the role-scoped `HttpOnly; Secure; SameSite=Strict` refresh cookie first-party to the browser. Access tokens remain 15-minute, memory-only Bearer tokens. Registration remains sessionless until verification. No access-token cookie or browser-persistent JavaScript token storage is introduced.
-- **Alternatives considered:** Store access or refresh tokens in local/session storage — rejected because XSS could read them. Continue direct cross-site refresh cookies — rejected because iOS WebKit does not provide reliable persistence. Move all frontend hosting back to Render — rejected because the current Vercel deployment is established and the proxy recovers the same-origin boundary without another migration.
-- **Consequences:** Vercel becomes part of the API request path; its external rewrite passes upstream response headers, including `Set-Cookie`. The documented 120-second external-origin timeout exceeds the approximately 50-second Render cold start, but production monitoring must flag `ROUTER_EXTERNAL_TARGET_ERROR`. Direct browser calls to the Render origin are no longer the normal production path.
-- **Review trigger:** Vercel stops forwarding required response headers, proxy cold starts approach its timeout, or RozVisit adopts a custom parent domain that makes the portal and API same-site without a proxy.
+- **Status:** Confirmed; amended after the RozVisit custom domains went live.
+- **Context:** The original split-host deployment used unrelated platform domains, making refresh cookies unreliable under iOS WebKit tracking protection. The production portal now lives at `https://rozvisit.com` and the API at `https://api.rozvisit.com`, creating different origins within one HTTPS site.
+- **Decision:** Production clients call `https://api.rozvisit.com/api/v1` directly. Role-scoped refresh cookies use `Domain=.rozvisit.com; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth`. Access tokens remain 15-minute, memory-only Bearer tokens. Registration remains sessionless until verification. Render permits only the exact portal origin through credentialed CORS.
+- **Alternatives considered:** Keep the platform-host proxy — unnecessary after custom domains became same-site. Store access or refresh tokens in local/session storage — rejected because XSS could read them. Use `SameSite=None` — rejected because it is no longer necessary and permits broader cross-site cookie behavior.
+- **Consequences:** The browser calls Render's custom API origin directly, so exact credentialed CORS is required. `Lax` remains compatible because both hosts share the same scheme and registrable domain, while avoiding third-party-cookie dependence on WebKit.
+- **Review trigger:** The portal or API moves outside the `rozvisit.com` site, the cookie domain changes, or browser evidence shows same-site cookies are not retained.
 - **Implementation amendment (23 July 2026):** Public authentication screens do not initiate silent refresh. Only a direct load of a protected portal route performs the role-scoped bootstrap refresh. Access-token updates use a monotonic generation guard, preventing a slow pre-existing refresh (including one delayed by a Render cold start) from overwriting the token returned by a newer login or from undoing logout. This preserves the memory-only Bearer-token model while removing a WebKit-visible login race.
 
 ---

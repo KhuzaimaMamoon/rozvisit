@@ -1,16 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
-    {
-      "source": "/api/v1/:path*",
-      "destination": "https://rozvisit-api.onrender.com/api/v1/:path*"
-    },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "headers": [
-    {
-      "source": "/api/v1/:path*",
-      "headers": [{ "key": "Cache-Control", "value": "private, no-store" }]
-    }
-  ]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }

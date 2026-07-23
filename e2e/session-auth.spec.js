@@ -29,7 +29,7 @@ test('access stays memory-only, protected calls use Bearer, and refresh restores
   const refreshCookie = (await page.context().cookies()).find(
     (cookie) => cookie.name === 'refreshToken_admin',
   );
-  expect(refreshCookie).toMatchObject({ httpOnly: true, path: '/api/v1/auth', sameSite: 'Strict' });
+  expect(refreshCookie).toMatchObject({ httpOnly: true, path: '/api/v1/auth', sameSite: 'Lax' });
 
   const refreshResponse = page.waitForResponse(
     (response) =>

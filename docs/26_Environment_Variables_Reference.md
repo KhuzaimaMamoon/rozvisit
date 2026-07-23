@@ -271,6 +271,20 @@ Every variable is specified with the 9 fields from the prompt:
 | Default behavior | Boot refused — an email link without its application origin is not usable |
 | Validation | Must be a valid absolute URL |
 
+### `AUTH_COOKIE_DOMAIN`
+
+| Field | Value |
+|---|---|
+| Variable | `AUTH_COOKIE_DOMAIN` |
+| Service | Server auth layer |
+| Purpose | Scopes role-specific refresh cookies across the production portal and API subdomain |
+| Required | Optional; explicitly recommended in production |
+| Development example | Leave unset for localhost |
+| Production rule | Set `AUTH_COOKIE_DOMAIN=.rozvisit.com` on Render |
+| Sensitivity | Public |
+| Default behavior | In production, derives `.<APP_BASE_URL hostname>`; in development, omitted |
+| Validation | Must equal the `APP_BASE_URL` hostname or one of its parent domains |
+
 ### `DEV_LOG_AUTH_LINKS`
 
 | Field | Value |
@@ -339,11 +353,11 @@ The following are **reserved shape**. They are not required at MVP; the app boot
 
 ## A.10 CORS
 
-The API uses the origin of the required `APP_BASE_URL` as its one allowed browser origin. Production browser traffic normally reaches Render through the portal's same-origin Vercel `/api/v1` rewrite; the explicit allowlist remains defense in depth and supports controlled direct API diagnostics. Wildcard origins are never used.
+The API uses the origin of the required `APP_BASE_URL` as its one allowed browser origin. The production portal calls the custom API origin directly, so credentialed CORS is required. Wildcard origins are never used.
 
-For the current production deployment, `APP_BASE_URL=https://rozvisit-client.vercel.app` authorizes that portal to call the API. Requests from any other browser origin are refused without CORS headers.
+For the current production deployment, `APP_BASE_URL=https://rozvisit.com` authorizes that portal to call `https://api.rozvisit.com`. Requests from any other browser origin are refused without CORS headers.
 
-Refresh cookies are `HttpOnly`, `Secure`, and `SameSite=Strict` in production. The Vercel rewrite makes `/api/v1/auth` first-party to the browser, avoiding iOS WebKit's cross-site-cookie restrictions. Local development uses the same first-party path through Vite's proxy and omits only `Secure`.
+Refresh cookies are `Domain=.rozvisit.com`, `HttpOnly`, `Secure`, and `SameSite=Lax` in production. The portal and API are different origins but the same HTTPS site, so WebKit does not treat the cookie as third-party. Local development uses Vite's proxy and omits the production domain and `Secure` attributes.
 
 ---
 
@@ -402,12 +416,12 @@ Vite exposes only variables prefixed with `VITE_` to the browser. Everything the
 |---|---|
 | Variable | `VITE_API_BASE_URL` |
 | Service | Client (Vite build) |
-| Purpose | The base path for API calls made from the portals |
+| Purpose | The base URL for API calls made from the portals |
 | Required | Optional (has a sensible default at MVP) |
 | Development example | `VITE_API_BASE_URL=http://localhost:5000/api/v1` |
-| Production rule | Production builds always use the relative `/api/v1` path, which Vercel rewrites to Render. Do not set an absolute Render URL for browser traffic; any legacy Vercel value is deliberately ignored by the production client. |
+| Production rule | Production code always uses `https://api.rozvisit.com/api/v1`; this local-development override is ignored in production. |
 | Sensitivity | Public |
-| Default behavior | Production always uses `/api/v1`. In local development, an explicit value may override the Vite proxy target; otherwise it also defaults to `/api/v1`. |
+| Default behavior | Production uses `https://api.rozvisit.com/api/v1`. Local development uses `/api/v1` through Vite unless explicitly overridden. |
 | Validation | Absolute URL or a path beginning with `/` |
 
 ## B.2 Optional Client Toggles *(Recommendation — reserved shape)*
@@ -439,6 +453,7 @@ MONGO_URI=
 # Auth — two separate secrets, ≥32 bytes each, DIFFERENT values
 JWT_ACCESS_SECRET=
 JWT_REFRESH_SECRET=
+AUTH_COOKIE_DOMAIN=.rozvisit.com
 
 # Field encryption (32-byte random material, base64)
 FIELD_ENCRYPTION_KEY=
@@ -488,8 +503,8 @@ REDIS_URL=
 # Everything here is Public by definition.
 # ─────────────────────────────────────────────────
 
-# API base URL — defaults to /api (same-origin) if unset
-VITE_API_BASE_URL=
+# Local development uses Vite's proxy. Production uses the canonical API domain in code.
+VITE_API_BASE_URL=/api/v1
 ```
 
 ---
@@ -550,6 +565,7 @@ The order is fixed:
 | `SENTRY_DSN` | Monitoring | Optional | Sensitive |
 | `LOG_LEVEL` | Server runtime | Optional | Public |
 | `DEV_LOG_AUTH_LINKS` | Local auth testing | Optional | Public (enables secret-bearing local logs) |
+| `AUTH_COOKIE_DOMAIN` | Auth cookie scope | Optional (recommended in production) | Public |
 | `TWILIO_ACCOUNT_SID` | Third-party (Phase 2) | Phase 2 | Sensitive |
 | `TWILIO_AUTH_TOKEN` | Third-party (Phase 2) | Phase 2 | Secret |
 | `TWILIO_FROM_NUMBER` | Third-party (Phase 2) | Phase 2 | Sensitive |

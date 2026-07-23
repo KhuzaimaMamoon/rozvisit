@@ -313,6 +313,7 @@ MONGO_URI=
 # Auth — two separate secrets, ≥32 bytes each, different values
 JWT_ACCESS_SECRET=
 JWT_REFRESH_SECRET=
+AUTH_COOKIE_DOMAIN=.rozvisit.com
 
 # Field encryption (32-byte random material, base64)
 FIELD_ENCRYPTION_KEY=
@@ -350,8 +351,8 @@ WHATSAPP_API_TOKEN=
 Client (client/.env):
 
 ```
-# Local-development override only; production always uses the first-party /api/v1 rewrite.
-VITE_API_BASE_URL=
+# Local development override; production uses the canonical custom API domain.
+VITE_API_BASE_URL=/api/v1
 ```
 
 **The server refuses to boot** if any required variable is missing or fails validation — a security property, not just a convenience.

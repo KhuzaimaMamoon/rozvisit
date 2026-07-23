@@ -87,7 +87,7 @@ Every boundary has an enforcement (Section 8+) and, where relevant, an audit (Se
 | Auth endpoints | The most-attacked surface — see §16 |
 | The API in general | Every route is a surface — see §8 |
 | The signed media upload path | Custom permits — see §25 |
-| Cookies (refresh only) | Path-scoped, HttpOnly, SameSite=Strict — see §18 |
+| Cookies (refresh only) | Domain/path-scoped, HttpOnly, SameSite=Lax — see §18 |
 | Admin routes | Elevated blast radius — see §7 and §28 |
 | Third-party service consoles | Cloudinary, Atlas, Render, GitHub, Firebase — see §19–20 |
 | Caregiver device (offline queue on IndexedDB) | Physical/device threat — see §22 |
@@ -191,7 +191,7 @@ Special validation rules:
 
 ## 13. CSRF Considerations
 
-- The only cookie is the refresh cookie: production uses `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`. Local HTTP development omits only `Secure` so refresh-based session restoration can be tested; deployed environments always retain it. `SameSite=Strict` blocks cross-site sending; `Path` scoping limits it further (Document 13 §5).
+- The only cookie is the refresh cookie: production uses `Domain=.rozvisit.com; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth`. Local HTTP development omits `Secure` and the shared domain so refresh-based session restoration can be tested. The production portal and API are same-site, while `Lax` still prevents the cookie being sent in third-party contexts; path scoping limits it further (Document 13 §5).
 - All state-changing endpoints require the `Authorization: Bearer` header, which cross-site forms cannot set — the practical CSRF answer for a token-header SPA (Document 13 §27).
 - No traditional session cookies used for state changes → no need for CSRF tokens at MVP.
 
@@ -199,8 +199,8 @@ Special validation rules:
 
 ## 14. CORS Policy
 
-- Production browser traffic is same-origin at the portal boundary: Vercel serves the portals and rewrites `/api/v1/*` to Render. Access tokens remain memory-only and travel in `Authorization: Bearer`; the role-scoped refresh cookie remains `HttpOnly; Secure; SameSite=Strict` and path-scoped to `/api/v1/auth`.
-- Render retains an exact `APP_BASE_URL` origin allowlist as defense in depth and for controlled diagnostics. Wildcard CORS is never permitted.
+- Production browser traffic is cross-origin but same-site: Vercel serves `https://rozvisit.com`, while Render serves `https://api.rozvisit.com`. Access tokens remain memory-only and travel in `Authorization: Bearer`; the role-scoped refresh cookie is `Domain=.rozvisit.com; HttpOnly; Secure; SameSite=Lax` and path-scoped to `/api/v1/auth`.
+- Render permits the exact `APP_BASE_URL=https://rozvisit.com` origin with credentialed CORS. Wildcard CORS is never permitted.
 - Cloudinary uploads happen from the browser directly to Cloudinary's domain; the CORS policy needed is the one at Cloudinary's end, configured to allow the app's origin.
 
 ---
@@ -237,7 +237,7 @@ The one thing this document adds:
 
 Full spec in Document 13 §3–5. Highlights:
 - Access tokens in memory only (Document 09 §13).
-- Refresh tokens in `HttpOnly; Secure; SameSite=Strict` path-scoped cookies, hashed server-side in `refreshTokens`, individually revocable.
+- Refresh tokens in `Domain=.rozvisit.com; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth` cookies, hashed server-side in `refreshTokens`, individually revocable.
 - Rotation on refresh *(Recommendation)* with the documented plain-refresh fallback for MVP simplicity.
 - Verification and reset tokens are random (not JWT), stored hashed with expiries, single-use.
 
@@ -487,7 +487,7 @@ The concrete list a reviewer walks before approving a release.
 - [ ] `dangerouslySetInnerHTML` is not used anywhere in the client.
 - [ ] The one-shape response envelope is enforced by the response formatter.
 - [ ] Access tokens are held in memory only; localStorage is not used for tokens.
-- [ ] The refresh cookie is `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`.
+- [ ] The refresh cookie is `Domain=.rozvisit.com; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth`.
 - [ ] The auth rate limiter is active on the four confirmed routes.
 - [ ] All list endpoints require and enforce pagination limits.
 - [ ] Camera capture UI has no gallery affordance; `sourceFlag` is set at capture; the validator refuses non-`in_app_camera` sources.

@@ -24,6 +24,7 @@ const OPTIONAL = [
   'GMAIL_USER',
   'GMAIL_APP_PASSWORD',
   'GMAIL_SMTP_PORT',
+  'AUTH_COOKIE_DOMAIN',
 ];
 const VALID_NODE_ENVS = new Set(['development', 'test', 'production']);
 const VALID_LOG_LEVELS = new Set(['error', 'warn', 'info', 'debug']);
@@ -112,6 +113,18 @@ if (
 const devLogAuthLinks = process.env.DEV_LOG_AUTH_LINKS === 'true';
 const appHost = new URL(process.env.APP_BASE_URL).hostname;
 const appOrigin = new URL(process.env.APP_BASE_URL).origin;
+const configuredCookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim() || null;
+const authCookieDomain =
+  configuredCookieDomain ?? (process.env.NODE_ENV === 'production' ? `.${appHost}` : null);
+if (authCookieDomain) {
+  const cookieHost = authCookieDomain.replace(/^\./, '');
+  if (
+    !/^[a-z0-9.-]+$/i.test(authCookieDomain) ||
+    (appHost !== cookieHost && !appHost.endsWith(`.${cookieHost}`))
+  ) {
+    fail('AUTH_COOKIE_DOMAIN must be the APP_BASE_URL host or one of its parent domains');
+  }
+}
 if (
   devLogAuthLinks &&
   (process.env.NODE_ENV !== 'development' || !['localhost', '127.0.0.1', '::1'].includes(appHost))
@@ -166,6 +179,7 @@ export const env = Object.freeze({
   }),
   appBaseUrl: process.env.APP_BASE_URL,
   appOrigin,
+  authCookieDomain,
   devLogAuthLinks,
   sentryDsn: process.env.SENTRY_DSN ?? null,
   logLevel,

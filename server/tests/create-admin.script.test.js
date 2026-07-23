@@ -30,7 +30,7 @@ describe('create-admin script', () => {
       ADMIN_NAME: 'Throwaway Production Admin',
       ADMIN_PASSWORD: throwawayPassword,
       ADMIN_PHONE: '+923001112233',
-      APP_BASE_URL: 'https://rozvisit-client.vercel.app',
+      APP_BASE_URL: 'https://rozvisit.com',
       CLOUDINARY_API_KEY: '123456789',
       CLOUDINARY_API_SECRET: 'test-cloudinary-secret',
       CLOUDINARY_CLOUD_NAME: 'test-cloud',

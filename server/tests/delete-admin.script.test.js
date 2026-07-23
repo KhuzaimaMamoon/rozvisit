@@ -35,7 +35,7 @@ describe('delete-admin script', () => {
     await mongoose.connect(mongoUri);
     scriptEnv = {
       ...process.env,
-      APP_BASE_URL: 'https://rozvisit-client.vercel.app',
+      APP_BASE_URL: 'https://rozvisit.com',
       CLOUDINARY_API_KEY: '123456789',
       CLOUDINARY_API_SECRET: 'test-cloudinary-secret',
       CLOUDINARY_CLOUD_NAME: 'test-cloud',

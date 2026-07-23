@@ -162,6 +162,7 @@ MONGO_URI=
 # Auth — two separate secrets, per Doc 13 §3
 JWT_ACCESS_SECRET=
 JWT_REFRESH_SECRET=
+AUTH_COOKIE_DOMAIN=.rozvisit.com
 
 # Field encryption (32-byte random key material, base64) — per Doc 18 §22
 FIELD_ENCRYPTION_KEY=
@@ -195,8 +196,8 @@ WHATSAPP_API_TOKEN=
 The client has no secrets at all (Doc 10 §8). Anything the browser holds is public. The Vite config supplies exactly one variable:
 
 ```
-# Only variable the client sees; in the single-service deployment this is "/api"
-VITE_API_BASE_URL=
+# Local development override; production uses the canonical API origin in code
+VITE_API_BASE_URL=/api/v1
 ```
 
 ### 5.3 Boot-time verification
@@ -286,14 +287,14 @@ Least-privilege from day one (Doc 18 §9):
 
 ## 11. Frontend Deployment
 
-**Current production shape:** Vercel serves `client/dist/`; Render serves the API. `client/vercel.json` rewrites the browser-visible `/api/v1/*` path to `https://rozvisit-api.onrender.com/api/v1/*`, preserving a first-party browser boundary for the HttpOnly refresh cookie while the access token remains a memory-only Bearer token.
+**Current production shape:** Vercel serves `client/dist/` at `https://rozvisit.com`; Render serves the API at `https://api.rozvisit.com`. Both hosts share the same HTTPS site. The browser calls the API custom domain directly while the access token remains a memory-only Bearer token.
 
 **Build during deployment:**
 - Vite builds `client/dist/` — hash-named static files.
-- Vercel serves the SPA fallback and proxies `/api/v1` to Render before applying that fallback.
+- Vercel serves the SPA fallback; API calls use the Render custom domain directly.
 - `Cache-Control: public, max-age=31536000, immutable` on hashed assets; `no-cache` on `index.html`.
 
-The proxy's external-origin request ceiling is 120 seconds. Render's observed free-tier cold start is approximately 50 seconds, so the proxy budget is sufficient; the portal retains its honest loading state while the first request wakes the service.
+The portal retains its honest loading state while the first API request wakes a free-tier Render instance.
 
 ## 12. Backend Deployment
 
@@ -312,19 +313,11 @@ Render is the confirmed host (D-06). The deployment shape:
 
 ## 13. Domain Setup
 
-Owned status: `rozvisit.com` and `rozvisit.pk` **not yet registered** — Doc 00 §21 open item 3.
+Owned status: `rozvisit.com` is live for the pilot. Vercel serves the portals from the apex and Render serves the API from its custom subdomain; both SSL certificates are active.
 
-**When the domains are registered** *(recommended for pilot launch)*:
-- Register both at a mainstream registrar.
-- Configure DNS to point to Render:
-  - `A` or `ALIAS/ANAME` at the apex, and `CNAME` for `www.`, per Render's guidance at the time of setup.
-  - **No email records at the apex until an email service is provisioned** — a bare MX record with nothing behind it invites bounces.
-- Add the domain to the Render service; Render issues the TLS certificate automatically (Doc 09 §13).
-- Verify HTTPS end-to-end before switching production traffic.
-
-**Subdomains anticipated:**
-- `app.rozvisit.com` — the client/caregiver/admin portals (or apex, if we prefer bare).
-- `api.rozvisit.com` — reserved; not used at MVP since the API is same-origin (Doc 18 §14).
+**Active production hosts:**
+- `rozvisit.com` — client, caregiver, and admin portals.
+- `api.rozvisit.com` — API service.
 - `status.rozvisit.com` — a simple status page *(Recommendation, Doc 21 §26)*.
 
 ## 14. HTTPS
@@ -339,9 +332,9 @@ Owned status: `rozvisit.com` and `rozvisit.pk` **not yet registered** — Doc 00
 
 Owned by Doc 18 §14. Restated for operational clarity:
 
-- **Production:** same-origin at the browser boundary — Vercel serves the portals and rewrites `/api/v1` to Render. Render retains an exact `APP_BASE_URL` origin allowlist as defense in depth; wildcard CORS is forbidden.
+- **Production:** cross-origin but same-site — `https://rozvisit.com` calls `https://api.rozvisit.com`. Render allows the exact `APP_BASE_URL` origin with credentials; wildcard CORS is forbidden.
 - **Cloudinary uploads** happen browser-to-Cloudinary; the CORS configuration lives at Cloudinary's end, configured to accept our production origin only (and localhost for development).
-- The refresh cookie is first-party and `SameSite=Strict` because the browser addresses the Vercel origin, not the external Render destination.
+- The refresh cookie uses `Domain=.rozvisit.com; Secure; HttpOnly; SameSite=Lax; Path=/api/v1/auth`, so it remains same-site across the portal and API hosts without relying on third-party cookies.
 
 ## 16. Docker Roadmap
 

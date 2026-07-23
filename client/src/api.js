@@ -1,11 +1,10 @@
 let accessToken = null;
 let accessTokenGeneration = 0;
 const refreshesInFlight = new Map();
-// Production always uses the first-party Vercel rewrite. This keeps the
-// HttpOnly refresh cookie first-party on iOS WebKit while protected calls
-// continue to carry the memory-only access token as a Bearer header.
 const apiBaseUrl = (
-  import.meta.env.PROD ? '/api/v1' : (import.meta.env.VITE_API_BASE_URL ?? '/api/v1')
+  import.meta.env.PROD
+    ? 'https://api.rozvisit.com/api/v1'
+    : (import.meta.env.VITE_API_BASE_URL ?? '/api/v1')
 ).replace(/\/+$/, '');
 
 export class ApiError extends Error {

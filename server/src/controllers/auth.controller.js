@@ -5,12 +5,17 @@ import { respond } from '../utils/respond.js';
 
 const LEGACY_REFRESH_COOKIE = 'refreshToken';
 const PORTAL_ROLE_HEADER = 'x-rozvisit-portal';
-const cookieOptions = Object.freeze({
-  httpOnly: true,
-  secure: env.nodeEnv === 'production',
-  sameSite: 'strict',
-  path: '/api/v1/auth',
-});
+export function refreshCookieOptions(config = env) {
+  return {
+    httpOnly: true,
+    secure: config.nodeEnv === 'production',
+    sameSite: 'lax',
+    path: '/api/v1/auth',
+    ...(config.authCookieDomain ? { domain: config.authCookieDomain } : {}),
+  };
+}
+
+const cookieOptions = Object.freeze(refreshCookieOptions());
 
 function run(handler) {
   return async (req, res, next) => {

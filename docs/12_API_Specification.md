@@ -33,7 +33,7 @@ One host serves the API and the portals (Doc 09 §8). Everything under `/api` is
 
 ## 4. Authentication
 
-- **Login** returns a short-lived access token (15 minutes) in the response body and sets a refresh token (7 days) as a `Secure; HttpOnly; SameSite=Strict` cookie (SEC-002).
+- **Login** returns a short-lived access token (15 minutes) in the response body and sets a refresh token (7 days) as a `.rozvisit.com`-scoped `Secure; HttpOnly; SameSite=Lax` cookie (SEC-002).
 - **Every protected call** sends `Authorization: Bearer <accessToken>`.
 - **Refresh** (`POST /auth/refresh`) uses the cookie automatically; the client wrapper retries a `401 TOKEN_EXPIRED` once through refresh, silently (Doc 10 client `api.js`).
 - Access tokens carry `{ sub: userId, role }` only — no personal data in the token (Doc 09 §13).
