@@ -572,11 +572,14 @@
 **Description:** Phase 1 assignment is manual by design (Journey C5). The system prefers continuity: the same caregiver for the same parent (Amina Bibi persona decision).
 
 **Acceptance criteria:**
-- Given a new schedule, When I assign a verified caregiver in the right area, Then all the schedule's visits attach to them and they are notified.
+- Given a new schedule, When I open assignment, Then every verified caregiver is shown with distance and service-area coverage, with in-area caregivers preferred.
+- Given an operational exception, When I assign a verified caregiver outside their configured area, Then the assignment succeeds and the override context is audited.
 - Given the parent has a previous caregiver, When I open assignment, Then that caregiver is suggested first (continuity preference).
 - Given a caregiver becomes unavailable, When I reassign, Then affected visits move to the backup and both client and caregivers are notified (BR-015).
 
-**Validation rules:** only Verified caregivers are assignable; area match required.
+**Validation rules:** only Verified caregivers are assignable. Service-area coverage is advisory:
+in-area caregivers appear first, but an admin may deliberately assign a verified out-of-area
+caregiver when operations require it; the override context is audited.
 
 **Analytics events:** `admin.visit_assigned`, `admin.visit_reassigned`.
 

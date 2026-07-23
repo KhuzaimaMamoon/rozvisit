@@ -177,11 +177,8 @@ function distanceKm(first, second) {
   return 6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
 }
 
-function isInServiceArea(caregiver, parent) {
-  return (
-    distanceKm(caregiver.serviceArea.coordinates, parent.location.coordinates) <=
-    caregiver.serviceArea.radiusKm
-  );
+function caregiverDistanceFromParent(caregiver, parent) {
+  return distanceKm(caregiver.serviceArea.coordinates, parent.location.coordinates);
 }
 
 function serializedFlag(flag) {
@@ -253,20 +250,24 @@ function serializeVisitEvidence(visit) {
   };
 }
 
-function serializeSuggestion({ caregiver, continuity, inArea, todayScheduledCount }) {
+function serializeSuggestion({
+  caregiver,
+  continuity,
+  distanceFromParentKm,
+  inArea,
+  todayScheduledCount,
+}) {
   const verified = caregiver.status === CAREGIVER_STATUS.VERIFIED;
   return {
     caregiverId: caregiver.userId._id.toString(),
     continuity,
+    distanceKm: Math.round(distanceFromParentKm * 10) / 10,
     inArea,
     name: caregiver.userId.name,
-    assignable: verified && inArea,
+    assignable: verified,
+    serviceRadiusKm: caregiver.serviceArea.radiusKm,
     todayScheduledCount,
-    blockedReason: !verified
-      ? 'This caregiver is not verified.'
-      : !inArea
-        ? 'This caregiver’s service area does not cover the parent location.'
-        : null,
+    blockedReason: verified ? null : 'This caregiver is not verified.',
   };
 }
 
@@ -590,51 +591,34 @@ export const adminService = Object.freeze({
 
     const verifiedCaregivers = await caregiverRepository.findVerifiedForAssignment();
     const previousCaregiverId = previous?.caregiverId?.toString() ?? null;
-    const profilesByUserId = new Map(
-      verifiedCaregivers.map((caregiver) => [caregiver.userId._id.toString(), caregiver]),
-    );
-    if (previousCaregiverId && !profilesByUserId.has(previousCaregiverId)) {
-      const [previousProfile] = await caregiverRepository.findByUserIds([previousCaregiverId]);
-      if (previousProfile) profilesByUserId.set(previousCaregiverId, previousProfile);
-    }
+    const availableCaregivers = verifiedCaregivers.filter((caregiver) => caregiver.userId);
 
     const { end, start } = startOfLocalDay(now);
-    const verifiedIds = verifiedCaregivers.map((caregiver) => caregiver.userId._id);
+    const verifiedIds = availableCaregivers.map((caregiver) => caregiver.userId._id);
     const counts = await visitRepository.countScheduledTodayByCaregiverIds(verifiedIds, start, end);
     const loads = new Map(counts.map((item) => [item._id.toString(), item.count]));
 
-    const previousProfile = previousCaregiverId ? profilesByUserId.get(previousCaregiverId) : null;
-    const inAreaCandidates = verifiedCaregivers
-      .filter((caregiver) => caregiver.userId._id.toString() !== previousCaregiverId)
-      .filter((caregiver) => isInServiceArea(caregiver, parent))
+    const candidates = availableCaregivers
+      .map((caregiver) => {
+        const distanceFromParentKm = caregiverDistanceFromParent(caregiver, parent);
+        return {
+          caregiver,
+          continuity: caregiver.userId._id.toString() === previousCaregiverId,
+          distanceFromParentKm,
+          inArea: distanceFromParentKm <= caregiver.serviceArea.radiusKm,
+          todayScheduledCount: loads.get(caregiver.userId._id.toString()) ?? 0,
+        };
+      })
       .sort(
         (first, second) =>
-          (loads.get(first.userId._id.toString()) ?? 0) -
-            (loads.get(second.userId._id.toString()) ?? 0) ||
-          first.userId.name.localeCompare(second.userId.name),
+          Number(second.inArea) - Number(first.inArea) ||
+          first.distanceFromParentKm - second.distanceFromParentKm ||
+          first.todayScheduledCount - second.todayScheduledCount ||
+          first.caregiver.userId.name.localeCompare(second.caregiver.userId.name),
       );
 
     return {
-      items: [
-        ...(previousProfile
-          ? [
-              serializeSuggestion({
-                caregiver: previousProfile,
-                continuity: true,
-                inArea: isInServiceArea(previousProfile, parent),
-                todayScheduledCount: loads.get(previousCaregiverId) ?? 0,
-              }),
-            ]
-          : []),
-        ...inAreaCandidates.map((caregiver) =>
-          serializeSuggestion({
-            caregiver,
-            continuity: false,
-            inArea: true,
-            todayScheduledCount: loads.get(caregiver.userId._id.toString()) ?? 0,
-          }),
-        ),
-      ],
+      items: candidates.map(serializeSuggestion),
     };
   },
 
@@ -653,16 +637,16 @@ export const adminService = Object.freeze({
     }
     const parent = await parentRepository.findById(visit.parentId);
     if (!parent) throw new NotFoundError();
-    if (!isInServiceArea(profile, parent)) {
-      throw new ConflictError(
-        'STATE_INVALID',
-        'The caregiver service area does not cover this parent.',
-      );
-    }
+    const distanceFromParentKm = caregiverDistanceFromParent(profile, parent);
+    const inArea = distanceFromParentKm <= profile.serviceArea.radiusKm;
     const reassigned = Boolean(visit.caregiverId);
     const updated = await visitRepository.update(visit._id, { $set: { caregiverId } });
     await audit(actorId, reassigned ? 'visit.reassigned' : 'visit.assigned', visit._id, {
       caregiverId,
+      distanceKm: Math.round(distanceFromParentKm * 10) / 10,
+      inArea,
+      outOfAreaOverride: !inArea,
+      serviceRadiusKm: profile.serviceArea.radiusKm,
     });
     await notifyRecipient({
       recipientId: parent.clientId,

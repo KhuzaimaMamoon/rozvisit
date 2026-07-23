@@ -355,9 +355,15 @@ Routes under `/admin/*`. Layout: full sidebar always (Document 15 §30/31). Desi
 ## S-32. Assign
 
 - **Route:** `/admin/visits/:id/assign` (also embedded in scheduling reviews)
-- **Purpose:** Assign a verified caregiver, continuity-first (FR-034).
-- **Sections:** suggestion list (previous caregiver first when present, then verified caregivers in-area sorted by current load), assign button per row.
-- **Validation:** only verified caregivers actionable; area mismatch shown but blocked with a reason chip.
+- **Purpose:** Assign a verified caregiver with clear distance, area, load, and continuity context
+  (FR-034).
+- **Sections:** all verified caregivers; each row shows distance from the parent, configured service
+  radius, explicit in-area/out-of-area label, today’s scheduled load, continuity label when
+  applicable, and an assign action. In-area caregivers appear first; each area group is
+  nearest-first.
+- **Validation:** only verified caregivers are returned/actionable. Area mismatch is a visible
+  warning, not a hidden result or hard block; the admin may use the clearly labelled out-of-area
+  action when operationally necessary.
 - **APIs:** `GET /admin/visits/:id/assignment-suggestions`, `POST /admin/visits/:id/assign`.
 - **Analytics:** `admin.visit_assigned`, `admin.visit_reassigned`.
 

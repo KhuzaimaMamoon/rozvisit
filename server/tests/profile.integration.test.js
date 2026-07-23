@@ -112,6 +112,7 @@ describe('Parents API', () => {
     expect(stored.addressText).not.toBe(parentData.addressText);
     expect(stored.locationShareUrl).not.toBe(parentData.locationShareUrl);
     expect(stored.careNotes).not.toBe(parentData.careNotes);
+    expect(stored.location.coordinates).toEqual([73.0479, 33.6844]);
   });
 
   it('validates duplicate contact priorities and refuses a non-client role', async () => {

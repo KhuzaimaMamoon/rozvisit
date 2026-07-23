@@ -317,7 +317,7 @@ Bounded-array note: embedded histories are bounded by nature (a visit has a hand
 | users | role, status | Compound | Admin user lists |
 | clientProfiles | userId | Unique | One profile per client |
 | caregiverProfiles | userId | Unique | One profile per caregiver |
-| caregiverProfiles | serviceArea | 2dsphere | Area matching (DATA-002) |
+| caregiverProfiles | serviceArea | 2dsphere | Assignment distance and advisory area coverage (DATA-002) |
 | caregiverProfiles | status | Single | Verified-only assignment lists (FR-034) |
 | parentProfiles | clientId | Single | "My parents" |
 | parentProfiles | location | 2dsphere | Phase 2 GPS geofence (FR-049) |
@@ -328,6 +328,11 @@ Bounded-array note: embedded histories are bounded by nature (a visit has a hand
 | visits | parentId, scheduledAt desc | Compound | The feed (FR-050, PERF-001) |
 | visits | status, scheduledAt | Compound | Admin filters + flag queries (FR-083/084) |
 | notifications | userId, createdAt desc | Compound | Notification list + unread |
+
+GeoJSON coordinate order is always `[longitude, latitude]`. Google Maps share links express a pin
+as `latitude,longitude`; profile creation resolves that link and deliberately reverses the pair
+before storing `parentProfiles.location`. Assignment distance calculations compare the stored
+parent point with `caregiverProfiles.serviceArea` in the same GeoJSON order.
 | notifications | idempotencyKey | Unique | One durable record per event recipient |
 | notificationFailures | notificationId | Unique | One admin-visible failure record per notification |
 | notificationFailures | state, createdAt desc | Compound | Open failure list |

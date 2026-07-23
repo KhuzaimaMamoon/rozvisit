@@ -160,7 +160,7 @@ describe('Admin verification API', () => {
     expect(response.status).toBe(403);
   });
 
-  it('orders continuity and in-area assignment suggestions by today load, then audits assignment', async () => {
+  it('lists every verified caregiver with distance, prefers in-area proximity, and audits an out-of-area assignment', async () => {
     const client = await User.create({
       email: 'ayesha@admin.test',
       name: 'Ayesha Khan',
@@ -169,7 +169,7 @@ describe('Admin verification API', () => {
       role: ROLES.CLIENT,
       status: USER_STATUS.ACTIVE,
     });
-    const [previousUser, lowLoadUser, highLoadUser] = await User.create([
+    const [previousUser, lowLoadUser, highLoadUser, outOfAreaUser] = await User.create([
       {
         email: 'previous@admin.test',
         name: 'Zara Previous',
@@ -194,15 +194,28 @@ describe('Admin verification API', () => {
         role: ROLES.CAREGIVER,
         status: USER_STATUS.ACTIVE,
       },
+      {
+        email: 'outside@admin.test',
+        name: 'Omar Outside',
+        passwordHash: 'hash',
+        phone: '+923001234564',
+        role: ROLES.CAREGIVER,
+        status: USER_STATUS.ACTIVE,
+      },
     ]);
     await CaregiverProfile.create(
-      [previousUser, lowLoadUser, highLoadUser].map((user) => ({
+      [
+        { coordinates: [73.01, 33], user: previousUser },
+        { coordinates: [73, 33], user: lowLoadUser },
+        { coordinates: [73.02, 33], user: highLoadUser },
+        { coordinates: [74, 33], user: outOfAreaUser },
+      ].map(({ coordinates, user }) => ({
         userId: user._id,
         verification: {
           cnicNumber: 'encrypted',
           gates: { cnic: true, interview: true, reference: true },
         },
-        serviceArea: { type: 'Point', coordinates: [73, 33], radiusKm: 12 },
+        serviceArea: { type: 'Point', coordinates, radiusKm: 12 },
         status: CAREGIVER_STATUS.VERIFIED,
       })),
     );
@@ -267,22 +280,44 @@ describe('Admin verification API', () => {
       .set(auth(admin));
     expect(suggestions.status).toBe(200);
     expect(suggestions.body.data.items.map((item) => item.caregiverId)).toEqual([
-      previousUser._id.toString(),
       lowLoadUser._id.toString(),
+      previousUser._id.toString(),
       highLoadUser._id.toString(),
+      outOfAreaUser._id.toString(),
     ]);
-    expect(suggestions.body.data.items[1].todayScheduledCount).toBe(0);
+    expect(suggestions.body.data.items[0]).toMatchObject({
+      assignable: true,
+      distanceKm: 0,
+      inArea: true,
+      serviceRadiusKm: 12,
+      todayScheduledCount: 0,
+    });
+    expect(suggestions.body.data.items[1].continuity).toBe(true);
     expect(suggestions.body.data.items[2].todayScheduledCount).toBe(2);
+    expect(suggestions.body.data.items[3]).toMatchObject({
+      assignable: true,
+      inArea: false,
+      serviceRadiusKm: 12,
+    });
+    expect(suggestions.body.data.items[3].distanceKm).toBeGreaterThan(90);
 
     const assigned = await request(app)
       .post(`/api/v1/admin/visits/${target._id}/assign`)
       .set(auth(admin))
-      .send({ caregiverId: lowLoadUser._id.toString() });
+      .send({ caregiverId: outOfAreaUser._id.toString() });
     expect(assigned.status).toBe(200);
-    expect(assigned.body.data.caregiver.name).toBe('Adam Low');
-    expect(
-      await AuditEvent.countDocuments({ action: 'visit.assigned', targetId: target._id }),
-    ).toBe(1);
+    expect(assigned.body.data.caregiver.name).toBe('Omar Outside');
+    const assignmentAudit = await AuditEvent.findOne({
+      action: 'visit.assigned',
+      targetId: target._id,
+    });
+    expect(assignmentAudit.detail).toMatchObject({
+      caregiverId: outOfAreaUser._id.toString(),
+      inArea: false,
+      outOfAreaOverride: true,
+      serviceRadiusKm: 12,
+    });
+    expect(assignmentAudit.detail.distanceKm).toBeGreaterThan(90);
   });
 
   it('filters oversight visits, returns evidence, and restores a resolved flag with an audit event', async () => {

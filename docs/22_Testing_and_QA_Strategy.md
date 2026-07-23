@@ -102,7 +102,9 @@ Handled by the integration layer above (Supertest hits the routes exactly as a c
 - **Schema tests** run at the integration layer against real Mongoose: strict mode rejects unknown fields; enums enforced; required fields enforced.
 - **Index tests** — every list query in a repository is `explain()`-checked to confirm an index is used and no collection scan occurs. *(Recommendation — a small utility that walks the repos in test mode and asserts index usage; wins a lot of long-term safety.)*
 - **Append-only guard** — a test that tries to update a history array element in place fails at the schema save-guard (Doc 11 §26).
-- **Geospatial** — a caregiver assignment query with the 2dsphere index returns candidates within the area.
+- **Geospatial** — assignment suggestions calculate the Maps-pin distance using GeoJSON
+  `[longitude, latitude]`, return all verified caregivers, prefer in-area candidates, and retain a
+  tested audited out-of-area override path.
 - **TTL** — the refresh token TTL logic tested with fake clocks in the unit layer (MongoDB's actual TTL sweeper is not tested — it is the DB's job).
 
 ---

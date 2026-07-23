@@ -503,8 +503,13 @@ All endpoints: **Role admin**, all mutations audited automatically (FR-082).
 ### POST /admin/visits/:id/assign
 
 - **Body:** `{ caregiverId }`
-- **Validation:** caregiver `verified` and area-matched (FR-034); previous caregiver suggested by `GET /admin/visits/:id/assignment-suggestions` (continuity)
+- **Validation:** caregiver must be `verified` (FR-034). Service-area coverage is advisory rather
+  than a hard block: an admin may assign a verified out-of-area caregiver when operationally
+  necessary.
 - **Success:** visits attached; caregiver notified; reassignment moves future visits and notifies all parties (BR-15 backup flow)
+- **Audit:** records caregiver ID, calculated distance, configured service radius, whether the
+  caregiver was in-area, and `outOfAreaOverride: true` when the admin deliberately selects an
+  out-of-area caregiver.
 
 ### POST /admin/visits/:id/mark-missed
 
@@ -514,11 +519,13 @@ All endpoints: **Role admin**, all mutations audited automatically (FR-082).
 
 ### GET /admin/visits/:id/assignment-suggestions
 
-- **Success:** the previous caregiver first when present, followed by verified caregivers whose
-  service area covers the parent location. Each item includes `caregiverId`, `name`, `inArea`,
-  `assignable`, `todayScheduledCount`, and whether it is the continuity suggestion. In-area
-  candidates sort by the number of assigned `scheduled` visits on the current calendar day
-  (ascending), then caregiver name alphabetically.
+- **Success:** every verified caregiver is returned; an area mismatch never makes the list empty.
+  Each item includes `caregiverId`, `name`, `distanceKm` (rounded to one decimal),
+  `serviceRadiusKm`, `inArea`, `assignable`, `todayScheduledCount`, and `continuity`.
+- **Ordering:** in-area caregivers first, then out-of-area caregivers; within each group, nearest
+  distance first. Equal-distance ties use today’s assigned `scheduled`-visit count (ascending),
+  then caregiver name alphabetically. `continuity` remains visible context but does not hide or
+  reorder a materially nearer caregiver.
 
 ### GET /admin/visits — Oversight list
 

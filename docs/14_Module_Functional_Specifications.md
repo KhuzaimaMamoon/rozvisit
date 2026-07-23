@@ -251,7 +251,7 @@ GPS check-in/out and ratings.
 | Screen | Phase | Content |
 |---|---|---|
 | Applications queue + detail | 1 | Gates view, recordings, decision actions (approve disabled until gates complete) |
-| Assignment | 1 | Suggestions with previous-caregiver first, area match |
+| Assignment | 1 | All verified caregivers with distance, coverage, load, and continuity context |
 | Visits oversight | 1 | Filterable list, full evidence per record, flag resolution |
 | Subscriptions workbench | 1 | (Module 3) |
 | SLA dashboard | 2 | Exception flags: late, missed, low-rated, stuck uploads |
@@ -259,7 +259,13 @@ GPS check-in/out and ratings.
 
 **Functional requirements:** FR-080–085. **Business rules:** zero unverified caregivers ever active — structural, not aspirational (FR-081); flag-for-review never auto-punish (SEC-011 posture everywhere); viewing CNIC data is itself an audited event (AUD-004); dispute outcomes follow the business rules (refund/credit per rules), closing on client confirmation or timeout.
 
-**Validation:** decision enum; assignment requires verified + area match; flag resolution requires a note. Assignment suggestions put the parent's previous caregiver first when present; remaining verified, in-area caregivers sort by today's assigned `scheduled`-visit count (ascending), then caregiver name alphabetically. A flag stores the pre-flag status; resolution retains the flag evidence and restores that status with an append-only `flag_resolved` history entry.
+**Validation:** decision enum; assignment requires a verified caregiver; flag resolution requires
+a note. Service-area matching is advisory for admin operations: suggestions include every verified
+caregiver, group in-area before out-of-area, and sort each group by distance, then today’s assigned
+`scheduled`-visit count and caregiver name. Distance, configured radius, and any out-of-area
+override are audited on assignment. Continuity remains visible decision context, not a hard sort or
+eligibility rule. A flag stores the pre-flag status; resolution retains the flag evidence and
+restores that status with an append-only `flag_resolved` history entry.
 
 **Administrative archival:** active and archived records are separated by an explicit list filter. Client archival disables login, archives parent profiles, pauses non-terminal subscriptions, and archives open visits; reactivation restores the client/parents but leaves subscriptions paused and open visits archived for operational review. Caregiver archival disables login and changes the profile to `deactivated`, which structurally blocks assignment; reactivation restores the prior verification state. Visit archival uses separate metadata rather than changing the operational visit status, and never removes evidence. Every archive/reactivate mutation requires a reason where applicable and writes an audit event.
 

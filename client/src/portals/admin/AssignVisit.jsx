@@ -7,11 +7,13 @@ export default function AssignVisit() {
   const visitId = useMemo(() => window.location.pathname.split('/').at(-2), []);
   const [suggestions, setSuggestions] = useState([]);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api(`/admin/visits/${visitId}/assignment-suggestions`)
       .then((data) => setSuggestions(data.items))
-      .catch((requestError) => setError(requestError.message));
+      .catch((requestError) => setError(requestError.message))
+      .finally(() => setLoading(false));
   }, [visitId]);
 
   async function assign(caregiverId) {
@@ -38,8 +40,9 @@ export default function AssignVisit() {
             Assign caregiver
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Continuity comes first; remaining in-area caregivers are ordered by today&apos;s
-            scheduled load.
+            Verified caregivers inside the parent&apos;s service area appear first, followed by the
+            nearest out-of-area options. Distance and daily load are shown so you can make an
+            informed assignment.
           </p>
         </header>
         {error ? <p className="mt-4 text-sm text-emergency">{error}</p> : null}
@@ -50,14 +53,37 @@ export default function AssignVisit() {
               key={suggestion.caregiverId}
             >
               <div>
-                <p className="font-semibold text-text">
-                  {suggestion.name}
-                  {suggestion.continuity ? ' · Previous caregiver' : ''}
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-text">{suggestion.name}</p>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      suggestion.inArea
+                        ? 'bg-success-soft text-success'
+                        : 'bg-pending-soft text-pending'
+                    }`}
+                  >
+                    {suggestion.inArea ? 'In service area' : 'Outside service area'}
+                  </span>
+                  {suggestion.continuity ? (
+                    <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">
+                      Previous caregiver
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-2 text-sm font-medium text-text">
+                  {suggestion.distanceKm.toFixed(1)} km from parent
                 </p>
                 <p className="mt-1 text-sm text-muted">
-                  {suggestion.todayScheduledCount} scheduled visit
+                  Service radius: {suggestion.serviceRadiusKm} km · {suggestion.todayScheduledCount}{' '}
+                  scheduled visit
                   {suggestion.todayScheduledCount === 1 ? '' : 's'} today
                 </p>
+                {!suggestion.inArea ? (
+                  <p className="mt-2 text-sm text-pending">
+                    This assignment is outside the caregiver&apos;s configured area. Admin may
+                    assign them when operationally necessary.
+                  </p>
+                ) : null}
                 {suggestion.blockedReason ? (
                   <p className="mt-1 text-sm text-emergency">{suggestion.blockedReason}</p>
                 ) : null}
@@ -68,13 +94,18 @@ export default function AssignVisit() {
                 onClick={() => assign(suggestion.caregiverId)}
                 type="button"
               >
-                Assign
+                {suggestion.inArea ? 'Assign' : 'Assign out of area'}
               </Button>
             </article>
           ))}
-          {!suggestions.length ? (
+          {loading ? (
             <p className="rounded-lg border border-border bg-surface p-5 text-sm text-muted">
-              No verified caregivers cover this parent&apos;s service area.
+              Finding verified caregivers and calculating distance…
+            </p>
+          ) : null}
+          {!loading && !suggestions.length ? (
+            <p className="rounded-lg border border-border bg-surface p-5 text-sm text-muted">
+              No verified caregivers are currently available for assignment.
             </p>
           ) : null}
         </section>
