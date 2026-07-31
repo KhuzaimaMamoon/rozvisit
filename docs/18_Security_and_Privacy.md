@@ -57,7 +57,7 @@ Ranked. Higher wins when they conflict.
 
 Everything else — non-sensitive UI text, aggregate counts — is standard business data.
 
-Parent map-share URLs are classified with A1: the original `locationShareUrl` is encrypted at rest and mechanically redacted from logs. Caregiver-scoped responses receive only the parsed pin needed for an assigned visit; the UI turns that point into an outbound Google Maps directions link.
+Parent and caregiver map-share URLs are classified with A1: the original `locationShareUrl` and `serviceAreaShareUrl` are encrypted at rest and mechanically redacted from logs. Caregiver-scoped responses receive only the parsed parent pin needed for an assigned visit; the UI turns that point into an outbound Google Maps directions link. Caregiver service-area links are not exposed in directory or assignment responses; those surfaces use only the calculated distance and configured radius.
 
 ---
 

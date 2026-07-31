@@ -259,7 +259,7 @@ GPS check-in/out and ratings.
 
 **Functional requirements:** FR-080–085. **Business rules:** zero unverified caregivers ever active — structural, not aspirational (FR-081); flag-for-review never auto-punish (SEC-011 posture everywhere); viewing CNIC data is itself an audited event (AUD-004); dispute outcomes follow the business rules (refund/credit per rules), closing on client confirmation or timeout.
 
-**Validation:** decision enum; assignment requires a verified caregiver; flag resolution requires
+**Validation:** caregiver applications use an allowlisted Google Maps share link plus a service radius; the server resolves the pin and stores GeoJSON `[longitude, latitude]` rather than asking applicants for raw coordinates. Decision enum; assignment requires a verified caregiver; flag resolution requires
 a note. Service-area matching is advisory for admin operations: suggestions include every verified
 caregiver, group in-area before out-of-area, and sort each group by distance, then today’s assigned
 `scheduled`-visit count and caregiver name. Distance, configured radius, and any out-of-area

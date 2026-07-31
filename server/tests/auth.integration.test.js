@@ -156,15 +156,37 @@ describe('Auth API', () => {
         phone: '+923001234567',
         password: PASSWORD,
         cnicNumber: '1234567890123',
-        serviceArea: { lng: 73.0479, lat: 33.6844, radiusKm: 10 },
+        serviceArea: {
+          radiusKm: 10,
+          shareUrl: 'https://www.google.com/maps?q=33.6844,73.0479',
+        },
       });
 
     expect(response.status).toBe(201);
     expect(response.body.data.status).toBe('applied');
     const profile = await CaregiverProfile.findOne({ userId: response.body.data.userId }).select(
-      '+verification.cnicNumber',
+      '+verification.cnicNumber +serviceAreaShareUrl',
     );
     expect(profile.verification.cnicNumber).not.toBe('1234567890123');
+    expect(profile.serviceAreaShareUrl).not.toBe('https://www.google.com/maps?q=33.6844,73.0479');
+    expect(profile.serviceArea.coordinates).toEqual([73.0479, 33.6844]);
+  });
+
+  it('rejects a caregiver application when a Maps link has no resolvable pin', async () => {
+    const response = await request(app)
+      .post('/api/v1/auth/apply')
+      .send({
+        name: 'Bilal Ahmed',
+        email: 'no-pin@example.com',
+        phone: '+923001234567',
+        password: PASSWORD,
+        cnicNumber: '1234567890123',
+        serviceArea: { radiusKm: 10, shareUrl: 'https://www.google.com/maps' },
+      });
+
+    expect(response.status).toBe(422);
+    expect(response.body.error.fields.serviceArea[0]).toContain('could not find a pin');
+    expect(await User.countDocuments({ email: 'no-pin@example.com' })).toBe(0);
   });
 
   it('verifies a valid email token and rejects a reused token', async () => {

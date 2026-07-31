@@ -46,6 +46,9 @@ const caregiverProfileSchema = new Schema(
       },
       radiusKm: { type: Number, required: true },
     },
+    // New applications always store the encrypted source link. Existing profiles predate the
+    // map-link migration, so this remains nullable until they are edited or re-applied.
+    serviceAreaShareUrl: { type: String, default: null, select: false },
     rating: {
       average: { type: Number, required: true, default: 0 },
       count: { type: Number, required: true, default: 0 },

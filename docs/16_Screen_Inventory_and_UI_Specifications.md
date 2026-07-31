@@ -79,8 +79,8 @@
 - **Role:** public
 - **Purpose:** Start a caregiver application (FR-003).
 - **Sections:** intro copy ("this is a verified role — here's what to expect"), form.
-- **Fields:** name, email, phone, password, CNIC number (13 digits), service area (map pin + radius km).
-- **Validation:** CNIC format, map coordinates present.
+- **Fields:** name, email, phone, password, CNIC number (13 digits), Google Maps share link for the caregiver’s usual service location, and service radius in km. Helper text tells the applicant to find their usual service location in Google Maps, tap Share, and paste the copied link; raw latitude/longitude inputs are not shown.
+- **Validation:** CNIC format; Google Maps link must resolve to a coordinate pin through allowlisted Google redirects; service radius must be at least 1 km.
 - **Success:** navigation to S-19 (application status) — even before email verification, so the applicant sees "we've got you."
 - **APIs:** `POST /auth/apply`.
 - **Analytics:** `auth.caregiver_applied`.

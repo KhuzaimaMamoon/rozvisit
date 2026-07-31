@@ -8,12 +8,11 @@ import PublicAuthLayout from './PublicAuthLayout.jsx';
 const initial = {
   cnicNumber: '',
   email: '',
-  lat: '',
-  lng: '',
   name: '',
   password: '',
   phone: '',
   radiusKm: '10',
+  serviceAreaShareUrl: '',
 };
 
 export default function Apply() {
@@ -37,9 +36,8 @@ export default function Apply() {
         body: JSON.stringify({
           ...form,
           serviceArea: {
-            lat: Number(form.lat),
-            lng: Number(form.lng),
             radiusKm: Number(form.radiusKm),
+            shareUrl: form.serviceAreaShareUrl,
           },
         }),
         method: 'POST',
@@ -146,45 +144,38 @@ export default function Apply() {
               value={form.password}
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2">
+          <div className="border-t border-border pt-6 lg:col-span-2">
+            <h2 className="text-base font-semibold text-text">Service area</h2>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              Open Google Maps, find your usual service location, tap Share, then paste the copied
+              link. We use the pin only to help match you with nearby families.
+            </p>
             <FormInput
               error={fields.serviceArea?.[0]}
-              id="lat"
-              label="Service latitude"
-              min="-90"
-              max="90"
-              step="any"
-              formatMessage="Latitude must be a number between -90 and 90."
-              onChange={update('lat')}
+              formatMessage="Paste a Google Maps share link from maps.google.com or maps.app.goo.gl."
+              helperText="Open Google Maps, find your service location, tap Share, then copy and paste the link here."
+              id="service-area-link"
+              label="Google Maps share link"
               required
-              type="number"
-              value={form.lat}
+              requiredMessage="Paste the Google Maps share link for your service area."
+              type="url"
+              value={form.serviceAreaShareUrl}
+              onChange={update('serviceAreaShareUrl')}
             />
-            <FormInput
-              error={fields.serviceArea?.[0]}
-              id="lng"
-              label="Service longitude"
-              min="-180"
-              max="180"
-              step="any"
-              formatMessage="Longitude must be a number between -180 and 180."
-              onChange={update('lng')}
-              required
-              type="number"
-              value={form.lng}
-            />
-            <FormInput
-              error={fields.serviceArea?.[0]}
-              id="radius"
-              label="Radius (km)"
-              min="1"
-              step="any"
-              formatMessage="Service radius must be at least 1 kilometre."
-              onChange={update('radiusKm')}
-              required
-              type="number"
-              value={form.radiusKm}
-            />
+            <div className="mt-4 max-w-xs">
+              <FormInput
+                error={fields.serviceArea?.[0]}
+                id="radius"
+                label="Radius (km)"
+                min="1"
+                step="any"
+                formatMessage="Service radius must be at least 1 kilometre."
+                onChange={update('radiusKm')}
+                required
+                type="number"
+                value={form.radiusKm}
+              />
+            </div>
           </div>
           <Button className="w-full lg:col-span-2" loading={loading} type="submit">
             Submit application

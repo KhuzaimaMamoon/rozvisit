@@ -19,8 +19,10 @@ import {
   ForbiddenError,
   GoneError,
   UnauthenticatedError,
+  ValidationError,
 } from '../utils/AppError.js';
 import { encrypt } from '../utils/crypto.js';
+import { resolveGoogleMapsShareUrl } from '../utils/googleMaps.js';
 import { logger } from '../utils/logger.js';
 import { emailChannel } from '../interfaces/channel.email.js';
 
@@ -78,6 +80,21 @@ async function userResponse(user) {
 
 function genericCredentialsError() {
   return new UnauthenticatedError('Email or password is incorrect.');
+}
+
+async function resolveServiceArea(serviceArea) {
+  try {
+    const { coordinates } = await resolveGoogleMapsShareUrl(serviceArea.shareUrl);
+    return {
+      coordinates: [coordinates.lng, coordinates.lat],
+      radiusKm: serviceArea.radiusKm,
+      shareUrl: serviceArea.shareUrl,
+    };
+  } catch (error) {
+    throw new ValidationError('Please fix the highlighted service-area link.', {
+      serviceArea: [error.message],
+    });
+  }
 }
 
 function failureKey(email) {
@@ -214,6 +231,9 @@ export const authService = Object.freeze({
         'An account already uses this email. Please sign in or reset your password.',
       );
     }
+    // Resolve before creating either record so a bad/expired map link cannot leave an orphaned
+    // caregiver account or application behind.
+    const resolvedServiceArea = await resolveServiceArea(serviceArea);
 
     const user = await userRepository.createUser({
       role: ROLES.CAREGIVER,
@@ -228,9 +248,10 @@ export const authService = Object.freeze({
       verification: { cnicNumber: encrypt(cnicNumber), gates: {} },
       serviceArea: {
         type: 'Point',
-        coordinates: [serviceArea.lng, serviceArea.lat],
-        radiusKm: serviceArea.radiusKm,
+        coordinates: resolvedServiceArea.coordinates,
+        radiusKm: resolvedServiceArea.radiusKm,
       },
+      serviceAreaShareUrl: encrypt(resolvedServiceArea.shareUrl),
       status: CAREGIVER_STATUS.APPLIED,
     });
     await issueEmailToken(user, AUTH_TOKEN_TYPES.EMAIL_VERIFICATION);

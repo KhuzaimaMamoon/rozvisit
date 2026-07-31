@@ -56,6 +56,20 @@ const token = (value) =>
   typeof value === 'string' && value.length > 0
     ? { value }
     : { message: 'This link is not valid. Please request a new one.' };
+const googleMapsShareUrl = (value) => {
+  let url;
+  try {
+    url = new URL(typeof value === 'string' ? value.trim() : '');
+  } catch {
+    return { message: 'Paste a complete Google Maps share link beginning with https://.' };
+  }
+  const host = url.hostname.toLowerCase();
+  const googleHost =
+    host === 'google.com' || host.endsWith('.google.com') || host === 'maps.app.goo.gl';
+  return url.protocol === 'https:' && googleHost
+    ? { value: url.href }
+    : { message: 'Use a Google Maps share link from maps.google.com or maps.app.goo.gl.' };
+};
 
 export const registerSchema = {
   safeParse: (value) => parseObject(value, { name, email, phone, countryCode, password }),
@@ -78,20 +92,11 @@ export const applySchema = {
           ? { value: cnic }
           : { message: 'Please enter a 13-digit CNIC number.' },
       serviceArea: (area) => {
-        const valid =
-          area &&
-          typeof area === 'object' &&
-          Number.isFinite(area.lng) &&
-          Number.isFinite(area.lat) &&
-          Number.isFinite(area.radiusKm) &&
-          area.lng >= -180 &&
-          area.lng <= 180 &&
-          area.lat >= -90 &&
-          area.lat <= 90 &&
-          area.radiusKm > 0;
-        return valid
-          ? { value: { lng: area.lng, lat: area.lat, radiusKm: area.radiusKm } }
-          : { message: 'Please enter a valid service area and radius.' };
+        const shareUrl = googleMapsShareUrl(area?.shareUrl);
+        if (shareUrl.message) return shareUrl;
+        return Number.isFinite(area?.radiusKm) && area.radiusKm > 0
+          ? { value: { shareUrl: shareUrl.value, radiusKm: area.radiusKm } }
+          : { message: 'Enter a service radius of at least 1 kilometre.' };
       },
     }),
 };

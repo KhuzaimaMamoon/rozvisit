@@ -139,7 +139,12 @@ describe('visitService', () => {
         parentId: parent._id.toString(),
         slots: [{ dayOfWeek: 0, time: '11:00' }],
       }),
-    ).rejects.toMatchObject({ code: 'SCHEDULING_LOCKED' });
+      // During the two-day reminder window, slots that have already rolled into next week return
+      // the more specific SCHEDULE_ALREADY_SET code. Outside that window the same second submit is
+      // SCHEDULING_LOCKED; both reject the duplicate weekly cycle as required.
+    ).rejects.toMatchObject({
+      code: expect.stringMatching(/^(SCHEDULING_LOCKED|SCHEDULE_ALREADY_SET)$/),
+    });
   });
 
   it('carries the prior weekly pattern forward when the new week has no client schedule', async () => {

@@ -141,8 +141,9 @@ test('AC-03: caregiver application cannot be approved before all gates, then rea
   await applicantPage.getByLabel('Phone').fill('+923001234567');
   await applicantPage.getByLabel('CNIC number').fill('3520212345678');
   await applicantPage.getByLabel('Password').fill(password);
-  await applicantPage.getByLabel('Service latitude').fill('33.6844');
-  await applicantPage.getByLabel('Service longitude').fill('73.0479');
+  await applicantPage
+    .getByLabel('Google Maps share link')
+    .fill('https://www.google.com/maps?q=33.6844,73.0479');
   await applicantPage.getByLabel('Radius (km)').fill('10');
   await applicantPage.getByRole('button', { name: 'Submit application' }).click();
   await expect(applicantPage.getByText('Your application has been received.')).toBeVisible();

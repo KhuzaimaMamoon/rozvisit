@@ -114,7 +114,8 @@ The full data dictionary. **(R)** = required, **(O)** = optional, **(E)** = encr
 | _id | ObjectId | R | |
 | userId | ObjectId → users | R | Unique |
 | verification | Embedded | R | See below |
-| serviceArea | GeoJSON Point + radiusKm | R | Matching + Phase 2 GPS context (DATA-002) |
+| serviceAreaShareUrl | String **(E)** | O for legacy, R for new applications | Original Google Maps share link for the caregiver’s usual service location; encrypted because it reveals a precise location |
+| serviceArea | GeoJSON Point + radiusKm | R | Parsed map pin used for matching + Phase 2 GPS context (DATA-002) |
 | availability | [{ day, startTime, endTime }] | O | |
 | rating | { average: Number, count: Number } | R (0/0) | Fed by Phase 2 ratings (BR-022) |
 | status | String enum | R | `applied` \| `in_review` \| `verified` \| `rejected` \| `deactivated` (FR-003/081) |
@@ -413,7 +414,7 @@ MVP search needs are exact and small: admin lookup by name/email, visit filters 
 
 Required and designed-in (DATA-002):
 - `parentProfiles.location` and `caregiverProfiles.serviceArea` are GeoJSON Points with 2dsphere indexes from day one.
-- Parent create/edit accepts a Google Maps share link rather than exposing raw coordinate fields to a client. The server follows only allowlisted Google Maps redirects, extracts the pin, stores the encrypted original link in `locationShareUrl`, and retains the parsed GeoJSON point for distance and service-area queries. Links without a resolvable coordinate pin are rejected rather than stored ambiguously.
+- Parent create/edit and new caregiver applications accept a Google Maps share link rather than exposing raw coordinate fields. The server follows only allowlisted Google Maps redirects, extracts the pin, stores the encrypted original link in `locationShareUrl` or `serviceAreaShareUrl`, and retains the parsed GeoJSON point for distance and service-area queries. Links without a resolvable coordinate pin are rejected rather than stored ambiguously. `serviceAreaShareUrl` is nullable only for caregiver profiles created before this migration.
 - MVP uses them lightly (assignment context); Phase 2 uses them fully: geofence comparison at check-in (FR-049) computes distance between the caregiver's reported point and the parent's stored point — a flag raises past the threshold, never a rejection (SEC-011).
 - Coordinates order is always `[longitude, latitude]` (GeoJSON rule — a classic bug source, stated here so it is stated somewhere).
 

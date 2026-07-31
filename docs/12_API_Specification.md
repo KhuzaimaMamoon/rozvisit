@@ -181,10 +181,10 @@ POST /api/v1/auth/register
 ### POST /auth/apply — Caregiver application
 
 - **Role:** public
-- **Body:** `{ name, email, phone, password, cnicNumber, serviceArea: { lng, lat, radiusKm } }`
-- **Validation:** CNIC 13 digits; coordinates valid; rest as register (FR-003)
+- **Body:** `{ name, email, phone, password, cnicNumber, serviceArea: { shareUrl, radiusKm } }`
+- **Validation:** CNIC 13 digits; `shareUrl` is an HTTPS Google Maps link from `maps.google.com`, another `*.google.com` Maps URL, or `maps.app.goo.gl`; it must resolve through allowlisted Google redirects to an embedded coordinate pin. `radiusKm` must be at least 1; rest as register (FR-003). Raw latitude/longitude input is not accepted.
 - **Success `201`:** account in `applied` state; next-steps message
-- **Security:** CNIC encrypted at rest immediately; never echoed back (SEC-009)
+- **Security:** CNIC and the original service-area share link are encrypted at rest immediately; neither is echoed back (SEC-009). The server derives and stores GeoJSON `[longitude, latitude]` for assignment-distance calculations.
 
 ### POST /auth/login
 

@@ -101,7 +101,10 @@ describe('notification trigger map', () => {
       name: 'Bilal Ahmed',
       password: 'caregiverPass123',
       phone: '+923001234567',
-      serviceArea: { lat: 33.6844, lng: 73.0479, radiusKm: 12 },
+      serviceArea: {
+        radiusKm: 12,
+        shareUrl: 'https://www.google.com/maps?q=33.6844,73.0479',
+      },
     });
     const caregiver = await User.findById(applicationResult.userId);
     const application = await CaregiverProfile.findOne({ userId: caregiver._id });
