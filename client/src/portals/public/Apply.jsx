@@ -153,7 +153,6 @@ export default function Apply() {
             <FormInput
               error={fields.serviceArea?.[0]}
               formatMessage="Paste a Google Maps share link from maps.google.com or maps.app.goo.gl."
-              helperText="Open Google Maps, find your service location, tap Share, then copy and paste the link here."
               id="service-area-link"
               label="Google Maps share link"
               required
